@@ -1,0 +1,99 @@
+import { WrittenTransactionResult, BuiltEvmTransactionResult, BuiltCallTransactionResult } from '../types/common';
+
+export enum DIDVersion {
+    V2_1_0 = '2.1.0',
+    V3_0_0 = '3.0.0'
+}
+
+// V2.1.0 specific interfaces
+export interface DIDV2Document {
+    id: string;
+    controller: string;
+    verificationMethod: VerificationMethod[];
+    authentication: string[];
+    service: Service[];
+    signature?: Signature;
+}
+
+// V3.0.0 specific interfaces
+export interface DIDV3Document {
+    id: string;
+    controller: string[];
+    verificationMethod: VerificationMethod[];
+    authentication: string[];
+    assertionMethod: string[];
+    keyAgreement: string[];
+    capabilityInvocation: string[];
+    capabilityDelegation: string[];
+    service: Service[];
+    signature?: Signature;
+    version: DIDVersion.V3_0_0;
+}
+
+export interface DIDDocumentBase {
+    name: string;
+    value: string;
+    validity: string;
+    created: string;
+    document: DIDV2Document | DIDV3Document;
+}
+
+export type DIDDocument = DIDDocumentBase;
+
+// create a v3 to accept the blockchainAccountId
+export interface VerificationMethod {
+    id?: string;
+    type: string;
+    controller?: string;
+    publicKeyMultibase?: string;
+    blockchainAccountId?: string;
+}
+
+export interface Service {
+    id: string;
+    type: string;
+    serviceEndpoint: string | string[] | Record<string, any>;
+}
+
+export interface Signature {
+    type: string;
+    issuer: string;
+    hash: string;
+}
+
+export interface CreateDIDOptions {
+    name: string;
+    controller: string[];
+    verificationMethods?: VerificationMethod[];
+    services?: Service[];
+    signature?: Signature;
+}
+
+export interface UpdateDIDOptions {
+    name: string;
+    controller?: string[];
+    verificationMethods?: VerificationMethod[];
+    services?: Service[];
+    signature?: Signature;
+}
+
+export interface RemoveDIDOptions {
+    name: string;
+    address?: string;
+}
+
+export interface ReadDIDOptions {
+    name: string;
+    address?: string;
+}
+
+export interface ReadDIDResult {
+    service: any;
+    name: string;
+    value: string;
+    validity: string;
+    created: string;
+    document: DIDV2Document | DIDV3Document;
+}
+
+export type DidWriteResult = WrittenTransactionResult | BuiltEvmTransactionResult | BuiltCallTransactionResult; 
