@@ -8,6 +8,8 @@ import { ChainType, SDKMetadata, CreateInstanceOptions, KeyType } from '../types
 
 import { Did } from './did';
 import { DIDVersion } from '../types/did';
+import { Storage } from './storage';
+
 
 /**
  * Entry point for the TypeScript SDK.
@@ -18,6 +20,8 @@ import { DIDVersion } from '../types/did';
  */
 export class Main extends Base {
     public readonly did: Did;
+    public readonly storage: Storage;
+
 
     /**
      * Initializes the Main class, representing the primary interface for the SDK.
@@ -42,6 +46,7 @@ export class Main extends Base {
         super(api, metadata);
 
         this.did = new Did(api, metadata);
+        this.storage = new Storage(api, metadata);
     }
 
     /**
