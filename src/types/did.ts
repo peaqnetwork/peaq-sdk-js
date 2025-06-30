@@ -40,6 +40,13 @@ export interface DIDDocumentBase {
 
 export type DIDDocument = DIDDocumentBase;
 
+export enum FunctionSignatures {
+    ADD_ATTRIBUTE = 'addAttribute(address,bytes,bytes,uint32)',
+    READ_ATTRIBUTE = 'readAttribute(address,bytes)',
+    UPDATE_ATTRIBUTE = 'updateAttribute(address,bytes,bytes,uint32)',
+    REMOVE_ATTRIBUTE = 'removeAttribute(address,bytes)'
+  }
+
 // create a v3 to accept the blockchainAccountId
 export interface VerificationMethod {
     id?: string;
