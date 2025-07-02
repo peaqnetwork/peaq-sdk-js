@@ -15,7 +15,7 @@ import {
     EvmTransaction,
     PrecompileAddresses
 } from '../../types/common';
-import { SendResult } from '../../types/base';
+import { SendResult, TransactionStatusCallback } from '../../types/base';
 import { Base } from '../base';
 import { AddItemOptions, RemoveItemOptions, UpdateItemOptions, GetItemOptions, GetItemResult, FunctionSignatures } from '../../types/storage';
 import { createStorageKeys, CreateStorageKeysEnum } from '../crypto';
@@ -55,7 +55,7 @@ export class Storage extends Base {
      */
     public async addItem(
         options: AddItemOptions,
-        statusCallback?: (result: ISubmittableResult) => void | Promise<void>
+        statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>
     ): Promise<SendResult | WrittenTransactionResult | BuiltCallTransactionResult | BuiltEvmTransactionResult> {
         if (!(this.api instanceof ApiPromise || this.api instanceof JsonRpcProvider)) {
             throw new Error('Invalid API instance');
@@ -86,7 +86,7 @@ export class Storage extends Base {
      */
     public async removeItem(
         options: RemoveItemOptions,
-        statusCallback?: (result: ISubmittableResult) => void | Promise<void>
+        statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>
     ): Promise<SendResult | WrittenTransactionResult | BuiltCallTransactionResult | BuiltEvmTransactionResult> {
         if (!(this.api instanceof ApiPromise || this.api instanceof JsonRpcProvider)) {
             throw new Error('Invalid API instance');
@@ -181,7 +181,7 @@ export class Storage extends Base {
      */
     public async updateItem(
         options: UpdateItemOptions,
-        statusCallback?: (result: ISubmittableResult) => void | Promise<void>
+        statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>
     ): Promise<SendResult | WrittenTransactionResult | BuiltCallTransactionResult | BuiltEvmTransactionResult> {
         if (!(this.api instanceof ApiPromise || this.api instanceof JsonRpcProvider)) {
             throw new Error('Invalid API instance');
@@ -283,25 +283,25 @@ export class Storage extends Base {
     }
 
     // ---------------  Substrate helpers ----------------
-    private async _addItemSubstrate(itemType: string, item: any, statusCallback?: (result: ISubmittableResult) => void): Promise<BuiltCallTransactionResult | SendResult> {
+    private async _addItemSubstrate(itemType: string, item: any, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<BuiltCallTransactionResult | SendResult> {
         const api = this.api as ApiPromise;
         const call = api.tx?.['peaqStorage']?.['addItem'](itemType, item);
         return this._handleSubstrateTx(call, `add storage item ${itemType}`, statusCallback);
     }
 
-    private async _removeItemSubstrate(itemType: string, statusCallback?: (result: ISubmittableResult) => void): Promise<BuiltCallTransactionResult | SendResult> {
+    private async _removeItemSubstrate(itemType: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<BuiltCallTransactionResult | SendResult> {
         const api = this.api as ApiPromise;
         const call = api.tx?.['peaqStorage']?.['removeItem'](itemType);
         return this._handleSubstrateTx(call, `remove storage item ${itemType}`, statusCallback);
     }
 
-    private async _updateItemSubstrate(itemType: string, newItem: any, statusCallback?: (result: ISubmittableResult) => void): Promise<BuiltCallTransactionResult | SendResult> {
+    private async _updateItemSubstrate(itemType: string, newItem: any, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<BuiltCallTransactionResult | SendResult> {
         const api = this.api as ApiPromise;
         const call = api.tx?.['peaqStorage']?.['updateItem'](itemType, newItem);
         return this._handleSubstrateTx(call, `update storage item ${itemType}`, statusCallback);
     }
 
-    private async _handleSubstrateTx(call: SubmittableExtrinsic<'promise', ISubmittableResult>, action: string, statusCallback?: (result: ISubmittableResult) => void): Promise<BuiltCallTransactionResult | SendResult> {
+    private async _handleSubstrateTx(call: SubmittableExtrinsic<'promise', ISubmittableResult>, action: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<BuiltCallTransactionResult | SendResult> {
         if (!this.metadata.pair) {
             return { message: `Constructed ${action} call (unsigned).`, extrinsic: call } as BuiltCallTransactionResult;
         }

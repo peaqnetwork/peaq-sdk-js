@@ -9,8 +9,8 @@ import { BN } from '@polkadot/util';
 import { GenericExtrinsic } from '@polkadot/types';
 import { AnyTuple } from '@polkadot/types-codec/types';
 
-import { ChainType, EvmTransaction, SDKMetadata, CreateInstanceOptions, KeyType } from '../types/common';
-import { FormattedReceipt, PeaqEvent, PeaqEventData, TErrorData, EvmExecutionError, SendResult } from '../types/base';
+import { ChainType, EvmTransaction, SDKMetadata, CreateInstanceOptions, KeyType, PrecompileAddresses } from '../types/common';
+import { FormattedReceipt, PeaqEvent, PeaqEventData, TErrorData, EvmExecutionError, SendResult, EvmSendResult, EvmFormattedReceipt, TransactionStatusCallback, EvmStatusUpdate, EvmEvent } from '../types/base';
 
 type Address = string;
 
@@ -131,7 +131,7 @@ export abstract class Base {
      */
     protected async _send_substrate_tx(
         call: SubmittableExtrinsic<"promise", ISubmittableResult>,
-        onStatus?: (result: ISubmittableResult) => void
+        onStatus?: (result: TransactionStatusCallback) => void | Promise<void>
     ): Promise<SendResult> {
         if (!this.metadata.pair) {
             throw new Error('No keypair available for signing');
@@ -142,7 +142,6 @@ export abstract class Base {
         }
 
         const keyPair = this.metadata.pair as KeyringPair;
-        const api = this.api;
 
         // Get managed nonce
         const nonce = await this._getNonce(keyPair.address);
@@ -321,6 +320,47 @@ export abstract class Base {
         };
     }
 
+    /**
+     * Get a readable name for precompile addresses
+     */
+    private _getPrecompileName(address: string): string {
+        const addr = address.toLowerCase();
+        switch (addr) {
+            case PrecompileAddresses.DID.toLowerCase():
+                return "DID";
+            case PrecompileAddresses.STORAGE.toLowerCase():
+                return "STORAGE";
+            case PrecompileAddresses.RBAC.toLowerCase():
+                return "RBAC";
+            case PrecompileAddresses.IERC20.toLowerCase():
+                return "IERC20";
+            default:
+                return address;
+        }
+    }
+
+    /**
+     * Convert ethers logs to our EvmEvent format with basic info and precompile names
+     */
+    private _formatEvmLogs(logs: readonly ethers.Log[]): EvmEvent[] {
+        return logs.map(log => ({
+            address: log.address,
+            addressName: this._getPrecompileName(log.address),
+            topics: log.topics,
+            data: log.data,
+            logIndex: log.index,
+            transactionIndex: log.transactionIndex,
+            removed: log.removed
+        }));
+    }
+
+    /**
+     * Convert ethers logs to our EvmEvent format
+     */
+    private _formatEvmEvents(logs: readonly ethers.Log[]): EvmEvent[] {
+        return this._formatEvmLogs(logs);
+    }
+
     // Add this helper function before the _send_evm_tx method
     private _parseEvmError(error: any): string {
         if (!error) return 'Unknown error occurred';
@@ -350,163 +390,148 @@ export abstract class Base {
         return error.message || error.toString();
     }
 
+    /**
+     * Enhanced EVM transaction with fire-and-forget and live-status modes
+     */
     protected async _send_evm_tx(
-        unsignedTx: EvmTransaction
-    ): Promise<ethers.TransactionReceipt> {
+        unsignedTx: EvmTransaction,
+        onStatus?: (result: TransactionStatusCallback) => void | Promise<void>
+    ): Promise<EvmSendResult> {
         if (!(this.api instanceof JsonRpcProvider)) {
             throw new EvmExecutionError('API must be JsonRpcProvider instance for EVM transactions');
         }
-
+    
         if (!this.metadata.pair || !(this.metadata.pair instanceof Wallet)) {
             throw new EvmExecutionError('No wallet available for signing');
         }
-
-        const maxAttempts = 5; // Reduced from 5 to avoid too many retries
-        const timeoutMs = 90000; // Increased to 90 seconds
         
         const provider = this.api;
-        // Ensure wallet is connected to the provider
         const wallet = (this.metadata.pair as Wallet).connect(provider);
         const address = wallet.address;
-
-        let attempt = 0;
-        let baseFeePerGas: bigint | null = null;
-        let chainId: bigint | null = null;
-        let currentNonce: number | null = null;
-
-        const waitForReceiptWithTimeout = async (
-            provider: JsonRpcProvider,
-            txHash: string,
-            timeoutMs: number
-        ): Promise<ethers.TransactionReceipt> => {
-            const receipt = await Promise.race([
-                provider.waitForTransaction(txHash),
-                new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Transaction timeout')), timeoutMs)
-                ),
-            ]) as ethers.TransactionReceipt;
+    
+        return new Promise<EvmSendResult>(async (resolveMain, rejectMain) => {
+            let cancelled = false;
             
-            return receipt;
-        };
-
-        while (attempt < maxAttempts) {
-            try {
-                // Fetch feeData & chainId on first attempt
-                if (attempt === 0) {
-                    const feeData = await provider.getFeeData();
-                    baseFeePerGas = feeData.gasPrice ?? feeData.maxFeePerGas ?? 0n;
-                    const network = await provider.getNetwork();
-                    chainId = network.chainId;
-                    
-                    // Get fresh nonce for each transaction
-                    currentNonce = await provider.getTransactionCount(address, 'pending');
-                } else {
-                    // For retries, increase gas price more aggressively and get fresh nonce
-                    baseFeePerGas = baseFeePerGas! * 150n / 100n; // 50% increase instead of 25%
-                    currentNonce = await provider.getTransactionCount(address, 'pending');
-                    
-                    // Add small delay between retries to avoid rapid-fire transactions
-                    await new Promise((r) => setTimeout(r, 2000));
-                }
-
-                // Estimate gas with current parameters
-                const estimateTx = {
-                    from: address,
-                    to: unsignedTx.to,
-                    data: unsignedTx.data ?? '0x',
-                    gasPrice: baseFeePerGas!,
-                    nonce: currentNonce,
-                    chainId: chainId!,
-                };
-
+            // A promise that resolves after 7 confirmations
+            const finalize = new Promise<EvmFormattedReceipt>(async (resolve, reject) => {
                 try {
-                    const estimatedGasLimit = await provider.estimateGas(estimateTx);
-                    
+                    // Estimate gas as source of truth
+                    const estimatedGasLimit = await provider.estimateGas({
+                        from: address,
+                        to: unsignedTx.to,
+                        data: unsignedTx.data ?? '0x',
+                    });
+    
                     // Build and send transaction
                     const fullTx = {
                         to: unsignedTx.to,
                         data: unsignedTx.data ?? '0x',
-                        nonce: currentNonce,
-                        gasPrice: baseFeePerGas!,
                         gasLimit: estimatedGasLimit,
-                        chainId: chainId!,
                     };
-
+    
                     const txResponse = await wallet.sendTransaction(fullTx);
-                    console.log(`Attempt ${attempt + 1}: Sent tx ${txResponse.hash} with gasPrice ${baseFeePerGas!.toString()} and nonce ${currentNonce}`);
-
-                    try {
-                        const receipt = await waitForReceiptWithTimeout(provider, txResponse.hash, timeoutMs);
-                        if (receipt.status === 0) {
-                            throw new Error('Transaction failed');
-                        }
-                        return receipt;
-                    } catch (waitError: any) {
-                        console.warn(
-                            `Attempt ${attempt + 1}: Tx ${txResponse.hash} not confirmed within ${timeoutMs}ms: ${waitError.message}`
-                        );
-
-                        // Check if transaction is still pending
-                        const pending = await provider.getTransaction(txResponse.hash);
-                        if (pending && !pending.blockNumber) {
-                            console.log(`Tx ${txResponse.hash} is still pending. Will retry with higher gas price...`);
-                            attempt += 1;
-                            continue;
-                        } else {
-                            throw new EvmExecutionError(
-                                `Transaction ${txResponse.hash} was dropped or not found after timeout.`
-                            );
-                        }
+                    
+                    // Return immediately with transaction hash
+                    resolveMain({
+                        txHash: txResponse.hash,
+                        unsubscribe: onStatus ? () => { cancelled = true; } : undefined,
+                        finalize
+                    });
+    
+                    // If callback provided, send status updates
+                    if (onStatus && !cancelled) {
+                        // 1. Broadcast status
+                        const broadcastStatus: EvmStatusUpdate = {
+                            type: "broadcast",
+                            hash: txResponse.hash,
+                            nonce: txResponse.nonce
+                        };
+                        onStatus(broadcastStatus);
                     }
-                } catch (estimateError: any) {
-                    // If this is a revert error, parse it and throw immediately
-                    if (estimateError.code === 'CALL_EXCEPTION') {
-                        throw new EvmExecutionError(this._parseEvmError(estimateError));
+    
+                    // 2. Wait for mining (1 confirmation)
+                    const receipt1 = await txResponse.wait(1);
+                    if (!receipt1) {
+                        throw new Error('Transaction receipt not found');
                     }
-                    throw estimateError;
+    
+                    if (receipt1.status === 0) {
+                        throw new EvmExecutionError('Transaction failed');
+                    }
+    
+                    if (onStatus && !cancelled) {
+                        // Mined status
+                        const minedStatus: EvmStatusUpdate = {
+                            type: "mined",
+                            hash: receipt1.hash,
+                            blockNumber: receipt1.blockNumber,
+                            blockHash: receipt1.blockHash,
+                            gasUsed: receipt1.gasUsed?.toString(),
+                            events: this._formatEvmEvents(receipt1.logs)
+                        };
+                        onStatus(minedStatus);
+                    }
+    
+                    // 3. Wait for 7 confirmations (finalized)
+                    const receiptN = await txResponse.wait(7);
+                    if (!receiptN) {
+                        throw new Error('Final receipt not found');
+                    }
+    
+                    if (onStatus && !cancelled) {
+                        // Finalized status
+                        const finalizedStatus: EvmStatusUpdate = {
+                            type: "confirmations",
+                            hash: receiptN.hash,
+                            blockNumber: receiptN.blockNumber,
+                            blockHash: receiptN.blockHash,
+                            confirmations: 7,
+                            gasUsed: receiptN.gasUsed?.toString(),
+                            events: this._formatEvmEvents(receiptN.logs)
+                        };
+                        onStatus(finalizedStatus);
+                    }
+    
+                    const formattedReceipt: EvmFormattedReceipt = {
+                        blockNumber: receiptN.blockNumber.toString(),
+                        txHash: receiptN.hash,
+                        confirmations: 7,
+                        gasUsed: receiptN.gasUsed.toString(),
+                        effectiveGasPrice: receiptN.gasPrice?.toString() || '0',
+                        status: receiptN.status || 0,
+                        blockHash: receiptN.blockHash
+                    };
+    
+                    resolve(formattedReceipt);
+                } catch (error: any) {
+                    // Gas estimation errors should be thrown immediately
+                    if (error.code === 'CALL_EXCEPTION') {
+                        const errorMessage = this._parseEvmError(error);
+                        reject(new EvmExecutionError(errorMessage));
+                        return;
+                    }
+                    
+                    reject(error);
                 }
-            } catch (err: any) {
-                const msg = err.toString().toLowerCase();
-                
-                // If it's already an EvmExecutionError with a parsed message, throw it directly
-                if (err instanceof EvmExecutionError) {
-                    throw err;
-                }
-                
-                // Handle specific error types that should trigger retry
-                const retryableErrors = [
-                    'replacement transaction underpriced',
-                    'fee too low',
-                    'intrinsic gas too low',
-                    'nonce too low',
-                    'already known',
-                    'transaction underpriced',
-                ];
-                
-                if (retryableErrors.some((substr) => msg.includes(substr))) {
-                    console.warn(
-                        `Attempt ${attempt + 1}: Detected retryable error ("${err.message}"). Will retry with higher gas price...`
-                    );
-                    attempt += 1;
-                    continue;
-                }
+            });
+    
+            // Handle cases where finalize rejects before we return
+            finalize.catch((error) => {
+                rejectMain(error);
+            });
+        });
+    }
 
-                // Handle connection errors
-                if (msg.includes('connection') && (msg.includes('closed') || msg.includes('error'))) {
-                    console.warn(
-                        `Attempt ${attempt + 1}: Connection error ("${err.message}"). Will retry...`
-                    );
-                    attempt += 1;
-                    await new Promise((r) => setTimeout(r, 1000));
-                    continue;
-                }
-
-                throw new EvmExecutionError(this._parseEvmError(err));
-            }
-        }
-
-        throw new EvmExecutionError(
-            `Failed to send EVM transaction after ${maxAttempts} attempts.`
-        );
+    // Format EVM receipt for consistency
+    protected _formatEvmReceipt(receipt: ethers.TransactionReceipt, confirmations: number = 7): EvmFormattedReceipt {
+        return {
+            blockNumber: receipt.blockNumber.toString(),
+            txHash: receipt.hash,
+            confirmations,
+            gasUsed: receipt.gasUsed.toString(),
+            effectiveGasPrice: receipt.gasPrice?.toString() || '0',
+            status: receipt.status || 0,
+            blockHash: receipt.blockHash
+        };
     }
 }

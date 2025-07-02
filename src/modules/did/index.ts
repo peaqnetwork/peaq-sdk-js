@@ -5,7 +5,7 @@ import { Base } from '../base';
 import { DIDVersion, CreateDIDOptions, UpdateDIDOptions, RemoveDIDOptions, ReadDIDOptions, ReadDIDResult, DidWriteResult } from '../../types/did';
 import { DIDV2Implementation } from './v2_implementation';
 import { DIDV3Implementation } from './v3_implementation';
-import { ISubmittableResult } from '@polkadot/types/types';
+import { TransactionStatusCallback } from '../../types/base';
 export class Did extends Base {
     private implementation: DIDV2Implementation | DIDV3Implementation;
 
@@ -36,7 +36,7 @@ export class Did extends Base {
      * Creates a new DID document based on the specified version
      */
     public async create(options: CreateDIDOptions,
-        statusCallback?: (result: ISubmittableResult) => void | Promise<void>
+        statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>
     ): Promise<DidWriteResult> {
         return this.implementation.create(options, statusCallback);
     }
@@ -53,7 +53,7 @@ export class Did extends Base {
      * Updates a DID document
      */
     public async update(options: UpdateDIDOptions,
-        statusCallback?: (result: ISubmittableResult) => void | Promise<void>
+        statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>
     ): Promise<DidWriteResult> {
         return (this.implementation as any).update(options, statusCallback);
     }
@@ -62,7 +62,7 @@ export class Did extends Base {
      * Deactivates a DID
      */
     public async remove(options: RemoveDIDOptions,
-        statusCallback?: (result: ISubmittableResult) => void | Promise<void>
+        statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>
     ): Promise<DidWriteResult> {
         return (this.implementation as any).remove(options, statusCallback);
     }
