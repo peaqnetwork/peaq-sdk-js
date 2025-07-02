@@ -52,14 +52,18 @@ export class Did extends Base {
     /**
      * Updates a DID document
      */
-    public async update(options: UpdateDIDOptions): Promise<DidWriteResult> {
-        return (this.implementation as any).update(options);
+    public async update(options: UpdateDIDOptions,
+        statusCallback?: (result: ISubmittableResult) => void | Promise<void>
+    ): Promise<DidWriteResult> {
+        return (this.implementation as any).update(options, statusCallback);
     }
 
     /**
      * Deactivates a DID
      */
-    public async remove(options: RemoveDIDOptions): Promise<DidWriteResult> {
-        return (this.implementation as any).remove(options);
+    public async remove(options: RemoveDIDOptions,
+        statusCallback?: (result: ISubmittableResult) => void | Promise<void>
+    ): Promise<DidWriteResult> {
+        return (this.implementation as any).remove(options, statusCallback);
     }
 } 

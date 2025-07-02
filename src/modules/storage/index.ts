@@ -45,6 +45,7 @@ export class Storage extends Base {
      * @param options - The options for adding an item
      * @param options.itemType - The key under which to store the item
      * @param options.item - The value to store (string or any serializable object)
+     * @param statusCallback - Optional callback for monitoring transaction status
      * 
      * @returns A promise that resolves to one of:
      * - WrittenTransactionResult: If the transaction was signed and broadcasted
@@ -52,7 +53,8 @@ export class Storage extends Base {
      * - BuiltEvmTransactionResult: If on EVM without a signer
      */
     public async addItem(
-        options: AddItemOptions
+        options: AddItemOptions,
+        statusCallback?: (result: ISubmittableResult) => void | Promise<void>
     ): Promise<WrittenTransactionResult | BuiltCallTransactionResult | BuiltEvmTransactionResult> {
         if (!(this.api instanceof ApiPromise || this.api instanceof JsonRpcProvider)) {
             throw new Error('Invalid API instance');
@@ -63,7 +65,7 @@ export class Storage extends Base {
         if (this.metadata.chainType === ChainType.EVM) {
             return this._addItemEvm(itemType, item);
         }
-        return this._addItemSubstrate(itemType, item);
+        return this._addItemSubstrate(itemType, item, statusCallback);
     }
 
     /**
@@ -74,6 +76,7 @@ export class Storage extends Base {
      * 
      * @param options - The options for removing an item
      * @param options.itemType - The key of the item to remove
+     * @param statusCallback - Optional callback for monitoring transaction status
      * 
      * @returns A promise that resolves to one of:
      * - WrittenTransactionResult: If the transaction was signed and broadcasted
@@ -81,7 +84,8 @@ export class Storage extends Base {
      * - BuiltEvmTransactionResult: If on EVM without a signer
      */
     public async removeItem(
-        options: RemoveItemOptions
+        options: RemoveItemOptions,
+        statusCallback?: (result: ISubmittableResult) => void | Promise<void>
     ): Promise<WrittenTransactionResult | BuiltCallTransactionResult | BuiltEvmTransactionResult> {
         if (!(this.api instanceof ApiPromise || this.api instanceof JsonRpcProvider)) {
             throw new Error('Invalid API instance');
@@ -92,7 +96,7 @@ export class Storage extends Base {
         if (this.metadata.chainType === ChainType.EVM) {
             return this._removeItemEvm(itemType);
         }
-        return this._removeItemSubstrate(itemType);
+        return this._removeItemSubstrate(itemType, statusCallback);
     }
 
     /**
@@ -167,6 +171,7 @@ export class Storage extends Base {
      * @param options - The options for updating an item
      * @param options.itemType - The key of the item to update
      * @param options.newItem - The new value to replace the existing stored value
+     * @param statusCallback - Optional callback for monitoring transaction status
      * 
      * @returns A promise that resolves to one of:
      * - WrittenTransactionResult: If the transaction was signed and broadcasted
@@ -174,7 +179,8 @@ export class Storage extends Base {
      * - BuiltEvmTransactionResult: If on EVM without a signer
      */
     public async updateItem(
-        options: UpdateItemOptions
+        options: UpdateItemOptions,
+        statusCallback?: (result: ISubmittableResult) => void | Promise<void>
     ): Promise<WrittenTransactionResult | BuiltCallTransactionResult | BuiltEvmTransactionResult> {
         if (!(this.api instanceof ApiPromise || this.api instanceof JsonRpcProvider)) {
             throw new Error('Invalid API instance');
@@ -185,7 +191,7 @@ export class Storage extends Base {
         if (this.metadata.chainType === ChainType.EVM) {
             return this._updateItemEvm(itemType, newItem);
         }
-        return this._updateItemSubstrate(itemType, newItem);
+        return this._updateItemSubstrate(itemType, newItem, statusCallback);
     }
 
     /**
@@ -276,30 +282,30 @@ export class Storage extends Base {
     }
 
     // ---------------  Substrate helpers ----------------
-    private async _addItemSubstrate(itemType: string, item: any): Promise<BuiltCallTransactionResult | WrittenTransactionResult> {
+    private async _addItemSubstrate(itemType: string, item: any, statusCallback?: (result: ISubmittableResult) => void): Promise<BuiltCallTransactionResult | WrittenTransactionResult> {
         const api = this.api as ApiPromise;
         const call = api.tx?.['peaqStorage']?.['addItem'](itemType, item);
-        return this._handleSubstrateTx(call, `add storage item ${itemType}`);
+        return this._handleSubstrateTx(call, `add storage item ${itemType}`, statusCallback);
     }
 
-    private async _removeItemSubstrate(itemType: string): Promise<BuiltCallTransactionResult | WrittenTransactionResult> {
+    private async _removeItemSubstrate(itemType: string, statusCallback?: (result: ISubmittableResult) => void): Promise<BuiltCallTransactionResult | WrittenTransactionResult> {
         const api = this.api as ApiPromise;
         const call = api.tx?.['peaqStorage']?.['removeItem'](itemType);
-        return this._handleSubstrateTx(call, `remove storage item ${itemType}`);
+        return this._handleSubstrateTx(call, `remove storage item ${itemType}`, statusCallback);
     }
 
-    private async _updateItemSubstrate(itemType: string, newItem: any): Promise<BuiltCallTransactionResult | WrittenTransactionResult> {
+    private async _updateItemSubstrate(itemType: string, newItem: any, statusCallback?: (result: ISubmittableResult) => void): Promise<BuiltCallTransactionResult | WrittenTransactionResult> {
         const api = this.api as ApiPromise;
         const call = api.tx?.['peaqStorage']?.['updateItem'](itemType, newItem);
-        return this._handleSubstrateTx(call, `update storage item ${itemType}`);
+        return this._handleSubstrateTx(call, `update storage item ${itemType}`, statusCallback);
     }
 
-    private async _handleSubstrateTx(call: SubmittableExtrinsic<'promise', ISubmittableResult>, action: string): Promise<BuiltCallTransactionResult | WrittenTransactionResult> {
+    private async _handleSubstrateTx(call: SubmittableExtrinsic<'promise', ISubmittableResult>, action: string, statusCallback?: (result: ISubmittableResult) => void): Promise<BuiltCallTransactionResult | WrittenTransactionResult> {
         if (!this.metadata.pair) {
             return { message: `Constructed ${action} call (unsigned).`, extrinsic: call } as BuiltCallTransactionResult;
         }
         try {
-            const result = await this._send_substrate_tx(call);
+            const result = await this._send_substrate_tx(call, statusCallback);
 
             return { 
                 message: `Successfully ${action}.`, 

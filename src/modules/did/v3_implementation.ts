@@ -1,8 +1,9 @@
 import { ApiPromise } from '@polkadot/api';
 import { JsonRpcProvider } from 'ethers';
+import { ISubmittableResult } from '@polkadot/types/types';
 import { Base } from '../base';
 import { SDKMetadata, ChainType } from '../../types/common';
-import { CreateDIDOptions, DidWriteResult, DIDDocument, DIDV3Document, DIDVersion, ReadDIDOptions, ReadDIDResult } from '../../types/did';
+import { CreateDIDOptions, DidWriteResult, DIDV3Document, DIDVersion, ReadDIDOptions, ReadDIDResult, UpdateDIDOptions, RemoveDIDOptions } from '../../types/did';
 
 // TODO: Once V3 implementation proto is completed
 export class DIDV3Implementation extends Base {
@@ -10,7 +11,9 @@ export class DIDV3Implementation extends Base {
         super(api, metadata);
     }
 
-    public async create(options: CreateDIDOptions): Promise<DidWriteResult> {
+    public async create(options: CreateDIDOptions,
+        statusCallback?: (result: ISubmittableResult) => void | Promise<void>
+    ): Promise<DidWriteResult> {
         // Get the connected wallet/keypair address
         const connectedAddress = (this.metadata.pair as any)?.address;
         if (!connectedAddress) {
@@ -55,12 +58,16 @@ export class DIDV3Implementation extends Base {
         return null;
     }
 
-    public async update(did: string, document: Partial<DIDDocument>): Promise<DidWriteResult> {
+    public async update(options: UpdateDIDOptions,
+        statusCallback?: (result: ISubmittableResult) => void | Promise<void>
+    ): Promise<DidWriteResult> {
         // Implementation will be added later
         return { message: 'v3 update unimplemented' } as unknown as DidWriteResult;
     }
 
-    public async remove(did: string): Promise<DidWriteResult> {
+    public async remove(options: RemoveDIDOptions,
+        statusCallback?: (result: ISubmittableResult) => void | Promise<void>
+    ): Promise<DidWriteResult> {
         // Implementation will be added later
         return { message: 'v3 deactivate unimplemented' } as unknown as DidWriteResult;
     }

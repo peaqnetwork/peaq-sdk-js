@@ -128,7 +128,9 @@ export class DIDV2Implementation extends Base {
   // ---------------------------------------------------------
   // UPDATE
   // ---------------------------------------------------------
-  public async update(options: UpdateDIDOptions): Promise<DidWriteResult> {
+  public async update(options: UpdateDIDOptions,
+    statusCallback?: (result: ISubmittableResult) => void | Promise<void>
+  ): Promise<DidWriteResult> {
     const { name, controller, verificationMethods, services, signature } = options;
 
     // Re-generate full DID Document with new data (simple replace strategy)
@@ -143,19 +145,21 @@ export class DIDV2Implementation extends Base {
     if (this.metadata.chainType === ChainType.EVM) {
       return this._updateEvm(name, primaryController, didDocumentHex);
     }
-    return this._updateSubstrate(name, primaryController, didDocumentHex);
+    return this._updateSubstrate(name, primaryController, didDocumentHex, statusCallback);
   }
 
   // ---------------------------------------------------------
   // REMOVE / deactivate
   // ---------------------------------------------------------
-  public async remove(options: RemoveDIDOptions): Promise<DidWriteResult> {
+  public async remove(options: RemoveDIDOptions,
+    statusCallback?: (result: ISubmittableResult) => void | Promise<void>
+  ): Promise<DidWriteResult> {
     const { name, address } = options;
 
     if (this.metadata.chainType === ChainType.EVM) {
       return this._removeEvm(name, (this.metadata.pair as any)?.address || address);
     }
-    return this._removeSubstrate(name, (this.metadata.pair as any)?.address || address);
+    return this._removeSubstrate(name, (this.metadata.pair as any)?.address || address, statusCallback);
   }
 
   // ---------------------------------------------------------
@@ -364,16 +368,16 @@ export class DIDV2Implementation extends Base {
     return this._handleSubstrateTx(call, `add DID ${name}`, statusCallback);
   }
 
-  private async _updateSubstrate(name: string, address: string, didHex: string): Promise<DidWriteResult> {
+  private async _updateSubstrate(name: string, address: string, didHex: string, statusCallback?: (result: ISubmittableResult) => void): Promise<DidWriteResult> {
     const api = this.api as ApiPromise;
     const call = api.tx['peaqDid']['updateAttribute'](address, name, didHex, null);
-    return this._handleSubstrateTx(call, `update DID ${name}`);
+    return this._handleSubstrateTx(call, `update DID ${name}`, statusCallback);
   }
 
-  private async _removeSubstrate(name: string, address: string): Promise<DidWriteResult> {
+  private async _removeSubstrate(name: string, address: string, statusCallback?: (result: ISubmittableResult) => void): Promise<DidWriteResult> {
     const api = this.api as ApiPromise;
     const call = api.tx['peaqDid']['removeAttribute'](address, name);
-    return this._handleSubstrateTx(call, `remove DID ${name}`);
+    return this._handleSubstrateTx(call, `remove DID ${name}`, statusCallback);
   }
 
   private async _handleSubstrateTx(call: SubmittableExtrinsic<'promise', ISubmittableResult>, action: string, statusCallback?: (result: ISubmittableResult) => void): Promise<DidWriteResult> {
