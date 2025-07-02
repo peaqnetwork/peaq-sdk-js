@@ -8,6 +8,7 @@ import { evmToAddress } from '@polkadot/util-crypto';
 
 import { Base } from '../base';
 import { ChainType, SDKMetadata, EvmTransaction, PrecompileAddresses, BuiltCallTransactionResult, BuiltEvmTransactionResult, WrittenTransactionResult } from '../../types/common';
+import { SendResult } from '../../types/base';
 import { createStorageKeys, CreateStorageKeysEnum, generateEvmPublicKeyMultibase, generateEd25519PublicKeyMultibase, generateSr25519PublicKeyMultibase } from '../crypto/';
 import {
   DIDV2Document,
@@ -380,18 +381,12 @@ export class DIDV2Implementation extends Base {
     return this._handleSubstrateTx(call, `remove DID ${name}`, statusCallback);
   }
 
-  private async _handleSubstrateTx(call: SubmittableExtrinsic<'promise', ISubmittableResult>, action: string, statusCallback?: (result: ISubmittableResult) => void): Promise<DidWriteResult> {
+  private async _handleSubstrateTx(call: SubmittableExtrinsic<'promise', ISubmittableResult>, action: string, statusCallback?: (result: ISubmittableResult) => void): Promise<BuiltCallTransactionResult | SendResult> {
     if (!this.metadata.pair) {
       return { message: `Constructed ${action} call (unsigned).`, extrinsic: call } as BuiltCallTransactionResult;
     }
     try {
-      const result = await this._send_substrate_tx(call, statusCallback);
-      
-      return { 
-        message: `Successfully ${action}.`, 
-        receipt: result.receipt,
-        unsubscribe: result.unsubscribe
-      } as WrittenTransactionResult;
+      return await this._send_substrate_tx(call, statusCallback);
     } catch (err: any) {
       // Throw error instead of returning signable extrinsic
       throw new Error(`Failed to ${action}: ${err?.message ?? err}`);

@@ -10,7 +10,7 @@ import { GenericExtrinsic } from '@polkadot/types';
 import { AnyTuple } from '@polkadot/types-codec/types';
 
 import { ChainType, EvmTransaction, SDKMetadata, CreateInstanceOptions, KeyType } from '../types/common';
-import { FormattedReceipt, PeaqEvent, PeaqEventData, SubstrateTransactionResult, TErrorData, EvmExecutionError } from '../types/base';
+import { FormattedReceipt, PeaqEvent, PeaqEventData, TErrorData, EvmExecutionError, SendResult } from '../types/base';
 
 type Address = string;
 
@@ -127,12 +127,12 @@ export abstract class Base {
     }
 
     /**
-     * Enhanced substrate transaction with better nonce management and execution tracking
+     * Enhanced substrate transaction with fire-and-forget and live-status modes
      */
     protected async _send_substrate_tx(
         call: SubmittableExtrinsic<"promise", ISubmittableResult>,
-        statusCallback?: (result: ISubmittableResult) => void
-    ): Promise<SubstrateTransactionResult> {
+        onStatus?: (result: ISubmittableResult) => void
+    ): Promise<SendResult> {
         if (!this.metadata.pair) {
             throw new Error('No keypair available for signing');
         }
@@ -142,185 +142,113 @@ export abstract class Base {
         }
 
         const keyPair = this.metadata.pair as KeyringPair;
+        const api = this.api;
 
         // Get managed nonce
         const nonce = await this._getNonce(keyPair.address);
 
-        // Use the enhanced signing and sending pattern from the original implementation
-        let submittableResult: ISubmittableResult | null = null;
-        
-        await this._newSignTx({
-            nonce, 
-            address: keyPair, 
-            extrinsics: call,
-            statusCallback: (result) => {
-                submittableResult = result;
-                statusCallback && statusCallback(result);
-            }
-        });
+        return new Promise<SendResult>(async (resolveMain, rejectMain) => {
+            let unsub: (() => void) | null = null;
+            let actualTxHash: string = '';
+            let hasReturned = false;
 
-        // Set up fallback subscription
-        const unsubscribe = await call.send((result) => {
-            statusCallback && statusCallback(result as unknown as ISubmittableResult);
-        });
+            // A promise that only resolves on finality (or rejects on drop/invalid/error)
+            const finalize = new Promise<FormattedReceipt>(async (resolve, reject) => {
+                try {
+                    // Sign the transaction first
+                    await call.signAsync(keyPair, { nonce });
 
-        // Use _formatReceipt with the captured ISubmittableResult
-        const receipt = this._formatReceipt(submittableResult!);
-
-        return {
-            receipt,
-            unsubscribe
-        };
-    }
-
-    /**
-     * Enhanced signing and transaction method based on the original implementation
-     * Provides better execution tracking and error handling
-     */
-    protected async _newSignTx(option: {
-        nonce: BN;
-        address: KeyringPair;
-        extrinsics: SubmittableExtrinsic<"promise", ISubmittableResult>;
-        statusCallback?: (result: ISubmittableResult) => void;
-    }): Promise<PeaqEvent[]> {
-        return new Promise<PeaqEvent[]>(async (resolve, reject) => {
-            const { extrinsics, nonce, address, statusCallback } = option;
-            const api = this.api as ApiPromise;
-            let subscribed = false;
-
-            try {
-                // Sign the transaction
-                await extrinsics.signAsync(address, { nonce });
-            } catch (error: any) {
-                reject(error);
-                return;
-            }
-
-            try {
-                // Send the transaction and listen for events
-                const unsub = await extrinsics.send(
-                    async (result: ISubmittableResult) => {
-                        statusCallback?.(result);
-
-                        if (
-                            (result.status.isInBlock || result.status.isFinalized) &&
-                            !subscribed
-                        ) {
-                            // Handle transaction inclusion
-                            subscribed = true;
-
-                            let inclusionBlockHash;
-                            if (result.status.isInBlock) {
-                                inclusionBlockHash = result.status.asInBlock.toString();
-                            } else if (result.status.isFinalized) {
-                                inclusionBlockHash = result.status.asFinalized.toString();
+                    // Send and monitor the transaction
+                    unsub = await call.send(async (result: ISubmittableResult) => {
+                        // Capture the real transaction hash from the first result
+                        if (!actualTxHash && result.txHash) {
+                            actualTxHash = result.txHash.toHex();
+                            
+                            // Return the SendResult immediately on first status update
+                            if (!hasReturned) {
+                                hasReturned = true;
+                                resolveMain({
+                                    txHash: actualTxHash,
+                                    unsubscribe: () => unsub && unsub(),
+                                    finalize
+                                });
                             }
-
-                            // Get inclusion block details
-                            const inclusionBlockHeader = await api.rpc.chain.getHeader(
-                                inclusionBlockHash
-                            );
-                            const inclusionBlockNr = inclusionBlockHeader.number.toBn();
-                            const executionBlockStartNr = inclusionBlockNr.addn(0);
-                            const executionBlockStopNr = inclusionBlockNr.addn(10);
-                            let executionBlockNr = executionBlockStartNr;
-
-                            // Save instance of current block hash for peaqEvent
-                            const _inclusionBlockHash = inclusionBlockHash;
-
-                            // Subscribe to new blocks to track execution
-                            const unsubscribeNewHeads = await api.rpc.chain.subscribeNewHeads(
-                                async (lastHeader) => {
-                                    const lastBlockNumber = lastHeader.number.toBn();
-
-                                    if (executionBlockNr.gt(executionBlockStopNr)) {
-                                        // Transaction not executed within expected blocks
-                                        unsubscribeNewHeads();
-                                        reject(
-                                            `Tx([${extrinsics.hash.toString()}]) was not executed in blocks: ${executionBlockStartNr.toString()}..${executionBlockStopNr.toString()}`
-                                        );
-                                        unsub();
-                                        return;
-                                    }
-
-                                    if (lastBlockNumber.gte(executionBlockNr)) {
-                                        const blockHash = await api.rpc.chain.getBlockHash(
-                                            executionBlockNr
-                                        );
-                                        const blockHeader = await api.rpc.chain.getHeader(
-                                            blockHash
-                                        );
-                                        const extrinsics_in_block: GenericExtrinsic<AnyTuple>[] = (
-                                            await api.rpc.chain.getBlock(blockHeader.hash)
-                                        ).block.extrinsics;
-
-                                        executionBlockNr.iaddn(1);
-
-                                        const index = extrinsics_in_block.findIndex((extrinsic) => {
-                                            return (
-                                                extrinsic.hash.toString() === extrinsics.hash.toString()
-                                            );
-                                        });
-
-                                        if (index < 0) {
-                                            return;
-                                        } else {
-                                            unsubscribeNewHeads();
-                                        }
-
-                                        const events = await result.events;
-                                        const peaqEvents = events.map(({ event, phase }) => {
-                                            const { data, method, section } = event;
-                                            const eventData: PeaqEventData = { lookupName: method, data: data };
-                                            return {
-                                                event: event,
-                                                phase: phase,
-                                                section: section,
-                                                method: method,
-                                                eventData: [eventData],
-                                                blockHash: _inclusionBlockHash
-                                            } as PeaqEvent;
-                                        });
-
-                                        // Check for any failed extrinsics
-                                        const extrinsicFailedEvents = peaqEvents.filter(peaqEvent => peaqEvent.method === "ExtrinsicFailed");
-                                        if (extrinsicFailedEvents.length > 0) {
-                                            const eventData = extrinsicFailedEvents[0].eventData[0];
-                                            const errorResp = await this._transactionError(extrinsicFailedEvents[0].method, eventData);
-                                            reject(
-                                                new Error(
-                                                    `${errorResp?.name} for ${errorResp?.section}.`
-                                                )
-                                            );
-                                            return;
-                                        }
-                                        resolve(peaqEvents);
-                                        unsub();
-                                    }
-                                }
-                            );
+                        }
+                        
+                        // Forward status to user callback if provided
+                        if (onStatus) {
+                            onStatus(result);
                         }
 
-                        if (result.isError) {
-                            console.info(
-                                'Transaction Error Result',
-                                JSON.stringify(result, null, 2)
-                            );
-                            reject(`Tx([${extrinsics.hash.toString()}]) Transaction error`);
+                        // Check for early failures when inBlock
+                        if (result.status.isInBlock) {
+                            const blockHash = result.status.asInBlock.toString();
+                            
+                            // Check for extrinsic failures early to fail fast
+                            const events = result.events;
+                            const peaqEvents = events.map(({ event, phase }) => {
+                                const { section, method, data } = event;
+                                const eventData: PeaqEventData = { lookupName: method, data: data };
+                                return {
+                                    event,
+                                    phase,
+                                    section,
+                                    method,
+                                    eventData: [eventData],
+                                    blockHash: blockHash
+                                } as PeaqEvent;
+                            });
+                            
+                            // Check for any failed extrinsics
+                            const extrinsicFailedEvents = peaqEvents.filter(peaqEvent => peaqEvent.method === "ExtrinsicFailed");
+                            if (extrinsicFailedEvents.length > 0) {
+                                const eventData = extrinsicFailedEvents[0].eventData[0];
+                                const errorResp = await this._transactionError(extrinsicFailedEvents[0].method, eventData);
+                                unsub && unsub();
+                                return reject(
+                                    new Error(
+                                        `${errorResp?.name} for ${errorResp?.section}.`
+                                    )
+                                );
+                            }
                         }
+
+                        // Handle finalization
+                        if (result.status.isFinalized) {
+                            unsub && unsub();
+                            const receipt = this._formatReceipt(result);
+                            resolve(receipt);
+                        } 
+                        // Handle error states
+                        else if (result.status.isInvalid || result.status.isDropped) {
+                            unsub && unsub();
+                            reject(new Error(
+                                result.status.isInvalid
+                                    ? "Transaction is invalid"
+                                    : "Transaction was dropped"
+                            ));
+                        }
+                    });
+                } catch (error: any) {
+                    if (unsub) unsub();
+                    if (!hasReturned) {
+                        rejectMain(error);
+                    } else {
+                        reject(error);
                     }
-                );
-            } catch (error: any) {
-                reject({
-                    data:
-                        error.message ||
-                        error.description ||
-                        error.data?.toString() ||
-                        error.toString(),
-                });
-            }
+                }
+            });
+
+            // Handle cases where finalize rejects before we return
+            finalize.catch((error) => {
+                if (!hasReturned) {
+                    rejectMain(error);
+                }
+            });
         });
     }
+
+
 
     // used for substrate txs
     protected _formatReceipt(receipt: ISubmittableResult): FormattedReceipt {

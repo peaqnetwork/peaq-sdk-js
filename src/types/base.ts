@@ -33,6 +33,12 @@ export interface SubstrateTransactionResult {
     unsubscribe: () => void;
 }
 
+export interface SendResult {
+    txHash: string;
+    unsubscribe: () => void;
+    finalize: Promise<FormattedReceipt>;
+}
+
 export interface FormattedReceipt {
     blockNumber: string;
     txHash: string;
