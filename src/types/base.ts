@@ -28,6 +28,11 @@ export interface TErrorData {
     };
 }
 
+export interface SubstrateTransactionResult {
+    receipt: FormattedReceipt;
+    unsubscribe: () => void;
+}
+
 export interface FormattedReceipt {
     blockNumber: string;
     txHash: string;
@@ -46,4 +51,11 @@ export interface FormattedReceipt {
         class: string | undefined;
         paysFee: string | undefined;
     };
+}
+
+export class EvmExecutionError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'EvmExecutionError';
+    }
 }

@@ -37,14 +37,14 @@ export class Storage extends Base {
     }
 
     /**
-     * Adds a new item of `itemType` to the on-chain storage, storing `item` as its value.
+     * Adds a new item to peaqStorage under the specified itemType key.
      * 
      * For EVM: Constructs a transaction to the `addItem` storage precompile contract.
      * For Substrate: Composes an `addItem` extrinsic to the peaqStorage pallet.
      * 
      * @param options - The options for adding an item
-     * @param options.itemType - A string key used to categorize or identify the item
-     * @param options.item - The value to store
+     * @param options.itemType - The key under which to store the item
+     * @param options.item - The value to store (string or any serializable object)
      * 
      * @returns A promise that resolves to one of:
      * - WrittenTransactionResult: If the transaction was signed and broadcasted
@@ -299,14 +299,15 @@ export class Storage extends Base {
             return { message: `Constructed ${action} call (unsigned).`, extrinsic: call } as BuiltCallTransactionResult;
         }
         try {
-            const receipt = await this._send_substrate_tx(call);
-            return { message: `Successfully ${action}.`, receipt } as WrittenTransactionResult;
+            const result = await this._send_substrate_tx(call);
+
+            return { 
+                message: `Successfully ${action}.`, 
+                receipt: result.receipt,
+                unsubscribe: result.unsubscribe
+            } as WrittenTransactionResult;
         } catch (err: any) {
-            // Fallback: provide unsigned extrinsic so caller can sign/send externally
-            return {
-                message: `Error while attempting to ${action}: ${err?.message ?? err}. Returning unsigned extrinsic instead.`,
-                extrinsic: call
-            } as BuiltCallTransactionResult;
+            throw new Error(`Failed to ${action}: ${err?.message ?? err}`);
         }
     }
 }

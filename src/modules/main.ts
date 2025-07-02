@@ -19,6 +19,7 @@ import { Storage } from './storage';
  * It inherits from Base, which contains common logic for both EVM and Substrate operations.
  */
 export class Main extends Base {
+    static ChainType = ChainType;
     public readonly did: Did;
     public readonly storage: Storage;
 

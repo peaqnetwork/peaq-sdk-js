@@ -70,7 +70,7 @@ export interface Signature {
 
 export interface CreateDIDOptions {
     name: string;
-    controller: string[];
+    controller?: string[];
     verificationMethods?: VerificationMethod[];
     services?: Service[];
     signature?: Signature;

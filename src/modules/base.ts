@@ -4,20 +4,15 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { ethers, JsonRpcProvider, Wallet, TransactionResponse } from 'ethers';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { ISubmittableResult } from '@polkadot/types/types';
-import { Event, Phase } from '@polkadot/types/interfaces';
-import { Codec } from '@polkadot/types/types';
 import { hexToU8a, isHex } from '@polkadot/util';
 import { BN } from '@polkadot/util';
+import { GenericExtrinsic } from '@polkadot/types';
+import { AnyTuple } from '@polkadot/types-codec/types';
 
 import { ChainType, EvmTransaction, SDKMetadata, CreateInstanceOptions, KeyType } from '../types/common';
-import { FormattedReceipt, PeaqEvent, PeaqEventData, TErrorData } from '../types/base';
+import { FormattedReceipt, PeaqEvent, PeaqEventData, SubstrateTransactionResult, TErrorData, EvmExecutionError } from '../types/base';
 
-class EvmExecutionError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'EvmExecutionError';
-    }
-}
+type Address = string;
 
 /**
  * Provides shared functionality for both EVM and Substrate SDK operations,
@@ -27,6 +22,7 @@ export abstract class Base {
     private _api: ApiPromise | JsonRpcProvider;
     private _metadata: SDKMetadata;
     protected maxAttempts: number = 5;
+    private _nonceStore: Map<Address, BN>;
 
     /**
      * Initializes Base with a connected API instance and shared SDK metadata.
@@ -37,6 +33,7 @@ export abstract class Base {
     constructor(api: ApiPromise | JsonRpcProvider, metadata: SDKMetadata) {
         this._api = api;
         this._metadata = metadata;
+        this._nonceStore = new Map();
     }
 
     /**
@@ -51,6 +48,30 @@ export abstract class Base {
      */
     protected get metadata(): SDKMetadata {
         return this._metadata;
+    }
+
+    /**
+     * Gets the next nonce for an address, managing nonce state to prevent collisions
+     */
+    protected async _getNonce(address: Address): Promise<BN> {
+        if (!(this.api instanceof ApiPromise)) {
+            throw new Error('API must be ApiPromise instance for nonce management');
+        }
+
+        const api = this.api;
+        const onChainNonce: BN = (
+            await api.rpc.system.accountNextIndex(address)
+        ).toBn() as BN;
+
+        const currentNonce = (
+            this._nonceStore.has(address) ? this._nonceStore.get(address) : new BN(0)
+        ) as BN;
+
+        const nonce = onChainNonce?.gt(currentNonce) ? onChainNonce : currentNonce;
+        const newNonce = nonce?.addn(1);
+
+        this._nonceStore.set(address, newNonce);
+        return nonce;
     }
 
     /**
@@ -105,9 +126,13 @@ export abstract class Base {
         }
     }
 
+    /**
+     * Enhanced substrate transaction with better nonce management and execution tracking
+     */
     protected async _send_substrate_tx(
-        call: SubmittableExtrinsic<"promise", ISubmittableResult>
-    ): Promise<FormattedReceipt> {
+        call: SubmittableExtrinsic<"promise", ISubmittableResult>,
+        statusCallback?: (result: ISubmittableResult) => void
+    ): Promise<SubstrateTransactionResult> {
         if (!this.metadata.pair) {
             throw new Error('No keypair available for signing');
         }
@@ -116,93 +141,185 @@ export abstract class Base {
             throw new Error('API must be ApiPromise instance for Substrate transactions');
         }
 
-        let tip = 0;
-        let paymentInfoPartialFee: bigint | null = null;
-        let attempt = 0;
+        const keyPair = this.metadata.pair as KeyringPair;
 
-        while (attempt < this.maxAttempts) {
+        // Get managed nonce
+        const nonce = await this._getNonce(keyPair.address);
+
+        // Use the enhanced signing and sending pattern from the original implementation
+        let submittableResult: ISubmittableResult | null = null;
+        
+        await this._newSignTx({
+            nonce, 
+            address: keyPair, 
+            extrinsics: call,
+            statusCallback: (result) => {
+                submittableResult = result;
+                statusCallback && statusCallback(result);
+            }
+        });
+
+        // Set up fallback subscription
+        const unsubscribe = await call.send((result) => {
+            statusCallback && statusCallback(result as unknown as ISubmittableResult);
+        });
+
+        // Use _formatReceipt with the captured ISubmittableResult
+        const receipt = this._formatReceipt(submittableResult!);
+
+        return {
+            receipt,
+            unsubscribe
+        };
+    }
+
+    /**
+     * Enhanced signing and transaction method based on the original implementation
+     * Provides better execution tracking and error handling
+     */
+    protected async _newSignTx(option: {
+        nonce: BN;
+        address: KeyringPair;
+        extrinsics: SubmittableExtrinsic<"promise", ISubmittableResult>;
+        statusCallback?: (result: ISubmittableResult) => void;
+    }): Promise<PeaqEvent[]> {
+        return new Promise<PeaqEvent[]>(async (resolve, reject) => {
+            const { extrinsics, nonce, address, statusCallback } = option;
+            const api = this.api as ApiPromise;
+            let subscribed = false;
+
             try {
-                if (attempt === 0 && 'paymentInfo' in call) {
-                    const info = await call.paymentInfo(this.metadata.pair as any);
-                    paymentInfoPartialFee = info.partialFee.toBigInt();
-                }
+                // Sign the transaction
+                await extrinsics.signAsync(address, { nonce });
+            } catch (error: any) {
+                reject(error);
+                return;
+            }
 
-                const result = await new Promise<ISubmittableResult>((resolve, reject) => {
-                    let unsub: (() => void) | undefined;
-                    
-                    call.signAndSend(
-                        this.metadata.pair as any,
-                        { tip },
-                        async (result) => {
-                            const { status, events } = result;
+            try {
+                // Send the transaction and listen for events
+                const unsub = await extrinsics.send(
+                    async (result: ISubmittableResult) => {
+                        statusCallback?.(result);
 
-                            // TODO should I make sure it is finalized?
-                    if (status.isInBlock || status.isFinalized) {
-                                const peaqEvents = events.map(({ event, phase }) => {
-                                    const { data, method, section } = event;
-                                    const eventData: PeaqEventData = { 
-                                        lookupName: method, 
-                                        data: data 
-                                    };
-                                    return {
-                                        event: event,
-                                        phase: phase,
-                                        section: section,
-                                        method: method,
-                                        eventData: [eventData],
-                                        blockHash: status.asInBlock.toHex()
-                                    } as PeaqEvent;
-                                });
+                        if (
+                            (result.status.isInBlock || result.status.isFinalized) &&
+                            !subscribed
+                        ) {
+                            // Handle transaction inclusion
+                            subscribed = true;
 
-                                // Check for any failed extrinsics
-                                const extrinsicFailedEvents = peaqEvents.filter(
-                                    peaqEvent => peaqEvent.method === "ExtrinsicFailed"
-                                );
-
-                                if (extrinsicFailedEvents.length > 0) {
-                                    const eventData = extrinsicFailedEvents[0].eventData[0];
-                                    const errorResp = await this._transactionError(
-                                        extrinsicFailedEvents[0].method, 
-                                        eventData
-                                    );
-                                    if (unsub) unsub();
-                            reject(
-                            new Error(
-                                            `${errorResp?.name} for ${errorResp?.section}.`
-                                        )
-                                    );
-                                    return;
-                                }
-
-                                if (unsub) unsub();
-                                resolve(result);
+                            let inclusionBlockHash;
+                            if (result.status.isInBlock) {
+                                inclusionBlockHash = result.status.asInBlock.toString();
+                            } else if (result.status.isFinalized) {
+                                inclusionBlockHash = result.status.asFinalized.toString();
                             }
+
+                            // Get inclusion block details
+                            const inclusionBlockHeader = await api.rpc.chain.getHeader(
+                                inclusionBlockHash
+                            );
+                            const inclusionBlockNr = inclusionBlockHeader.number.toBn();
+                            const executionBlockStartNr = inclusionBlockNr.addn(0);
+                            const executionBlockStopNr = inclusionBlockNr.addn(10);
+                            let executionBlockNr = executionBlockStartNr;
+
+                            // Save instance of current block hash for peaqEvent
+                            const _inclusionBlockHash = inclusionBlockHash;
+
+                            // Subscribe to new blocks to track execution
+                            const unsubscribeNewHeads = await api.rpc.chain.subscribeNewHeads(
+                                async (lastHeader) => {
+                                    const lastBlockNumber = lastHeader.number.toBn();
+
+                                    if (executionBlockNr.gt(executionBlockStopNr)) {
+                                        // Transaction not executed within expected blocks
+                                        unsubscribeNewHeads();
+                                        reject(
+                                            `Tx([${extrinsics.hash.toString()}]) was not executed in blocks: ${executionBlockStartNr.toString()}..${executionBlockStopNr.toString()}`
+                                        );
+                                        unsub();
+                                        return;
+                                    }
+
+                                    if (lastBlockNumber.gte(executionBlockNr)) {
+                                        const blockHash = await api.rpc.chain.getBlockHash(
+                                            executionBlockNr
+                                        );
+                                        const blockHeader = await api.rpc.chain.getHeader(
+                                            blockHash
+                                        );
+                                        const extrinsics_in_block: GenericExtrinsic<AnyTuple>[] = (
+                                            await api.rpc.chain.getBlock(blockHeader.hash)
+                                        ).block.extrinsics;
+
+                                        executionBlockNr.iaddn(1);
+
+                                        const index = extrinsics_in_block.findIndex((extrinsic) => {
+                                            return (
+                                                extrinsic.hash.toString() === extrinsics.hash.toString()
+                                            );
+                                        });
+
+                                        if (index < 0) {
+                                            return;
+                                        } else {
+                                            unsubscribeNewHeads();
+                                        }
+
+                                        const events = await result.events;
+                                        const peaqEvents = events.map(({ event, phase }) => {
+                                            const { data, method, section } = event;
+                                            const eventData: PeaqEventData = { lookupName: method, data: data };
+                                            return {
+                                                event: event,
+                                                phase: phase,
+                                                section: section,
+                                                method: method,
+                                                eventData: [eventData],
+                                                blockHash: _inclusionBlockHash
+                                            } as PeaqEvent;
+                                        });
+
+                                        // Check for any failed extrinsics
+                                        const extrinsicFailedEvents = peaqEvents.filter(peaqEvent => peaqEvent.method === "ExtrinsicFailed");
+                                        if (extrinsicFailedEvents.length > 0) {
+                                            const eventData = extrinsicFailedEvents[0].eventData[0];
+                                            const errorResp = await this._transactionError(extrinsicFailedEvents[0].method, eventData);
+                                            reject(
+                                                new Error(
+                                                    `${errorResp?.name} for ${errorResp?.section}.`
+                                                )
+                                            );
+                                            return;
+                                        }
+                                        resolve(peaqEvents);
+                                        unsub();
+                                    }
+                                }
+                            );
                         }
-                    ).then(u => { unsub = u; }).catch(reject);
-                });
 
-                return this._formatReceipt(result);
-            } catch (err: any) {
-            const msg = err.toString();
-
-            if (msg.includes('Priority is too low') && paymentInfoPartialFee !== null) {
-                console.warn(
-                `Attempt ${attempt + 1}: Priority too low with tip=${tip}. Bumping tip...`
+                        if (result.isError) {
+                            console.info(
+                                'Transaction Error Result',
+                                JSON.stringify(result, null, 2)
+                            );
+                            reject(`Tx([${extrinsics.hash.toString()}]) Transaction error`);
+                        }
+                    }
                 );
-                const increment = (paymentInfoPartialFee * BigInt(25)) / BigInt(100);
-                tip = tip + Number(increment);
-                attempt += 1;
-                await new Promise((r) => setTimeout(r, 500));
-                continue;
+            } catch (error: any) {
+                reject({
+                    data:
+                        error.message ||
+                        error.description ||
+                        error.data?.toString() ||
+                        error.toString(),
+                });
             }
-
-            throw err;
-            }
-        }
-
-        throw new Error(
-            `Failed to submit extrinsic after ${this.maxAttempts} attempts due to low priority.`
-        );
+        });
     }
 
     // used for substrate txs

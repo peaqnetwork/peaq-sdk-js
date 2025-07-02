@@ -11,11 +11,20 @@ export class DIDV3Implementation extends Base {
     }
 
     public async create(options: CreateDIDOptions): Promise<DidWriteResult> {
+        // Get the connected wallet/keypair address
+        const connectedAddress = (this.metadata.pair as any)?.address;
+        if (!connectedAddress) {
+            throw new Error('No wallet/keypair connected. Please either provide a controller or connect a wallet/keypair.');
+        }
+
+        // Use provided controller or default to connected address
+        const effectiveController = options.controller || [connectedAddress];
+
         // This is a skeleton implementation - actual implementation will be added later
         const document: DIDV3Document = {
             version: DIDVersion.V3_0_0,
             id: '', // Will be generated
-            controller: options.controller,
+            controller: effectiveController,
             verificationMethod: options.verificationMethods || [],
             authentication: [],
             assertionMethod: [],

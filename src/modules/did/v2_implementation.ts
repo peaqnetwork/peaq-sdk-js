@@ -42,21 +42,32 @@ export class DIDV2Implementation extends Base {
   // ---------------------------------------------------------
   // CREATE
   // ---------------------------------------------------------
-  public async create(options: CreateDIDOptions): Promise<DidWriteResult> {
+  public async create(options: CreateDIDOptions,
+    statusCallback?: (result: ISubmittableResult) => void | Promise<void>
+  ): Promise<DidWriteResult> {
     const { name, controller, verificationMethods = [], services = [], signature } = options;
 
+    // Get the connected wallet/keypair address
+    const connectedAddress = (this.metadata.pair as any)?.address;
+    if (!connectedAddress) {
+      throw new Error('No wallet/keypair connected. Please either provide a controller or connect a wallet/keypair.');
+    }
+
+    // Use provided controller or default to connected address
+    const effectiveController = controller || [connectedAddress];
+
     // Build DID Document (protobuf) -> hex string
-    const didDocumentHex = await this._generateDidDocument(controller[0], {
-      controller,
+    const didDocumentHex = await this._generateDidDocument(effectiveController[0], {
+      controller: effectiveController,
       verificationMethods,
       services,
       signature
     });
 
     if (this.metadata.chainType === ChainType.EVM) {
-      return this._createEvm(name, controller[0], didDocumentHex);
+      return this._createEvm(name, effectiveController[0], didDocumentHex);
     }
-    return this._createSubstrate(name, controller[0], didDocumentHex);
+    return this._createSubstrate(name, effectiveController[0], didDocumentHex, statusCallback);
   }
 
   // ---------------------------------------------------------
@@ -347,10 +358,10 @@ export class DIDV2Implementation extends Base {
   }
 
   // ---------------  Substrate helpers ----------------
-  private async _createSubstrate(name: string, address: string, didHex: string): Promise<DidWriteResult> {
+  private async _createSubstrate(name: string, address: string, didHex: string, statusCallback?: (result: ISubmittableResult) => void): Promise<DidWriteResult> {
     const api = this.api as ApiPromise;
-    const call = api.tx['peaqDid']['addAttribute'](address, name, didHex, null);
-    return this._handleSubstrateTx(call, `add DID ${name}`);
+    const call = api.tx?.['peaqDid']['addAttribute'](address, name, didHex, null);
+    return this._handleSubstrateTx(call, `add DID ${name}`, statusCallback);
   }
 
   private async _updateSubstrate(name: string, address: string, didHex: string): Promise<DidWriteResult> {
@@ -365,19 +376,21 @@ export class DIDV2Implementation extends Base {
     return this._handleSubstrateTx(call, `remove DID ${name}`);
   }
 
-  private async _handleSubstrateTx(call: SubmittableExtrinsic<'promise', ISubmittableResult>, action: string): Promise<DidWriteResult> {
+  private async _handleSubstrateTx(call: SubmittableExtrinsic<'promise', ISubmittableResult>, action: string, statusCallback?: (result: ISubmittableResult) => void): Promise<DidWriteResult> {
     if (!this.metadata.pair) {
       return { message: `Constructed ${action} call (unsigned).`, extrinsic: call } as BuiltCallTransactionResult;
     }
     try {
-      const receipt = await this._send_substrate_tx(call);
-      return { message: `Successfully ${action}.`, receipt } as WrittenTransactionResult;
+      const result = await this._send_substrate_tx(call, statusCallback);
+      
+      return { 
+        message: `Successfully ${action}.`, 
+        receipt: result.receipt,
+        unsubscribe: result.unsubscribe
+      } as WrittenTransactionResult;
     } catch (err: any) {
-      // Fallback: provide unsigned extrinsic so caller can sign/send externally
-      return {
-        message: `Error while attempting to ${action}: ${err?.message ?? err}. Returning unsigned extrinsic instead.`,
-        extrinsic: call
-      } as BuiltCallTransactionResult;
+      // Throw error instead of returning signable extrinsic
+      throw new Error(`Failed to ${action}: ${err?.message ?? err}`);
     }
   }
 } 

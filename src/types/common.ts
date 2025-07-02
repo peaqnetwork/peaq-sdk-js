@@ -48,6 +48,7 @@ export interface SDKMetadata {
 export interface WrittenTransactionResult {
     message: string
     receipt: object
+    unsubscribe?: () => void
 }
 export interface BuiltCallTransactionResult {
     message: string
