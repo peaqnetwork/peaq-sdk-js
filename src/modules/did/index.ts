@@ -6,6 +6,7 @@ import { DIDVersion, CreateDIDOptions, UpdateDIDOptions, RemoveDIDOptions, ReadD
 import { DIDV2Implementation } from './v2_implementation';
 import { DIDV3Implementation } from './v3_implementation';
 import { TransactionStatusCallback } from '../../types/base';
+import { EvmTxOptions } from '../../types/common';
 export class Did extends Base {
     private implementation: DIDV2Implementation | DIDV3Implementation;
 
@@ -36,9 +37,10 @@ export class Did extends Base {
      * Creates a new DID document based on the specified version
      */
     public async create(options: CreateDIDOptions,
-        statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>
+        statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
+        txOptions?: EvmTxOptions
     ): Promise<DidWriteResult> {
-        return this.implementation.create(options, statusCallback);
+        return this.implementation.create(options, statusCallback, txOptions);
     }
 
     /**

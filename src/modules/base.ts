@@ -9,7 +9,7 @@ import { BN } from '@polkadot/util';
 import { GenericExtrinsic } from '@polkadot/types';
 import { AnyTuple } from '@polkadot/types-codec/types';
 
-import { ChainType, EvmTransaction, SDKMetadata, CreateInstanceOptions, KeyType, PrecompileAddresses } from '../types/common';
+import { ChainType, SDKMetadata, EvmTransaction, EvmTxOptions, KeyType, PrecompileAddresses, CreateInstanceOptions } from '../types/common';
 import { FormattedReceipt, PeaqEvent, PeaqEventData, TErrorData, EvmExecutionError, SendResult, EvmSendResult, EvmFormattedReceipt, TransactionStatusCallback, EvmStatusUpdate, EvmEvent } from '../types/base';
 
 type Address = string;
@@ -349,8 +349,7 @@ export abstract class Base {
             topics: log.topics,
             data: log.data,
             logIndex: log.index,
-            transactionIndex: log.transactionIndex,
-            removed: log.removed
+            transactionIndex: log.transactionIndex
         }));
     }
 
@@ -395,7 +394,8 @@ export abstract class Base {
      */
     protected async _send_evm_tx(
         unsignedTx: EvmTransaction,
-        onStatus?: (result: TransactionStatusCallback) => void | Promise<void>
+        onStatus?: (result: TransactionStatusCallback) => void | Promise<void>,
+        opts: EvmTxOptions = {}
     ): Promise<EvmSendResult> {
         if (!(this.api instanceof JsonRpcProvider)) {
             throw new EvmExecutionError('API must be JsonRpcProvider instance for EVM transactions');
@@ -408,11 +408,12 @@ export abstract class Base {
         const provider = this.api;
         const wallet = (this.metadata.pair as Wallet).connect(provider);
         const address = wallet.address;
+        const confirmations = opts.confirmations ?? 1; // Default to 1 if not specified
     
         return new Promise<EvmSendResult>(async (resolveMain, rejectMain) => {
             let cancelled = false;
             
-            // A promise that resolves after 7 confirmations
+            // A promise that resolves after user-specified confirmations
             const finalize = new Promise<EvmFormattedReceipt>(async (resolve, reject) => {
                 try {
                     // Estimate gas as source of truth
@@ -449,8 +450,8 @@ export abstract class Base {
                         onStatus(broadcastStatus);
                     }
     
-                    // 2. Wait for mining (1 confirmation)
-                    const receipt1 = await txResponse.wait(1);
+                    // 2. Wait for mining (default)
+                    const receipt1 = await txResponse.wait().finally();
                     if (!receipt1) {
                         throw new Error('Transaction receipt not found');
                     }
@@ -467,13 +468,14 @@ export abstract class Base {
                             blockNumber: receipt1.blockNumber,
                             blockHash: receipt1.blockHash,
                             gasUsed: receipt1.gasUsed?.toString(),
-                            events: this._formatEvmEvents(receipt1.logs)
+                            events: this._formatEvmEvents(receipt1.logs),
+                            confirmations: 1
                         };
                         onStatus(minedStatus);
                     }
     
-                    // 3. Wait for 7 confirmations (finalized)
-                    const receiptN = await txResponse.wait(7);
+                    // 3. Wait for user-specified confirmations (evm-like finalized)
+                    const receiptN = await txResponse.wait(confirmations);
                     if (!receiptN) {
                         throw new Error('Final receipt not found');
                     }
@@ -485,24 +487,14 @@ export abstract class Base {
                             hash: receiptN.hash,
                             blockNumber: receiptN.blockNumber,
                             blockHash: receiptN.blockHash,
-                            confirmations: 7,
+                            confirmations: confirmations,
                             gasUsed: receiptN.gasUsed?.toString(),
                             events: this._formatEvmEvents(receiptN.logs)
                         };
                         onStatus(finalizedStatus);
                     }
     
-                    const formattedReceipt: EvmFormattedReceipt = {
-                        blockNumber: receiptN.blockNumber.toString(),
-                        txHash: receiptN.hash,
-                        confirmations: 7,
-                        gasUsed: receiptN.gasUsed.toString(),
-                        effectiveGasPrice: receiptN.gasPrice?.toString() || '0',
-                        status: receiptN.status || 0,
-                        blockHash: receiptN.blockHash
-                    };
-    
-                    resolve(formattedReceipt);
+                    resolve(this._formatEvmReceipt(receiptN, confirmations));
                 } catch (error: any) {
                     // Gas estimation errors should be thrown immediately
                     if (error.code === 'CALL_EXCEPTION') {
@@ -523,15 +515,42 @@ export abstract class Base {
     }
 
     // Format EVM receipt for consistency
-    protected _formatEvmReceipt(receipt: ethers.TransactionReceipt, confirmations: number = 7): EvmFormattedReceipt {
+    protected _formatEvmReceipt(receipt: ethers.TransactionReceipt, confirmations: number): EvmFormattedReceipt {
         return {
             blockNumber: receipt.blockNumber.toString(),
             txHash: receipt.hash,
-            confirmations,
+            confirmations: confirmations,
             gasUsed: receipt.gasUsed.toString(),
             effectiveGasPrice: receipt.gasPrice?.toString() || '0',
             status: receipt.status || 0,
-            blockHash: receipt.blockHash
+            blockHash: receipt.blockHash,
+            receipt: {
+                transactionHash: receipt.hash,
+                transactionIndex: receipt.index,
+                blockHash: receipt.blockHash,
+                from: receipt.from,
+                to: receipt.to,
+                blockNumber: receipt.blockNumber,
+                cumulativeGasUsed: Number(receipt.cumulativeGasUsed),
+                gasUsed: Number(receipt.gasUsed),
+                contractAddress: receipt.contractAddress,
+                status: receipt.status || 0,
+                effectiveGasPrice: Number(receipt.gasPrice) || 0,
+                type: receipt.type,
+                logs: receipt.logs.map(log => ({
+                    address: log.address,
+                    topics: log.topics,
+                    data: log.data,
+                    blockHash: log.blockHash,
+                    blockNumber: log.blockNumber,
+                    transactionHash: log.transactionHash,
+                    transactionIndex: log.transactionIndex,
+                    logIndex: log.index,
+                    transactionLogIndex: `0x${log.index.toString(16)}`,
+                    removed: log.removed || false
+                })),
+                logsBloom: receipt.logsBloom
+            }
         };
     }
 }

@@ -58,3 +58,8 @@ export interface BuiltEvmTransactionResult {
     message: string
     tx: EvmTransaction
 }
+
+export interface EvmTxOptions {
+  /** How many blocks to wait before considering a tx "finalized" */
+  confirmations?: number;
+}

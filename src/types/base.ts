@@ -103,6 +103,33 @@ export interface EvmFormattedReceipt {
     effectiveGasPrice: string;
     status: number; // 1 for success, 0 for failure
     blockHash: string;
+    receipt: {
+        transactionHash: string;
+        transactionIndex: number;
+        blockHash: string;
+        from: string;
+        to: string | null;
+        blockNumber: number;
+        cumulativeGasUsed: number;
+        gasUsed: number;
+        contractAddress: string | null;
+        status: number;
+        effectiveGasPrice: number;
+        type: number;
+        logs: {
+            address: string;
+            topics: readonly string[];
+            data: string;
+            blockHash: string;
+            blockNumber: number;
+            transactionHash: string;
+            transactionIndex: number;
+            logIndex: number;
+            transactionLogIndex: string;
+            removed: boolean;
+        }[];
+        logsBloom: string;
+    };
 }
 
 export class EvmExecutionError extends Error {
