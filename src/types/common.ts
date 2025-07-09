@@ -44,12 +44,11 @@ export interface SDKMetadata {
     didVersion?: DIDVersion;
     keyType?: KeyType;
 }
-
-export interface WrittenTransactionResult {
-    message: string
-    receipt: object
-    unsubscribe?: () => void
-}
+// export interface WrittenTransactionResult {
+//     message: string
+//     receipt: object
+//     unsubscribe?: () => void
+// }
 export interface BuiltCallTransactionResult {
     message: string
     extrinsic: SubmittableExtrinsic<"promise", ISubmittableResult>
@@ -59,7 +58,19 @@ export interface BuiltEvmTransactionResult {
     tx: EvmTransaction
 }
 
-export interface EvmTxOptions {
-  /** How many blocks to wait before considering a tx "finalized" */
-  confirmations?: number;
+export enum ConfirmationMode {
+    UNSAFE = 'UNSAFE',
+    CUSTOM = 'CUSTOM',
+    SAFE = 'SAFE'
+}
+
+export enum TransactionStatus {
+    BROADCAST = 'BROADCAST',
+    IN_BLOCK = 'IN_BLOCK',
+    FINALIZED = 'FINALIZED'
+}
+
+export interface txOptions {
+    mode?: ConfirmationMode;
+    confirmations?: number;
 }

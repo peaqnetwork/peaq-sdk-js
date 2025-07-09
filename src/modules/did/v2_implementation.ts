@@ -7,8 +7,8 @@ import { hexToU8a, u8aToHex } from '@polkadot/util';
 import { evmToAddress } from '@polkadot/util-crypto';
 
 import { Base } from '../base';
-import { ChainType, SDKMetadata, EvmTransaction, PrecompileAddresses, BuiltCallTransactionResult, BuiltEvmTransactionResult, WrittenTransactionResult, EvmTxOptions } from '../../types/common';
-import { SendResult, EvmSendResult, TransactionStatusCallback } from '../../types/base';
+import { ChainType, SDKMetadata, EvmTransaction, PrecompileAddresses, BuiltCallTransactionResult, BuiltEvmTransactionResult, txOptions } from '../../types/common';
+import { SubstrateSendResult, EvmSendResult, TransactionStatusCallback } from '../../types/base';
 import { createStorageKeys, CreateStorageKeysEnum, generateEvmPublicKeyMultibase, generateEd25519PublicKeyMultibase, generateSr25519PublicKeyMultibase } from '../crypto/';
 import {
   DIDV2Document,
@@ -45,7 +45,7 @@ export class DIDV2Implementation extends Base {
   // ---------------------------------------------------------
   public async create(options: CreateDIDOptions,
     statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
-    txOptions?: EvmTxOptions
+    txOptions?: txOptions
   ): Promise<DidWriteResult> {
     const { name, controller, verificationMethods = [], services = [], signature } = options;
 
@@ -131,7 +131,8 @@ export class DIDV2Implementation extends Base {
   // UPDATE
   // ---------------------------------------------------------
   public async update(options: UpdateDIDOptions,
-    statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>
+    statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
+    txOptions?: txOptions
   ): Promise<DidWriteResult> {
     const { name, controller, verificationMethods, services, signature } = options;
 
@@ -145,7 +146,7 @@ export class DIDV2Implementation extends Base {
     });
 
     if (this.metadata.chainType === ChainType.EVM) {
-      return this._updateEvm(name, primaryController, didDocumentHex, statusCallback);
+      return this._updateEvm(name, primaryController, didDocumentHex, statusCallback, txOptions);
     }
     return this._updateSubstrate(name, primaryController, didDocumentHex, statusCallback);
   }
@@ -154,12 +155,13 @@ export class DIDV2Implementation extends Base {
   // REMOVE / deactivate
   // ---------------------------------------------------------
   public async remove(options: RemoveDIDOptions,
-    statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>
+    statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
+    txOptions?: txOptions
   ): Promise<DidWriteResult> {
     const { name, address } = options;
 
     if (this.metadata.chainType === ChainType.EVM) {
-      return this._removeEvm(name, (this.metadata.pair as any)?.address || address, statusCallback);
+      return this._removeEvm(name, (this.metadata.pair as any)?.address || address, statusCallback, txOptions);
     }
     return this._removeSubstrate(name, (this.metadata.pair as any)?.address || address, statusCallback);
   }
@@ -311,7 +313,7 @@ export class DIDV2Implementation extends Base {
   }
 
   // ---------------  EVM helpers ----------------
-  private async _createEvm(name: string, address: string, didHex: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: EvmTxOptions): Promise<DidWriteResult> {
+  private async _createEvm(name: string, address: string, didHex: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<DidWriteResult> {
     const selector = ethers.keccak256(ethers.toUtf8Bytes(FunctionSignatures.ADD_ATTRIBUTE)).substring(0, 10);
     const params = this.abiCoder.encode(
       ['address', 'bytes', 'bytes', 'uint32'],
@@ -323,12 +325,16 @@ export class DIDV2Implementation extends Base {
     };
 
     if (!this.metadata.pair || this.metadata.machineStation) {
-      return { message: 'Constructed create DID tx (unsigned).', tx } as BuiltEvmTransactionResult;
+      return { message: `Constructed DID create transaction for ${address} of the name ${name}. You must sign and send it externally.`, tx } as BuiltEvmTransactionResult;
     }
-    return this._handleEvmTx(tx, `create DID ${name}`, statusCallback, txOptions);
+    const evmResult = await this._handleEvmTx(tx, `create DID ${name}`, statusCallback, txOptions);
+    
+    // Add success message and return the EvmSendResult directly
+    (evmResult as any).message = `Successfully added the DID under the name ${name} for user ${address}.`;
+    return evmResult;
   }
 
-  private async _updateEvm(name: string, address: string, didHex: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<DidWriteResult> {
+  private async _updateEvm(name: string, address: string, didHex: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<DidWriteResult> {
     const selector = ethers.keccak256(ethers.toUtf8Bytes(FunctionSignatures.UPDATE_ATTRIBUTE)).substring(0, 10);
     const params = this.abiCoder.encode(
       ['address', 'bytes', 'bytes', 'uint32'],
@@ -341,10 +347,10 @@ export class DIDV2Implementation extends Base {
     if (!this.metadata.pair || this.metadata.machineStation) {
       return { message: 'Constructed update DID tx (unsigned).', tx } as BuiltEvmTransactionResult;
     }
-    return this._handleEvmTx(tx, `update DID ${name}`, statusCallback);
+    return this._handleEvmTx(tx, `update DID ${name}`, statusCallback, txOptions);
   }
 
-  private async _removeEvm(name: string, address: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<DidWriteResult> {
+  private async _removeEvm(name: string, address: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<DidWriteResult> {
     const selector = ethers.keccak256(ethers.toUtf8Bytes(FunctionSignatures.REMOVE_ATTRIBUTE)).substring(0, 10);
     const params = this.abiCoder.encode(
       ['address', 'bytes'],
@@ -358,7 +364,7 @@ export class DIDV2Implementation extends Base {
     if (!this.metadata.pair || this.metadata.machineStation) {
       return { message: 'Constructed remove DID tx (unsigned).', tx } as BuiltEvmTransactionResult;
     }
-    return this._handleEvmTx(tx, `remove DID ${name}`, statusCallback);
+    return this._handleEvmTx(tx, `remove DID ${name}`, statusCallback, txOptions);
   }
 
   // ---------------  Substrate helpers ----------------
@@ -380,7 +386,7 @@ export class DIDV2Implementation extends Base {
     return this._handleSubstrateTx(call, `remove DID ${name}`, statusCallback);
   }
 
-  private async _handleSubstrateTx(call: SubmittableExtrinsic<'promise', ISubmittableResult>, action: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<BuiltCallTransactionResult | SendResult> {
+  private async _handleSubstrateTx(call: SubmittableExtrinsic<'promise', ISubmittableResult>, action: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<BuiltCallTransactionResult | SubstrateSendResult> {
     if (!this.metadata.pair) {
       return { message: `Constructed ${action} call (unsigned).`, extrinsic: call } as BuiltCallTransactionResult;
     }
@@ -393,7 +399,7 @@ export class DIDV2Implementation extends Base {
     }
   }
 
-  private async _handleEvmTx(tx: EvmTransaction, action: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: EvmTxOptions): Promise<EvmSendResult> {
+  private async _handleEvmTx(tx: EvmTransaction, action: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<EvmSendResult> {
     try {
       // The _send_evm_tx method already handles EVM status updates properly
       return await this._send_evm_tx(tx, statusCallback, txOptions);

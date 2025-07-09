@@ -1,5 +1,5 @@
-import { WrittenTransactionResult, BuiltEvmTransactionResult, BuiltCallTransactionResult } from '../types/common';
-import { SendResult, EvmSendResult } from '../types/base';
+import { BuiltEvmTransactionResult, BuiltCallTransactionResult } from '../types/common';
+import { SubstrateSendResult, EvmSendResult } from '../types/base';
 
 export enum DIDVersion {
     V2_1_0 = '2.1.0',
@@ -104,4 +104,4 @@ export interface ReadDIDResult {
     document: DIDV2Document | DIDV3Document;
 }
 
-export type DidWriteResult = SendResult | EvmSendResult | WrittenTransactionResult | BuiltEvmTransactionResult | BuiltCallTransactionResult; 
+export type DidWriteResult = SubstrateSendResult | EvmSendResult | BuiltEvmTransactionResult | BuiltCallTransactionResult;
