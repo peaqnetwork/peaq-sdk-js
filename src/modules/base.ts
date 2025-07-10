@@ -21,7 +21,6 @@ type Address = string;
 export abstract class Base {
     private _api: ApiPromise | JsonRpcProvider;
     private _metadata: SDKMetadata;
-    protected maxAttempts: number = 5;
     private _nonceStore: Map<Address, BN>;
 
     /**

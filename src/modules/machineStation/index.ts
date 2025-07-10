@@ -95,8 +95,39 @@ export class MachineStation extends Base {
         statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
         txOptions?: txOptions
     ): Promise<MachineStationWriteResult | UpdateConfigsTransactionData> {
-        // TODO: Implement configuration update logic
-        throw new Error('updateConfigs not yet implemented');
+        const { key, value, sendTransaction = true } = options;
+        
+        try {
+            const functionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.UPDATE_CONFIGS)).substring(0, 10);
+            const keyHash = ethers.keccak256(ethers.toUtf8Bytes(key));
+            
+            const params = this.abiCoder.encode(
+                ["bytes32", "uint256"],
+                [keyHash, value]
+            );
+
+            const payload = params.replace("0x", functionSelector);
+            const tx: EvmTransaction = {
+                to: this.machineStationAddress,
+                data: payload
+            };
+
+            if (!sendTransaction) {
+                return {
+                    transaction_data: tx,
+                    message: "Transaction data ready for manual submission",
+                    machine_station_address: this.machineStationAddress,
+                    function: "update_configs",
+                    config_key: key,
+                    config_value: Number(value),
+                    required_role: "STATION_MANAGER_ROLE"
+                } as UpdateConfigsTransactionData;
+            }
+
+            return await this._handleEvmTx(tx, `update config '${key}' to ${value}`, statusCallback, txOptions);
+        } catch (error: any) {
+            throw new Error(`Failed to update configs: ${error.message}`);
+        }
     }
 
     // =====================================================================
@@ -361,26 +392,11 @@ export class MachineStation extends Base {
         statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, 
         txOptions?: txOptions
     ): Promise<MachineStationWriteResult> {
-        if (!this.metadata.pair || this.metadata.machineStation) {
+        if (!this.metadata.pair) {
             return { message: `Constructed ${action} tx (unsigned).`, tx } as BuiltEvmTransactionResult;
         }
         try {
             return await this._send_evm_tx(tx, statusCallback, txOptions);
-        } catch (err: any) {
-            throw new Error(`Failed to ${action}: ${err?.message ?? err}`);
-        }
-    }
-
-    private async _handleSubstrateTx(
-        call: SubmittableExtrinsic<'promise', ISubmittableResult>, 
-        action: string, 
-        statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>
-    ): Promise<MachineStationWriteResult> {
-        if (!this.metadata.pair) {
-            return { message: `Constructed ${action} call (unsigned).`, extrinsic: call } as BuiltCallTransactionResult;
-        }
-        try {
-            return await this._send_substrate_tx(call, statusCallback);
         } catch (err: any) {
             throw new Error(`Failed to ${action}: ${err?.message ?? err}`);
         }
