@@ -69,6 +69,7 @@ export class DIDV2Implementation extends Base {
     if (this.metadata.chainType === ChainType.EVM) {
       return this._createEvm(name, effectiveController[0], didDocumentHex, statusCallback, txOptions);
     }
+    // TODO: MACTH: Don't default to substrate, just offer as another option. If not other options his, then default to an error saying chain type is not supported.
     return this._createSubstrate(name, effectiveController[0], didDocumentHex, statusCallback);
   }
 
@@ -78,6 +79,7 @@ export class DIDV2Implementation extends Base {
   public async read(options: ReadDIDOptions): Promise<ReadDIDResult | null> {
     const { name, address } = options;
     
+    // switch statement to determine chain type. If not supported throw an error
     if (this.metadata.chainType === ChainType.EVM) {
       const evmAddress = address || (this.metadata.pair as any)?.address;
       if (!evmAddress) {
@@ -324,14 +326,7 @@ export class DIDV2Implementation extends Base {
       data: params.replace('0x', selector)
     };
 
-    if (!this.metadata.pair || this.metadata.machineStation) {
-      return { message: `Constructed DID create transaction for ${address} of the name ${name}. You must sign and send it externally.`, tx } as BuiltEvmTransactionResult;
-    }
-    const evmResult = await this._handleEvmTx(tx, `create DID ${name}`, statusCallback, txOptions);
-    
-    // Add success message and return the EvmSendResult directly
-    (evmResult as any).message = `Successfully added the DID under the name ${name} for user ${address}.`;
-    return evmResult;
+    return this._handleEvmTx(tx, `create DID ${name} for ${address}`, statusCallback, txOptions);
   }
 
   private async _updateEvm(name: string, address: string, didHex: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<DidWriteResult> {
@@ -344,9 +339,7 @@ export class DIDV2Implementation extends Base {
       to: PrecompileAddresses.DID,
       data: params.replace('0x', selector)
     };
-    if (!this.metadata.pair || this.metadata.machineStation) {
-      return { message: 'Constructed update DID tx (unsigned).', tx } as BuiltEvmTransactionResult;
-    }
+
     return this._handleEvmTx(tx, `update DID ${name}`, statusCallback, txOptions);
   }
 
@@ -361,9 +354,6 @@ export class DIDV2Implementation extends Base {
       data: params.replace('0x', selector)
     };
 
-    if (!this.metadata.pair || this.metadata.machineStation) {
-      return { message: 'Constructed remove DID tx (unsigned).', tx } as BuiltEvmTransactionResult;
-    }
     return this._handleEvmTx(tx, `remove DID ${name}`, statusCallback, txOptions);
   }
 
@@ -386,7 +376,7 @@ export class DIDV2Implementation extends Base {
     return this._handleSubstrateTx(call, `remove DID ${name}`, statusCallback);
   }
 
-  private async _handleSubstrateTx(call: SubmittableExtrinsic<'promise', ISubmittableResult>, action: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<BuiltCallTransactionResult | SubstrateSendResult> {
+  private async _handleSubstrateTx(call: SubmittableExtrinsic<'promise', ISubmittableResult>, action: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<DidWriteResult> {
     if (!this.metadata.pair) {
       return { message: `Constructed ${action} call (unsigned).`, extrinsic: call } as BuiltCallTransactionResult;
     }
@@ -399,7 +389,10 @@ export class DIDV2Implementation extends Base {
     }
   }
 
-  private async _handleEvmTx(tx: EvmTransaction, action: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<EvmSendResult> {
+  private async _handleEvmTx(tx: EvmTransaction, action: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<DidWriteResult> {
+    if (!this.metadata.pair || this.metadata.machineStation) {
+      return { message: `Constructed ${action} tx (unsigned).`, tx } as BuiltEvmTransactionResult;
+    }
     try {
       // The _send_evm_tx method already handles EVM status updates properly
       return await this._send_evm_tx(tx, statusCallback, txOptions);
