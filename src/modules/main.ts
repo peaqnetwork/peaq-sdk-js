@@ -9,7 +9,7 @@ import { ChainType, SDKMetadata, CreateInstanceOptions, KeyType, ConfirmationMod
 import { Did } from './did';
 import { DIDVersion } from '../types/did';
 import { Storage } from './storage';
-
+import { MachineStation } from './machineStation';
 
 /**
  * Entry point for the TypeScript SDK.
@@ -25,6 +25,7 @@ export class Main extends Base {
 
     public readonly did: Did;
     public readonly storage: Storage;
+    public machineStation?: MachineStation;
 
 
     /**
@@ -68,6 +69,40 @@ export class Main extends Base {
         const sdk = new Main(options);
         await sdk.connect();
         await sdk.initializeSigner(options.seed);
+        return sdk;
+    }
+
+    /**
+     * Creates and returns a new instance of the SDK configured for a machine station.
+     * 
+     * @param baseUrl - The connection URL for the blockchain
+     * @param machineStationAddress - The address of the machine station
+     * @param machineStationOwnerPrivateKey - Private key for the machine station owner
+     * @returns An initialized SDK object with machine station module
+     */
+    static async createMachineStationInstance(
+        baseUrl: string,
+        machineStationAddress: string,
+        machineStationOwnerPrivateKey: string
+    ): Promise<Main> {
+        await cryptoWaitReady();
+        const options: CreateInstanceOptions = {
+            baseUrl,
+            chainType: ChainType.EVM,
+            machineStation: true
+        };
+        const sdk = new Main(options);
+        await sdk.connect();
+        await sdk.initializeSigner(machineStationOwnerPrivateKey);
+
+        sdk.machineStation = new MachineStation(
+            sdk,
+            sdk.api as JsonRpcProvider,
+            sdk.metadata,
+            machineStationAddress,
+            machineStationOwnerPrivateKey
+        );
+
         return sdk;
     }
 
