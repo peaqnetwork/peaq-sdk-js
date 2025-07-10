@@ -7,7 +7,7 @@ import { hexToU8a, u8aToHex } from '@polkadot/util';
 import { evmToAddress } from '@polkadot/util-crypto';
 
 import { Base } from '../base';
-import { ChainType, SDKMetadata, EvmTransaction, PrecompileAddresses, BuiltCallTransactionResult, BuiltEvmTransactionResult, txOptions } from '../../types/common';
+import { ChainType, SDKMetadata, EvmTransaction, PrecompileAddresses, BuiltCallTransactionResult, BuiltEvmTransactionResult, txOptions, VerificationMethodType } from '../../types/common';
 import { SubstrateSendResult, EvmSendResult, TransactionStatusCallback } from '../../types/base';
 import { createStorageKeys, CreateStorageKeysEnum, generateEvmPublicKeyMultibase, generateEd25519PublicKeyMultibase, generateSr25519PublicKeyMultibase } from '../crypto/';
 import {
@@ -138,7 +138,6 @@ export class DIDV2Implementation extends Base {
   ): Promise<DidWriteResult> {
     const { name, controller, verificationMethods, services, signature } = options;
 
-    // Re-generate full DID Document with new data (simple replace strategy)
     const primaryController = controller?.[0] ?? ((this.metadata.pair as any)?.address ?? '');
     const didDocumentHex = await this._generateDidDocument(primaryController, {
       controller: controller ?? [],
@@ -227,10 +226,9 @@ export class DIDV2Implementation extends Base {
       }
       if (this.api instanceof JsonRpcProvider && this.metadata.chainType === ChainType.EVM) {
         const chainId = await this.getChainId();
-        method.setBlockchainAccountId(`eip155:${chainId}:${address}`);
+        method.setPublicKeyMultibase(`eip155:${chainId}:${address}`);
+        // method.setBlockchainAccountId(`eip155:${chainId}:${address}`);
       }
-      // const chainId = await this.getChainId();
-      // method.setBlockchainAccountId(`eip155:${chainId}:${address}`)
 
       // TODO add assertionMethod, keyAgreement, capabilityInvocation, capabilityDelegation in v3
       doc.addVerificationMethods(method);
@@ -264,7 +262,7 @@ export class DIDV2Implementation extends Base {
 
   private _generateMultibase(address: string, type: string): string {
     switch (type) {
-        case 'EcdsaSecp256k1RecoveryMethod2020':
+        case VerificationMethodType.ECDSA:
             if (this.metadata.chainType !== ChainType.EVM) {
                 throw new Error('EcdsaSecp256k1RecoveryMethod2020 is only supported on EVM chains');
             }
@@ -273,18 +271,18 @@ export class DIDV2Implementation extends Base {
                 return ''; // Return empty string as fallback
             }
             return generateEvmPublicKeyMultibase(this.metadata.pair as any);
-        case 'Ed25519VerificationKey2020':
+        case VerificationMethodType.ED25519:
             if (this.metadata.chainType !== ChainType.SUBSTRATE) {
                 throw new Error('Ed25519VerificationKey2020 is only supported on Substrate chains');
             }
           return generateEd25519PublicKeyMultibase(address);
-        case 'Sr25519VerificationKey2020':
+        case VerificationMethodType.SR25519:
             if (this.metadata.chainType !== ChainType.SUBSTRATE) {
                 throw new Error('Sr25519VerificationKey2020 is only supported on Substrate chains');
             }
             return generateSr25519PublicKeyMultibase(address);
         default:
-            throw new Error(`Unsupported DID version: ${type}`);
+            throw new Error(`Unsupported DID verification method type: ${type}`);
     }
   }
 
@@ -298,7 +296,7 @@ export class DIDV2Implementation extends Base {
         type: m.getType(),
         controller: m.getController(),
         publicKeyMultibase: m.getPublicKeyMultibase(),
-        blockchainAccountId: m.getBlockchainAccountId()
+        // blockchainAccountId: m.getBlockchainAccountId()
       })),
       authentication: doc.getAuthentications(),
       service: (doc.getServices() || []).map((s: any) => ({

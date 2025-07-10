@@ -54,7 +54,7 @@ export interface VerificationMethod {
     type: string;
     controller?: string;
     publicKeyMultibase?: string;
-    blockchainAccountId?: string;
+    // blockchainAccountId?: string;
 }
 
 export interface Service {

@@ -15,6 +15,11 @@ export enum KeyType {
     ED25519 = "ed25519"
 }
 
+export enum VerificationMethodType {
+    ECDSA = "EcdsaSecp256k1RecoveryMethod2020",
+    SR25519 = "Sr25519VerificationKey2020",
+    ED25519 = "Ed25519VerificationKey2020"
+}
 export interface EvmTransaction {
     to: string;
     data: string;

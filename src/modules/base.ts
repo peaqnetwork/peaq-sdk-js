@@ -505,8 +505,6 @@ export abstract class Base {
                              if (!finalizedHead1) {
                                  throw new Error("Could not fetch finalized head");
                              }
-                            console.log("BEFORE wait the finalized head: ", finalizedHead1.number);
-                            console.log("Receipt start", receipt.blockNumber);
 
                             const customReceipt = await txResponse.wait(targetConfirmations);
                             if (!customReceipt) {
@@ -519,12 +517,9 @@ export abstract class Base {
                             if (!finalizedHead) {
                                 throw new Error("Could not fetch finalized head");
                             }
-                            console.log("AFTER wait the finalized head: ", finalizedHead.number);
-                            console.log("finalReceipt start", finalReceipt.blockNumber);
 
                             const head = await provider.getBlockNumber();            // e.g. 108 or higher
                             const confirmationsSeen = head - inclusionBlock  + 1;          // 9 or more
-                            console.log("confirmationsSeen", confirmationsSeen);
 
                             // check if finalized head has passed the final receipt block number
                             if (finalizedHead.number >= finalReceipt.blockNumber) {
@@ -553,7 +548,6 @@ export abstract class Base {
                             if (!startingBlock ) {
                                 throw new Error('Could not get finalized block');
                             }
-                            console.log("startingBlock finalized", startingBlock.number);
                             do {
                                 finalizedHeadSafe = await provider.getBlock("finalized");
                                 if (!finalizedHeadSafe) {
@@ -570,7 +564,6 @@ export abstract class Base {
                                 throw new Error("Could not fetch finalized head");
                             }
                             finalReceipt = latestReceipt;
-                            console.log("finalReceipt start", finalReceipt.blockNumber);
 
                             
                             finalConfirmations = finalReceipt.blockNumber - startingBlock.number;

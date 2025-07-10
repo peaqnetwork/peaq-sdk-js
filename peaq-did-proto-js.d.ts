@@ -21,8 +21,8 @@ declare module 'peaq-did-proto-js' {
     getPublicKeyMultibase(): string;
     setPublicKeyMultibase(value: string): this;
 
-    getBlockchainAccountId(): string;
-    setBlockchainAccountId(value: string): this;
+    // getBlockchainAccountId(): string;
+    // setBlockchainAccountId(value: string): this;
 
     serializeBinary(): Uint8Array;
     static deserializeBinary(bytes: Uint8Array): VerificationMethod;

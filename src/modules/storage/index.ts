@@ -190,12 +190,12 @@ export class Storage extends Base {
             throw new Error('Invalid API instance');
         }
 
-        const { itemType, newItem } = options;
+        const { itemType, item } = options;
 
         if (this.metadata.chainType === ChainType.EVM) {
-            return this._updateItemEvm(itemType, newItem, statusCallback, txOptions);
+            return this._updateItemEvm(itemType, item, statusCallback, txOptions);
         }
-        return this._updateItemSubstrate(itemType, newItem, statusCallback);
+        return this._updateItemSubstrate(itemType, item, statusCallback);
     }
 
     /**

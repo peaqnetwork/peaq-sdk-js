@@ -12,7 +12,7 @@ export interface RemoveItemOptions {
 
 export interface UpdateItemOptions {
     itemType: string;
-    newItem: Object;
+    item: Object;
 }
 
 export interface GetItemOptions {
