@@ -147,8 +147,91 @@ export class MachineStation extends Base {
         statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
         txOptions?: txOptions
     ): Promise<DeployedSmartAccountResult | BuiltEvmTransactionResult | BuiltCallTransactionResult | DeployMachineSmartAccountTransactionData> {
-        // TODO: Implement smart account deployment logic
-        throw new Error('deployMachineSmartAccount not yet implemented');
+        const { machineSmartAccountOwnerAddress, nonce, machineStationOwnerSignature, sendTransaction = true } = options;
+        
+        try {
+            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.DEPLOY_MACHINE_SMART_ACCOUNT)).substring(0, 10);
+
+            const params = this.abiCoder.encode(
+                ["address", "uint256", "bytes"],
+                [machineSmartAccountOwnerAddress, nonce, machineStationOwnerSignature]
+            );
+
+            const payload = params.replace("0x", createFunctionSelector);
+            const tx: EvmTransaction = {
+                to: this.machineStationAddress,
+                data: payload
+            };
+
+            if (!sendTransaction) {
+                return {
+                    transaction_data: tx,
+                    message: "Transaction data ready for manual submission",
+                    machine_station_address: this.machineStationAddress,
+                    function: "deploy_machine_smart_account", 
+                    machine_account_owner_address: machineSmartAccountOwnerAddress,
+                    required_role: "STATION_MANAGER_ROLE",
+                    note: "After transaction is mined, listen for MachineSmartAccountDeployed event to get the deployed address"
+                } as DeployMachineSmartAccountTransactionData;
+            }
+
+            const result = await this._handleEvmTx(tx, `deploy machine smart account for ${machineSmartAccountOwnerAddress}`, statusCallback, txOptions);
+            
+            // Extract deployed address from the result
+            let deployedAddress: string | null = null;
+            
+            // Check if we have a receipt with logs (from finalize or direct receipt)
+            if ('receipt' in result && result.receipt) {
+                const receipt = result.receipt as any;
+                if (receipt.logs && Array.isArray(receipt.logs)) {
+                    // Compute the event signature
+                    const eventSignature = ethers.id("MachineSmartAccountDeployed(address)");
+                    
+                    // Find the relevant log
+                    const log = receipt.logs.find((log: any) => log.topics[0] === eventSignature);
+                    
+                    if (log) {
+                        // The deployed address is stored as the second topic (topics[1]) in a 32-byte format
+                        const rawDeployedAddress = log.topics[1];
+                        deployedAddress = ethers.getAddress(`0x${rawDeployedAddress.slice(26)}`); // Extract last 20 bytes
+                    }
+                }
+            }
+            
+            // If we have a finalize function, wait for it and extract address from there
+            if (!deployedAddress && 'finalize' in result && result.finalize) {
+                try {
+                    const finalizedReceipt = await result.finalize;
+                    const receipt = finalizedReceipt as any;
+                    if (receipt.logs && Array.isArray(receipt.logs)) {
+                        const eventSignature = ethers.id("MachineSmartAccountDeployed(address)");
+                        const log = receipt.logs.find((log: any) => log.topics[0] === eventSignature);
+                        
+                        if (log) {
+                            const rawDeployedAddress = log.topics[1];
+                            deployedAddress = ethers.getAddress(`0x${rawDeployedAddress.slice(26)}`);
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Failed to extract deployed address from finalized receipt:', error);
+                }
+            }
+            
+            // If we found a deployed address, return the full result
+            if (deployedAddress) {
+                return {
+                    message: `Successfully deployed machine smart account at address ${deployedAddress}.`,
+                    deployed_address: deployedAddress,
+                    txHash: 'txHash' in result ? result.txHash : undefined,
+                    finalize: 'finalize' in result ? result.finalize : undefined
+                } as DeployedSmartAccountResult;
+            }
+            
+            // If no deployed address found, return the original result
+            return result as DeployedSmartAccountResult | BuiltEvmTransactionResult | BuiltCallTransactionResult;
+        } catch (error: any) {
+            throw new Error(`Failed to deploy machine smart account: ${error.message}`);
+        }
     }
 
     // =====================================================================
@@ -261,8 +344,34 @@ export class MachineStation extends Base {
         if (!this.machineStationOwnerWallet) {
             throw new Error('Machine station owner wallet is required for admin signatures');
         }
-        // TODO: Implement EIP-712 signature generation for deploy smart account
-        throw new Error('adminSignDeployMachineSmartAccount not yet implemented');
+        
+        try {
+            const { machineSmartAccountOwnerAddress, nonce } = options;
+            const chainId = await this.getChainId();
+            const domain = {
+                name: "MachineStationFactory",
+                version: "2",
+                chainId: chainId,
+                verifyingContract: this.machineStationAddress,
+            };
+
+            const types = {
+                DeployMachineSmartAccount: [
+                    { name: "machineOwner", type: "address" },
+                    { name: "nonce", type: "uint256" },
+                ],
+            };
+
+            const message = {
+                machineOwner: machineSmartAccountOwnerAddress,
+                nonce: nonce,
+            };
+
+            const signature = await this.machineStationOwnerWallet.signTypedData(domain, types, message);
+            return signature;
+        } catch (error: any) {
+            throw new Error(`Failed to sign deploy machine smart account: ${error.message}`);
+        }
     }
 
     /**
