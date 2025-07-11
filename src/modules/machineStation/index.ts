@@ -18,7 +18,6 @@ import { SubstrateSendResult, EvmSendResult, TransactionStatusCallback } from '.
 import { Base } from '../base';
 import {
     MachineStationFactoryFunctionSignatures,
-    MachineStationConfigKeys,
     MachineStationWriteResult,
     DeployedSmartAccountResult,
     EIP712SignableMessage,
@@ -251,8 +250,38 @@ export class MachineStation extends Base {
         statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
         txOptions?: txOptions
     ): Promise<MachineStationWriteResult | TransferMachineStationBalanceTransactionData> {
-        // TODO: Implement balance transfer logic
-        throw new Error('transferMachineStationBalance not yet implemented');
+        const { newMachineStationAddress, nonce, machineStationOwnerSignature, sendTransaction = true } = options;
+        
+        try {
+            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.TRANSFER_MACHINE_STATION_BALANCE)).substring(0, 10);
+
+            const params = this.abiCoder.encode(
+                ["address", "uint256", "bytes"],
+                [newMachineStationAddress, nonce, machineStationOwnerSignature]
+            );
+
+            const payload = params.replace("0x", createFunctionSelector);
+            const tx: EvmTransaction = {
+                to: this.machineStationAddress,
+                data: payload
+            };
+
+            if (!sendTransaction) {
+                return {
+                    transaction_data: tx,
+                    message: "Transaction data ready for manual submission",
+                    machine_station_address: this.machineStationAddress,
+                    function: "execute_transfer_machine_station_balance",
+                    current_machine_station_address: this.machineStationAddress,
+                    new_machine_station_address: newMachineStationAddress,
+                    required_role: "DEFAULT_ADMIN_ROLE"
+                } as TransferMachineStationBalanceTransactionData;
+            }
+
+            return await this._handleEvmTx(tx, `transfer machine station balance to ${newMachineStationAddress}`, statusCallback, txOptions);
+        } catch (error: any) {
+            throw new Error(`Failed to transfer machine station balance: ${error.message}`);
+        }
     }
 
     // =====================================================================
@@ -387,8 +416,34 @@ export class MachineStation extends Base {
         if (!this.machineStationOwnerWallet) {
             throw new Error('Machine station owner wallet is required for admin signatures');
         }
-        // TODO: Implement EIP-712 signature generation for balance transfer
-        throw new Error('adminSignTransferMachineStationBalance not yet implemented');
+        
+        try {
+            const { newMachineStationAddress, nonce } = options;
+            const chainId = await this.getChainId();
+            const domain = {
+                name: "MachineStationFactory",
+                version: "2",
+                chainId: chainId,
+                verifyingContract: this.machineStationAddress,
+            };
+
+            const types = {
+                TransferMachineStationBalance: [
+                    { name: "newMachineStationAddress", type: "address" },
+                    { name: "nonce", type: "uint256" },
+                ],
+            };
+
+            const message = {
+                newMachineStationAddress: newMachineStationAddress,
+                nonce: nonce
+            };
+
+            const signature = await this.machineStationOwnerWallet.signTypedData(domain, types, message);
+            return signature;
+        } catch (error: any) {
+            throw new Error(`Failed to sign transfer machine station balance: ${error.message}`);
+        }
     }
 
     /**
