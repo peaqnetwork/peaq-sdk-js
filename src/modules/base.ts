@@ -412,8 +412,8 @@ export abstract class Base {
         const address = wallet.address;
 
         // Handle confirmation modes
-        const mode = opts.mode ?? ConfirmationMode.UNSAFE;
-        let targetConfirmations = 1;  // Default to 1 for unsafe mode
+        const mode = opts.mode ?? ConfirmationMode.FAST;
+        let targetConfirmations = 1;  // Default to 1 for FAST mode
         
         if (mode === ConfirmationMode.CUSTOM) {
             if (!opts.confirmations) {
@@ -454,7 +454,7 @@ export abstract class Base {
                         // confirmationMode: mode
                     });
     
-                    // 1. Broadcast status - before tx has been waited
+                    // 1. Broadcast status - before tx has been included
                     if (onStatus && !cancelled) {
                         onStatus({
                             status: TransactionStatus.BROADCAST,
@@ -466,12 +466,12 @@ export abstract class Base {
                     }
     
                     // Wait for first confirmation
-                    const receipt = await txResponse.wait();
-                    if (!receipt) {
+                    const inclusionReceipt = await txResponse.wait();
+                    if (!inclusionReceipt) {
                         throw new Error('Transaction receipt not found');
                     }
     
-                    if (receipt.status === 0) {
+                    if (inclusionReceipt.status === 0) {
                         throw new EvmExecutionError('Transaction failed');
                     }
 
@@ -481,19 +481,19 @@ export abstract class Base {
                             status: TransactionStatus.IN_BLOCK,
                             confirmationMode: mode,
                             totalConfirmations: 1,
-                            receipt: receipt,
+                            receipt: inclusionReceipt,
                             hash: txResponse.hash
                         });
                     }
 
-                    let finalReceipt   = receipt;
+                    let userReceipt;
                     let finalConfirmations: number;
                     let status: TransactionStatus;
-                    const inclusionBlock   = receipt.blockNumber;
+                    const inclusionBlock   = inclusionReceipt.blockNumber;
 
                     // Handle different confirmation requirements
                     switch (mode) {
-                        case ConfirmationMode.UNSAFE:
+                        case ConfirmationMode.FAST:
                             // Already have 1 confirmation, nothing more needed
                             finalConfirmations = 1;
                             status = TransactionStatus.IN_BLOCK;
@@ -501,8 +501,8 @@ export abstract class Base {
 
                         case ConfirmationMode.CUSTOM:
                              // 1) wait for the user’s target
-                             const finalizedHead1 = await provider.getBlock("finalized");
-                             if (!finalizedHead1) {
+                             const startingFinalized = await provider.getBlock("finalized");
+                             if (!startingFinalized) {
                                  throw new Error("Could not fetch finalized head");
                              }
 
@@ -511,18 +511,18 @@ export abstract class Base {
                                 throw new Error('Could not get receipt after waiting for confirmations');
                             }
                             // reset final receipt in case there was reorg during wait
-                            finalReceipt = customReceipt;
+                            userReceipt = customReceipt;
                             
                             const finalizedHead = await provider.getBlock("finalized");
                             if (!finalizedHead) {
                                 throw new Error("Could not fetch finalized head");
                             }
 
-                            const head = await provider.getBlockNumber();            // e.g. 108 or higher
-                            const confirmationsSeen = head - inclusionBlock  + 1;          // 9 or more
+                            const head = await provider.getBlockNumber();
+                            const confirmationsSeen = finalizedHead.number - startingFinalized.number  + 1;
 
                             // check if finalized head has passed the final receipt block number
-                            if (finalizedHead.number >= finalReceipt.blockNumber) {
+                            if (finalizedHead.number >= inclusionBlock) {
                                 status = TransactionStatus.FINALIZED;
                             } else {
                                 status = TransactionStatus.IN_BLOCK;
@@ -534,36 +534,38 @@ export abstract class Base {
                                     status: status,
                                     confirmationMode: mode,
                                     totalConfirmations: confirmationsSeen,
-                                    receipt: finalReceipt,
+                                    receipt: userReceipt,
                                     hash: txResponse.hash
                                 });
                             }
                             
                             break;
 
-                        case ConfirmationMode.SAFE:
+                        case ConfirmationMode.FINAL:
                             // Poll until the GRANDPA-finalized head >= inclusion block
-                            let finalizedHeadSafe;
+                            let finalizedHeadFINAL;
                             let startingBlock = await provider.getBlock("finalized");
                             if (!startingBlock ) {
                                 throw new Error('Could not get finalized block');
                             }
                             do {
-                                finalizedHeadSafe = await provider.getBlock("finalized");
-                                if (!finalizedHeadSafe) {
+                                finalizedHeadFINAL = await provider.getBlock("finalized");
+                                if (!finalizedHeadFINAL) {
                                     throw new Error('Could not get finalized block');
                                 }
-                                if (finalizedHeadSafe.number >= finalReceipt.blockNumber) {
+                                if (finalizedHeadFINAL.number >= inclusionBlock) {
                                     break;
                                 }
                                 await new Promise(r => setTimeout(r, 1_000)); // poll every second
                             } while (true);
                             
-                            const latestReceipt = await provider.getTransactionReceipt(finalReceipt.hash);
-                            if (!latestReceipt) {
+                            // polling for the receipt after the finalized head has passed the inclusion block
+                            // fetching new receipt block number ensures tx is on the correct block in case of an reorg
+                            const finalReceipt = await provider.getTransactionReceipt(inclusionReceipt.hash);
+                            if (!finalReceipt) {
                                 throw new Error("Could not fetch finalized head");
                             }
-                            finalReceipt = latestReceipt;
+                            userReceipt = finalReceipt;
 
                             
                             finalConfirmations = finalReceipt.blockNumber - startingBlock.number;
@@ -574,7 +576,7 @@ export abstract class Base {
                                     status: TransactionStatus.FINALIZED,
                                     confirmationMode: mode,
                                     totalConfirmations: finalConfirmations,
-                                    receipt: latestReceipt,
+                                    receipt: userReceipt,
                                     hash: txResponse.hash
                                 });
                             }
@@ -582,10 +584,10 @@ export abstract class Base {
                     }
 
                     // Return the clean EVM receipt without additional fields
-                    if (!finalReceipt) {
+                    if (!userReceipt) {
                         throw new Error('Transaction receipt not found');
                     }
-                    resolve(finalReceipt);
+                    resolve(userReceipt);
                 } catch (error: any) {
                     // Gas estimation errors should be thrown immediately
                     if (error.code === 'CALL_EXCEPTION') {

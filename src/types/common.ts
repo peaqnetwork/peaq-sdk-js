@@ -64,9 +64,9 @@ export interface BuiltEvmTransactionResult {
 }
 
 export enum ConfirmationMode {
-    UNSAFE = 'UNSAFE',
+    FAST = 'FAST',
     CUSTOM = 'CUSTOM',
-    SAFE = 'SAFE'
+    FINAL = 'FINAL'
 }
 
 export enum TransactionStatus {
