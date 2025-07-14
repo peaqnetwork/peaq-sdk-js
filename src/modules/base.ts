@@ -1,7 +1,7 @@
 import { ApiPromise, Keyring } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 
-import { ethers, JsonRpcProvider, Wallet, TransactionResponse } from 'ethers';
+import { ethers, JsonRpcProvider, Wallet } from 'ethers';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { ISubmittableResult } from '@polkadot/types/types';
 import { hexToU8a, isHex } from '@polkadot/util';
@@ -355,12 +355,6 @@ export abstract class Base {
         }));
     }
 
-    /**
-     * Convert ethers logs to our EvmEvent format
-     */
-    private _formatEvmEvents(logs: readonly ethers.Log[]): EvmEvent[] {
-        return this._formatEvmLogs(logs);
-    }
 
     // Add this helper function before the _send_evm_tx method
     private _parseEvmError(error: any): string {
@@ -434,14 +428,22 @@ export abstract class Base {
                         data: unsignedTx.data ?? '0x',
                     });
     
-                    // TODO what type of gas limit should we use?
-                    // legacy or EIP1559?
-
-                    // Build and send transaction
+                    // Get current fee data for EIP-1559
+                    const feeData = await provider.getFeeData();
+                    
+                    // Use custom values if provided, otherwise use network defaults
+                    const maxFeePerGas = feeData.maxFeePerGas;
+                    const maxPriorityFeePerGas = feeData.maxPriorityFeePerGas;
+                    const gasLimit = estimatedGasLimit;
+                    
+                    // Build EIP-1559 transaction
                     const fullTx = {
                         to: unsignedTx.to,
                         data: unsignedTx.data ?? '0x',
-                        gasLimit: estimatedGasLimit,
+                        gasLimit,
+                        type: 2, // EIP-1559 transaction type
+                        maxFeePerGas,
+                        maxPriorityFeePerGas,
                     };
     
                     const txResponse = await wallet.sendTransaction(fullTx);
@@ -497,6 +499,7 @@ export abstract class Base {
                             // Already have 1 confirmation, nothing more needed
                             finalConfirmations = 1;
                             status = TransactionStatus.IN_BLOCK;
+                            userReceipt = inclusionReceipt;
                             break;
 
                         case ConfirmationMode.CUSTOM:
@@ -605,10 +608,5 @@ export abstract class Base {
                 rejectMain(error);
             });
         });
-    }
-
-    // Format EVM receipt for consistency
-    protected _formatEvmReceipt(receipt: ethers.TransactionReceipt, confirmations: number): EvmFormattedReceipt {
-        return receipt;
     }
 }
