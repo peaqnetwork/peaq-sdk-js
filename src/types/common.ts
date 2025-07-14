@@ -1,5 +1,5 @@
 import { KeyringPair } from '@polkadot/keyring/types';
-import { Wallet } from 'ethers';
+import { Wallet, TransactionRequest } from 'ethers';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { ISubmittableResult } from '@polkadot/types/types';
 import { DIDVersion } from './did';
@@ -20,10 +20,7 @@ export enum VerificationMethodType {
     SR25519 = "Sr25519VerificationKey2020",
     ED25519 = "Ed25519VerificationKey2020"
 }
-export interface EvmTransaction {
-    to: string;
-    data: string;
-}
+export type EvmTransaction = TransactionRequest;
 
 export enum PrecompileAddresses {
     DID = "0x0000000000000000000000000000000000000800",
@@ -64,9 +61,9 @@ export interface BuiltEvmTransactionResult {
 }
 
 export enum ConfirmationMode {
-    UNSAFE = 'UNSAFE',
+    FAST = 'FAST',
     CUSTOM = 'CUSTOM',
-    SAFE = 'SAFE'
+    FINAL = 'FINAL'
 }
 
 export enum TransactionStatus {
