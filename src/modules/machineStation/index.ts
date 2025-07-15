@@ -1,13 +1,9 @@
 // external imports
-import { ApiPromise } from '@polkadot/api';
-import { ethers, JsonRpcProvider, Wallet } from 'ethers';
-import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { ISubmittableResult } from '@polkadot/types/types';
+import { ethers, JsonRpcProvider, Signer } from 'ethers';
 
 // local imports
 import { Main } from '../main';
-import { 
-    ChainType,
+import {
     SDKMetadata,
     BuiltCallTransactionResult,
     BuiltEvmTransactionResult,
@@ -53,7 +49,7 @@ export class MachineStation extends Base {
     private abiCoder = new ethers.AbiCoder();
     private sdk: any;
     private machineStationAddress: string;
-    private machineStationOwnerWallet: Wallet;
+    private machineStationOwnerSigner: Signer;
 
     /**
      * Initializes MachineStation with a connected API instance and shared SDK metadata.
@@ -62,19 +58,19 @@ export class MachineStation extends Base {
      * @param api - The blockchain API connection (JsonRpcProvider for EVM)
      * @param metadata - Shared metadata, including chain type and optional signer
      * @param machineStationAddress - The address of the machine station factory contract
-     * @param machineStationOwnerPrivateKey - Optional private key for machine station owner operations
+     * @param machineStationOwnerSigner - Signer instance for machine station owner operations
      */
     constructor(
         sdk: Main,
         api: JsonRpcProvider, 
         metadata: SDKMetadata, 
         machineStationAddress: string,
-        machineStationOwnerPrivateKey: string
+        machineStationOwnerSigner: Signer
     ) {
         super(api, metadata);
         this.sdk = sdk;
         this.machineStationAddress = machineStationAddress;
-        this.machineStationOwnerWallet = new Wallet(machineStationOwnerPrivateKey, api);
+        this.machineStationOwnerSigner = machineStationOwnerSigner.connect(api);
     }
 
     // =====================================================================
@@ -179,40 +175,25 @@ export class MachineStation extends Base {
             // Extract deployed address from the result
             let deployedAddress: string | null = null;
             
-            // Check if we have a receipt with logs (from finalize or direct receipt)
+            // The new structure returns receipt as a Promise
             if ('receipt' in result && result.receipt) {
-                const receipt = result.receipt as any;
-                if (receipt.logs && Array.isArray(receipt.logs)) {
-                    // Compute the event signature
-                    const eventSignature = ethers.id("MachineSmartAccountDeployed(address)");
-                    
-                    // Find the relevant log
-                    const log = receipt.logs.find((log: any) => log.topics[0] === eventSignature);
-                    
-                    if (log) {
-                        // The deployed address is stored as the second topic (topics[1]) in a 32-byte format
-                        const rawDeployedAddress = log.topics[1];
-                        deployedAddress = ethers.getAddress(`0x${rawDeployedAddress.slice(26)}`); // Extract last 20 bytes
-                    }
-                }
-            }
-            
-            // If we have a finalize function, wait for it and extract address from there
-            if (!deployedAddress && 'finalize' in result && result.finalize) {
                 try {
-                    const finalizedReceipt = await result.finalize;
-                    const receipt = finalizedReceipt as any;
-                    if (receipt.logs && Array.isArray(receipt.logs)) {
+                    const receipt = await result.receipt;
+                    if (receipt && receipt.logs && Array.isArray(receipt.logs)) {
+                        // Compute the event signature
                         const eventSignature = ethers.id("MachineSmartAccountDeployed(address)");
+                        
+                        // Find the relevant log
                         const log = receipt.logs.find((log: any) => log.topics[0] === eventSignature);
                         
                         if (log) {
+                            // The deployed address is stored as the second topic (topics[1]) in a 32-byte format
                             const rawDeployedAddress = log.topics[1];
-                            deployedAddress = ethers.getAddress(`0x${rawDeployedAddress.slice(26)}`);
+                            deployedAddress = ethers.getAddress(`0x${rawDeployedAddress.slice(26)}`); // Extract last 20 bytes
                         }
                     }
                 } catch (error) {
-                    console.warn('Failed to extract deployed address from finalized receipt:', error);
+                    console.warn('Failed to extract deployed address from receipt:', error);
                 }
             }
             
@@ -222,7 +203,7 @@ export class MachineStation extends Base {
                     message: `Successfully deployed machine smart account at address ${deployedAddress}.`,
                     deployed_address: deployedAddress,
                     txHash: 'txHash' in result ? result.txHash : undefined,
-                    finalize: 'finalize' in result ? result.finalize : undefined
+                    receipt: 'receipt' in result ? result.receipt : undefined
                 } as DeployedSmartAccountResult;
             }
             
@@ -362,7 +343,7 @@ export class MachineStation extends Base {
 
     /**
      * Generates an admin signature for deploying a machine smart account.
-     * Requires machineStationOwnerWallet to be initialized.
+     * Requires machineStationOwnerSigner to be initialized.
      * 
      * @param options - The signature options
      * @returns Promise resolving to the EIP-712 signature string
@@ -370,8 +351,8 @@ export class MachineStation extends Base {
     public async adminSignDeployMachineSmartAccount(
         options: AdminSignDeployMachineSmartAccountOptions
     ): Promise<string> {
-        if (!this.machineStationOwnerWallet) {
-            throw new Error('Machine station owner wallet is required for admin signatures');
+        if (!this.machineStationOwnerSigner) {
+            throw new Error('Machine station owner signer is required for admin signatures');
         }
         
         try {
@@ -396,7 +377,7 @@ export class MachineStation extends Base {
                 nonce: nonce,
             };
 
-            const signature = await this.machineStationOwnerWallet.signTypedData(domain, types, message);
+            const signature = await this.machineStationOwnerSigner.signTypedData(domain, types, message);
             return signature;
         } catch (error: any) {
             throw new Error(`Failed to sign deploy machine smart account: ${error.message}`);
@@ -405,7 +386,7 @@ export class MachineStation extends Base {
 
     /**
      * Generates an admin signature for transferring machine station balance.
-     * Requires machineStationOwnerWallet to be initialized.
+     * Requires machineStationOwnerSigner to be initialized.
      * 
      * @param options - The signature options
      * @returns Promise resolving to the EIP-712 signature string
@@ -413,8 +394,8 @@ export class MachineStation extends Base {
     public async adminSignTransferMachineStationBalance(
         options: AdminSignTransferMachineStationBalanceOptions
     ): Promise<string> {
-        if (!this.machineStationOwnerWallet) {
-            throw new Error('Machine station owner wallet is required for admin signatures');
+        if (!this.machineStationOwnerSigner) {
+            throw new Error('Machine station owner signer is required for admin signatures');
         }
         
         try {
@@ -439,7 +420,7 @@ export class MachineStation extends Base {
                 nonce: nonce
             };
 
-            const signature = await this.machineStationOwnerWallet.signTypedData(domain, types, message);
+            const signature = await this.machineStationOwnerSigner.signTypedData(domain, types, message);
             return signature;
         } catch (error: any) {
             throw new Error(`Failed to sign transfer machine station balance: ${error.message}`);
@@ -448,7 +429,7 @@ export class MachineStation extends Base {
 
     /**
      * Generates an admin signature for executing a transaction.
-     * Requires machineStationOwnerWallet to be initialized.
+     * Requires machineStationOwnerSigner to be initialized.
      * 
      * @param options - The signature options
      * @returns Promise resolving to the EIP-712 signature string
@@ -456,8 +437,8 @@ export class MachineStation extends Base {
     public async adminSignTransaction(
         options: AdminSignTransactionOptions
     ): Promise<string> {
-        if (!this.machineStationOwnerWallet) {
-            throw new Error('Machine station owner wallet is required for admin signatures');
+        if (!this.machineStationOwnerSigner) {
+            throw new Error('Machine station owner signer is required for admin signatures');
         }
         // TODO: Implement EIP-712 signature generation for transaction
         throw new Error('adminSignTransaction not yet implemented');
@@ -465,7 +446,7 @@ export class MachineStation extends Base {
 
     /**
      * Generates an admin signature for executing a machine transaction.
-     * Requires machineStationOwnerWallet to be initialized.
+     * Requires machineStationOwnerSigner to be initialized.
      * 
      * @param options - The signature options
      * @returns Promise resolving to the EIP-712 signature string
@@ -473,8 +454,8 @@ export class MachineStation extends Base {
     public async adminSignMachineTransaction(
         options: AdminSignMachineTransactionOptions
     ): Promise<string> {
-        if (!this.machineStationOwnerWallet) {
-            throw new Error('Machine station owner wallet is required for admin signatures');
+        if (!this.machineStationOwnerSigner) {
+            throw new Error('Machine station owner signer is required for admin signatures');
         }
         // TODO: Implement EIP-712 signature generation for machine transaction
         throw new Error('adminSignMachineTransaction not yet implemented');
@@ -482,7 +463,7 @@ export class MachineStation extends Base {
 
     /**
      * Generates an admin signature for executing batch transactions.
-     * Requires machineStationOwnerWallet to be initialized.
+     * Requires machineStationOwnerSigner to be initialized.
      * 
      * @param options - The signature options
      * @returns Promise resolving to the EIP-712 signature string
@@ -490,8 +471,8 @@ export class MachineStation extends Base {
     public async adminSignMachineBatchTransactions(
         options: AdminSignMachineBatchTransactionsOptions
     ): Promise<string> {
-        if (!this.machineStationOwnerWallet) {
-            throw new Error('Machine station owner wallet is required for admin signatures');
+        if (!this.machineStationOwnerSigner) {
+            throw new Error('Machine station owner signer is required for admin signatures');
         }
         // TODO: Implement EIP-712 signature generation for batch transactions
         throw new Error('adminSignMachineBatchTransactions not yet implemented');
@@ -499,7 +480,7 @@ export class MachineStation extends Base {
 
     /**
      * Generates an admin signature for transferring machine balance.
-     * Requires machineStationOwnerWallet to be initialized.
+     * Requires machineStationOwnerSigner to be initialized.
      * 
      * @param options - The signature options
      * @returns Promise resolving to the EIP-712 signature string
@@ -507,8 +488,8 @@ export class MachineStation extends Base {
     public async adminSignTransferMachineBalance(
         options: AdminSignTransferMachineBalanceOptions
     ): Promise<string> {
-        if (!this.machineStationOwnerWallet) {
-            throw new Error('Machine station owner wallet is required for admin signatures');
+        if (!this.machineStationOwnerSigner) {
+            throw new Error('Machine station owner signer is required for admin signatures');
         }
         // TODO: Implement EIP-712 signature generation for machine balance transfer
         throw new Error('adminSignTransferMachineBalance not yet implemented');

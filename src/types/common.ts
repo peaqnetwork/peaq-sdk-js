@@ -29,7 +29,6 @@ export enum PrecompileAddresses {
     RBAC = "0x0000000000000000000000000000000000000802",
     IERC20 = "0x0000000000000000000000000000000000000809"
 }
-
 export interface CreateInstanceOptions {
     baseUrl: string;
     chainType: ChainType;
@@ -37,6 +36,11 @@ export interface CreateInstanceOptions {
     machineStation?: boolean;
     didVersion?: DIDVersion;
     keyType?: KeyType;
+}
+export interface CreateMachineStationInstanceOptions {
+    baseUrl: string;
+    machineStationAddress: string;
+    machineStationOwnerSigner: Signer;
 }
 
 export interface SDKMetadata {

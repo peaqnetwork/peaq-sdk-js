@@ -415,8 +415,8 @@ export abstract class Base {
         }
         
         const provider = this.api;
-        const wallet = (this.metadata.pair as Wallet).connect(provider);
-        const address = wallet.address;
+        const signer = (this.metadata.pair as Signer).connect(provider);
+        const address = await signer.getAddress();
 
         // Handle confirmation modes
         const mode = opts.mode ?? ConfirmationMode.FAST;
@@ -432,7 +432,7 @@ export abstract class Base {
         return new Promise<EvmSendResult>(async (resolveMain, rejectMain) => {
             let cancelled = false;
             
-            const finalize = new Promise<EvmFormattedReceipt>(async (resolve, reject) => {
+            const receipt = new Promise<EvmFormattedReceipt>(async (resolve, reject) => {
                 try {
                     // Estimate gas as source of truth
                     const estimatedGasLimit = await provider.estimateGas({
@@ -459,13 +459,13 @@ export abstract class Base {
                         maxPriorityFeePerGas,
                     };
     
-                    const txResponse = await wallet.sendTransaction(fullTx);
+                    const txResponse = await signer.sendTransaction(fullTx);
                     
                     // Return immediately with transaction hash
                     resolveMain({
                         txHash: txResponse.hash,
                         unsubscribe: onStatus ? () => { cancelled = true; } : undefined,
-                        finalize,
+                        receipt,
                         // confirmationMode: mode
                     });
     
@@ -617,7 +617,7 @@ export abstract class Base {
             });
     
             // Handle cases where finalize rejects before we return
-            finalize.catch((error) => {
+            receipt.catch((error) => {
                 rejectMain(error);
             });
         });

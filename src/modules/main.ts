@@ -5,7 +5,7 @@ import { JsonRpcProvider, Signer } from 'ethers';
 import { cryptoWaitReady, mnemonicValidate } from '@polkadot/util-crypto';
 
 import { Base } from './base';
-import { ChainType, SDKMetadata, CreateInstanceOptions, KeyType, ConfirmationMode, VerificationMethodType } from '../types/common';
+import { ChainType, SDKMetadata, CreateInstanceOptions, KeyType, ConfirmationMode, VerificationMethodType, CreateMachineStationInstanceOptions } from '../types/common';
 
 import { Did } from './did';
 import { DIDVersion } from '../types/did';
@@ -78,30 +78,28 @@ export class Main extends Base {
      * 
      * @param baseUrl - The connection URL for the blockchain
      * @param machineStationAddress - The address of the machine station
-     * @param machineStationOwnerPrivateKey - Private key for the machine station owner
+     * @param machineStationOwnerSigner - Signer instance for the machine station owner
      * @returns An initialized SDK object with machine station module
      */
     static async createMachineStationInstance(
-        baseUrl: string,
-        machineStationAddress: string,
-        machineStationOwnerPrivateKey: string
+        userOptions: CreateMachineStationInstanceOptions
     ): Promise<Main> {
         await cryptoWaitReady();
         const options: CreateInstanceOptions = {
-            baseUrl,
+            baseUrl: userOptions.baseUrl,
             chainType: ChainType.EVM,
             machineStation: true
         };
         const sdk = new Main(options);
         await sdk.connect();
-        await sdk.initializeSigner(machineStationOwnerPrivateKey);
+        await sdk.initializeSigner(userOptions.machineStationOwnerSigner);
 
         sdk.machineStation = new MachineStation(
             sdk,
             sdk.api as JsonRpcProvider,
             sdk.metadata,
-            machineStationAddress,
-            machineStationOwnerPrivateKey
+            userOptions.machineStationAddress,
+            userOptions.machineStationOwnerSigner
         );
 
         return sdk;
