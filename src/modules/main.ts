@@ -1,5 +1,6 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { JsonRpcProvider } from 'ethers';
+import { KeyringPair } from '@polkadot/keyring/types';
+import { JsonRpcProvider, Wallet } from 'ethers';
 
 import { cryptoWaitReady, mnemonicValidate } from '@polkadot/util-crypto';
 
@@ -64,7 +65,7 @@ export class Main extends Base {
         await cryptoWaitReady();
         const sdk = new Main(options);
         await sdk.connect();
-        await sdk.initializeSigner(options.seed);
+        await sdk.initializeSigner(options.auth);
         return sdk;
     }
 
@@ -123,51 +124,11 @@ export class Main extends Base {
         }
     }
     /**
-     * Initializes the signer by validating and setting the secret used for generating the key pair/account.
-     * @param seed - The mnemonic phrase or private key used to generate the key pair
+     * Initializes the signer by setting the authentication method.
+     * @param auth - The authentication method: string (private key/mnemonic), KeyringPair, or Wallet
      */
-    private async initializeSigner(seed?: string): Promise<void> {
-        await this.validateSecret(seed);
-        await this.setMetadata(seed);
-    }
-
-    /**
-     * Validates that the provided seed is compatible with EVM or Substrate.
-     * @param seed - The private key (for EVM) or mnemonic phrase (for Substrate) to validate
-     * @throws Error if the EVM private key is invalid or if the substrate mnemonic is invalid
-     */
-    private async validateSecret(seed?: string): Promise<void> {
-        if (!seed) return;
-
-        if (this.metadata.chainType === ChainType.EVM) {
-            const keyStr = seed.startsWith('0x') ? seed.slice(2) : seed;
-            if (keyStr.length !== 64) {
-                throw new Error('Invalid EVM private key length. Expected 64 hex characters (excluding "0x" prefix).');
-            }
-            try {
-                parseInt(keyStr, 16);
-            } catch {
-                throw new Error('Invalid EVM private key. It must be a valid hexadecimal string.');
-            }
-        } else {
-            const words = seed.trim().split(' ');
-            if (![12, 24].includes(words.length)) {
-                this.disconnect();
-                throw new Error('Invalid substrate mnemonic. Expected 12 or 24 words.');
-            }
-            if (!mnemonicValidate(seed)) {
-                this.disconnect();
-                throw new Error('Invalid substrate mnemonic format.');
-            }
-        }
-    }
-
-    /**
-     * Generates a cryptographic key pair from the provided seed and stores it in the SDK metadata.
-     * @param seed - The mnemonic phrase (for Substrate) or private key (for EVM)
-     */
-    private async setMetadata(seed?: string): Promise<void> {
-        if (!seed) return;
-        this._createKeyPair(seed, this.metadata.keyType);
+    private async initializeSigner(auth?: string | KeyringPair | Wallet): Promise<void> {
+        if (!auth) return;
+        this._setSigner(auth);
     }
 }

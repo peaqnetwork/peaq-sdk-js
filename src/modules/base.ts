@@ -98,29 +98,46 @@ export abstract class Base {
     }
 
     /**
-     * Generates a blockchain key pair from a seed string.
-     * @param seed - Hex private key (EVM) or mnemonic phrase (Substrate)
-     * @param keyType - The type of key to create for Substrate chains (ignored for EVM)
-     * @throws Error if seed is empty or invalid
+     * Sets the signer from auth input - handles Wallet, KeyringPair, or string.
+     * @param auth - Wallet instance (EVM), KeyringPair instance (Substrate), or string (private key/mnemonic)
+     * @throws Error if auth is invalid or incompatible with chain type
      */
-    protected _createKeyPair(seed: string, keyType?: KeyType): KeyringPair | Wallet {
-        if (!seed) {
-            throw new Error('Seed is required');
+    protected _setSigner(auth: string | KeyringPair | Wallet): KeyringPair | Wallet {
+        if (!auth) {
+            throw new Error('Authorization method is required');
         }
 
+        // If auth is already a Wallet or KeyringPair, validate and use directly
+        if (typeof auth !== 'string') {
+            if (this.metadata.chainType === ChainType.EVM) {
+                if (!(auth instanceof Wallet)) {
+                    throw new Error('EVM chains require a Wallet instance, not a KeyringPair');
+                }
+                this.metadata.pair = auth;
+                return auth;
+            } else {
+                if (auth instanceof Wallet) {
+                    throw new Error('Substrate chains require a KeyringPair instance, not a Wallet');
+                }
+                this.metadata.pair = auth;
+                return auth;
+            }
+        }
+
+        // For string auth, create the appropriate signer based on chain type
         if (this.metadata.chainType === ChainType.EVM) {
-            const wallet = new ethers.Wallet(seed);
+            const wallet = new ethers.Wallet(auth);
             this.metadata.pair = wallet;
             return wallet;
         } else {
             // Substrate - use the specified key type or default to sr25519
-            const selectedKeyType = keyType || KeyType.SR25519;
+            const selectedKeyType = this.metadata.keyType || KeyType.SR25519;
             
             // Map KeyType enum to Polkadot keyring type string
             const keyringType = selectedKeyType === KeyType.ED25519 ? 'ed25519' : 'sr25519';
             
             const keyring = new Keyring({ type: keyringType, ss58Format: 42 });
-            const pair = keyring.addFromMnemonic(seed);
+            const pair = keyring.addFromMnemonic(auth);
             this.metadata.pair = pair;
             return pair;
         }

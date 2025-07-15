@@ -15,6 +15,12 @@ export enum KeyType {
     ED25519 = "ed25519"
 }
 
+export enum AuthType {
+    SEED = "seed",
+    KEYRING_PAIR = "keyring_pair",
+    WALLET = "wallet"
+}
+
 export interface EvmTransaction {
     to: string;
     data: string;
@@ -30,7 +36,7 @@ export enum PrecompileAddresses {
 export interface CreateInstanceOptions {
     baseUrl: string;
     chainType: ChainType;
-    seed?: string;
+    auth?: AuthType;
     machineStation?: boolean;
     didVersion?: DIDVersion;
     keyType?: KeyType;
