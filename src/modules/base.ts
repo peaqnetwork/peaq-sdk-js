@@ -1,7 +1,7 @@
 import { ApiPromise, Keyring } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 
-import { ethers, JsonRpcProvider, Wallet } from 'ethers';
+import { ethers, JsonRpcProvider, Wallet, Signer } from 'ethers';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { ISubmittableResult } from '@polkadot/types/types';
 import { hexToU8a, isHex } from '@polkadot/util';
@@ -97,11 +97,11 @@ export abstract class Base {
     }
 
     /**
-     * Sets the signer from auth input - handles Wallet, KeyringPair, or string.
-     * @param auth - Wallet instance (EVM), KeyringPair instance (Substrate), or string (private key/mnemonic)
+     * Sets the signer from auth input - handles Signer, KeyringPair, or string.
+     * @param auth - Signer instance (EVM), KeyringPair instance (Substrate), or string (private key/mnemonic)
      * @throws Error if auth is invalid or incompatible with chain type
      */
-    protected _setSigner(auth: string | KeyringPair | Wallet): KeyringPair | Wallet {
+    protected _setSigner(auth: string | KeyringPair | Signer): KeyringPair | Signer {
         if (!auth) {
             throw new Error('Authorization method is required');
         }
@@ -109,17 +109,14 @@ export abstract class Base {
         // If auth is already a Wallet or KeyringPair, validate and use directly
         if (typeof auth !== 'string') {
             if (this.metadata.chainType === ChainType.EVM) {
-                if (!(auth instanceof Wallet)) {
-                    throw new Error('EVM chains require a Wallet instance, not a KeyringPair');
-                }
                 this.metadata.pair = auth;
                 return auth;
-            } else {
-                if (auth instanceof Wallet) {
-                    throw new Error('Substrate chains require a KeyringPair instance, not a Wallet');
-                }
+            } else if (this.metadata.chainType === ChainType.SUBSTRATE) {
                 this.metadata.pair = auth;
                 return auth;
+            }
+            else {
+                throw new Error('Invalid chain type');
             }
         }
 
@@ -413,8 +410,8 @@ export abstract class Base {
             throw new EvmExecutionError('API must be JsonRpcProvider instance for EVM transactions');
         }
     
-        if (!this.metadata.pair || !(this.metadata.pair instanceof Wallet)) {
-            throw new EvmExecutionError('No wallet available for signing');
+        if (!this.metadata.pair) {
+            throw new EvmExecutionError('No signer available for signing');
         }
         
         const provider = this.api;

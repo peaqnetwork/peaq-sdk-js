@@ -141,7 +141,8 @@ export class Storage extends Base {
         }
 
         // Get the appropriate address and convert if needed
-        let accountAddress = address || this.metadata.pair?.address;
+        let accountAddress = address || (this.metadata.pair as any)?.address;
+
         if (!accountAddress) {
             throw new Error('Address is required');
         }

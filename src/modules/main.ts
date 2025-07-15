@@ -1,6 +1,6 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { JsonRpcProvider, Wallet } from 'ethers';
+import { JsonRpcProvider, Signer } from 'ethers';
 
 import { cryptoWaitReady, mnemonicValidate } from '@polkadot/util-crypto';
 
@@ -163,9 +163,9 @@ export class Main extends Base {
     }
     /**
      * Initializes the signer by setting the authentication method.
-     * @param auth - The authentication method: string (private key/mnemonic), KeyringPair, or Wallet
+     * @param auth - The authentication method: string (private key/mnemonic), KeyringPair, or Signer
      */
-    private async initializeSigner(auth?: string | KeyringPair | Wallet): Promise<void> {
+    private async initializeSigner(auth?: string | KeyringPair | Signer): Promise<void> {
         if (!auth) return;
         this._setSigner(auth);
     }
