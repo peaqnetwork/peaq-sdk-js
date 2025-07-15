@@ -43,6 +43,8 @@ export const createStorageKeys = (args: CreateStorageKeysArgs[]) => {
 export function generateEvmPublicKeyMultibase(wallet: Wallet): string {
   // ENCODE EVM WALLET TO MULTIBASE
 
+  
+
   // 1. Get the 33-byte SEC1 “compressed” secp256k1 public key from the wallet
   const compressedPubKeyHex = wallet.signingKey.compressedPublicKey;
 

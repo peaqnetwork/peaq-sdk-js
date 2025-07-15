@@ -1,5 +1,5 @@
 import { KeyringPair } from '@polkadot/keyring/types';
-import { Wallet } from 'ethers';
+import { Wallet, TransactionRequest } from 'ethers';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { ISubmittableResult } from '@polkadot/types/types';
 import { DIDVersion } from './did';
@@ -14,17 +14,18 @@ export enum KeyType {
     SR25519 = "sr25519",
     ED25519 = "ed25519"
 }
-
 export enum AuthType {
     SEED = "seed",
     KEYRING_PAIR = "keyring_pair",
     WALLET = "wallet"
 }
 
-export interface EvmTransaction {
-    to: string;
-    data: string;
+export enum VerificationMethodType {
+    ECDSA = "EcdsaSecp256k1RecoveryMethod2020",
+    SR25519 = "Sr25519VerificationKey2020",
+    ED25519 = "Ed25519VerificationKey2020"
 }
+export type EvmTransaction = TransactionRequest;
 
 export enum PrecompileAddresses {
     DID = "0x0000000000000000000000000000000000000800",
@@ -50,12 +51,11 @@ export interface SDKMetadata {
     didVersion?: DIDVersion;
     keyType?: KeyType;
 }
-
-export interface WrittenTransactionResult {
-    message: string
-    receipt: object
-    unsubscribe?: () => void
-}
+// export interface WrittenTransactionResult {
+//     message: string
+//     receipt: object
+//     unsubscribe?: () => void
+// }
 export interface BuiltCallTransactionResult {
     message: string
     extrinsic: SubmittableExtrinsic<"promise", ISubmittableResult>
@@ -65,7 +65,19 @@ export interface BuiltEvmTransactionResult {
     tx: EvmTransaction
 }
 
-export interface EvmTxOptions {
-  /** How many blocks to wait before considering a tx "finalized" */
-  confirmations?: number;
+export enum ConfirmationMode {
+    FAST = 'FAST',
+    CUSTOM = 'CUSTOM',
+    FINAL = 'FINAL'
+}
+
+export enum TransactionStatus {
+    BROADCAST = 'BROADCAST',
+    IN_BLOCK = 'IN_BLOCK',
+    FINALIZED = 'FINALIZED'
+}
+
+export interface txOptions {
+    mode?: ConfirmationMode;
+    confirmations?: number;
 }

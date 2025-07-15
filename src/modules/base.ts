@@ -1,7 +1,7 @@
 import { ApiPromise, Keyring } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 
-import { ethers, JsonRpcProvider, Wallet, TransactionResponse } from 'ethers';
+import { ethers, JsonRpcProvider, Wallet } from 'ethers';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { ISubmittableResult } from '@polkadot/types/types';
 import { hexToU8a, isHex } from '@polkadot/util';
@@ -9,8 +9,8 @@ import { BN } from '@polkadot/util';
 import { GenericExtrinsic } from '@polkadot/types';
 import { AnyTuple } from '@polkadot/types-codec/types';
 
-import { ChainType, SDKMetadata, EvmTransaction, EvmTxOptions, KeyType, PrecompileAddresses, CreateInstanceOptions } from '../types/common';
-import { FormattedReceipt, PeaqEvent, PeaqEventData, TErrorData, EvmExecutionError, SendResult, EvmSendResult, EvmFormattedReceipt, TransactionStatusCallback, EvmStatusUpdate, EvmEvent } from '../types/base';
+import { ChainType, SDKMetadata, EvmTransaction, txOptions, KeyType, PrecompileAddresses, ConfirmationMode, TransactionStatus } from '../types/common';
+import { FormattedReceipt, PeaqEvent, PeaqEventData, TErrorData, EvmExecutionError, SubstrateSendResult, EvmSendResult, EvmFormattedReceipt, TransactionStatusCallback, EvmStatusUpdate, EvmEvent } from '../types/base';
 
 type Address = string;
 
@@ -21,7 +21,6 @@ type Address = string;
 export abstract class Base {
     private _api: ApiPromise | JsonRpcProvider;
     private _metadata: SDKMetadata;
-    protected maxAttempts: number = 5;
     private _nonceStore: Map<Address, BN>;
 
     /**
@@ -149,7 +148,7 @@ export abstract class Base {
     protected async _send_substrate_tx(
         call: SubmittableExtrinsic<"promise", ISubmittableResult>,
         onStatus?: (result: TransactionStatusCallback) => void | Promise<void>
-    ): Promise<SendResult> {
+    ): Promise<SubstrateSendResult> {
         if (!this.metadata.pair) {
             throw new Error('No keypair available for signing');
         }
@@ -163,7 +162,7 @@ export abstract class Base {
         // Get managed nonce
         const nonce = await this._getNonce(keyPair.address);
 
-        return new Promise<SendResult>(async (resolveMain, rejectMain) => {
+        return new Promise<SubstrateSendResult>(async (resolveMain, rejectMain) => {
             let unsub: (() => void) | null = null;
             let actualTxHash: string = '';
             let hasReturned = false;
@@ -214,6 +213,8 @@ export abstract class Base {
                                     blockHash: blockHash
                                 } as PeaqEvent;
                             });
+
+                            // TODO see if you can get custom amount of inBlocks for user to manually set
                             
                             // Check for any failed extrinsics
                             const extrinsicFailedEvents = peaqEvents.filter(peaqEvent => peaqEvent.method === "ExtrinsicFailed");
@@ -370,12 +371,6 @@ export abstract class Base {
         }));
     }
 
-    /**
-     * Convert ethers logs to our EvmEvent format
-     */
-    private _formatEvmEvents(logs: readonly ethers.Log[]): EvmEvent[] {
-        return this._formatEvmLogs(logs);
-    }
 
     // Add this helper function before the _send_evm_tx method
     private _parseEvmError(error: any): string {
@@ -412,7 +407,7 @@ export abstract class Base {
     protected async _send_evm_tx(
         unsignedTx: EvmTransaction,
         onStatus?: (result: TransactionStatusCallback) => void | Promise<void>,
-        opts: EvmTxOptions = {}
+        opts: txOptions = {}
     ): Promise<EvmSendResult> {
         if (!(this.api instanceof JsonRpcProvider)) {
             throw new EvmExecutionError('API must be JsonRpcProvider instance for EVM transactions');
@@ -425,12 +420,21 @@ export abstract class Base {
         const provider = this.api;
         const wallet = (this.metadata.pair as Wallet).connect(provider);
         const address = wallet.address;
-        const confirmations = opts.confirmations ?? 1; // Default to 1 if not specified
+
+        // Handle confirmation modes
+        const mode = opts.mode ?? ConfirmationMode.FAST;
+        let targetConfirmations = 1;  // Default to 1 for FAST mode
+        
+        if (mode === ConfirmationMode.CUSTOM) {
+            if (!opts.confirmations) {
+                throw new Error('confirmations must be set when using ConfirmationMode.CUSTOM');
+            }
+            targetConfirmations = opts.confirmations;
+        }
     
         return new Promise<EvmSendResult>(async (resolveMain, rejectMain) => {
             let cancelled = false;
             
-            // A promise that resolves after user-specified confirmations
             const finalize = new Promise<EvmFormattedReceipt>(async (resolve, reject) => {
                 try {
                     // Estimate gas as source of truth
@@ -440,11 +444,22 @@ export abstract class Base {
                         data: unsignedTx.data ?? '0x',
                     });
     
-                    // Build and send transaction
+                    // Get current fee data for EIP-1559
+                    const feeData = await provider.getFeeData();
+                    
+                    // Use custom values if provided, otherwise use network defaults
+                    const maxFeePerGas = feeData.maxFeePerGas;
+                    const maxPriorityFeePerGas = feeData.maxPriorityFeePerGas;
+                    const gasLimit = estimatedGasLimit;
+                    
+                    // Build EIP-1559 transaction
                     const fullTx = {
                         to: unsignedTx.to,
                         data: unsignedTx.data ?? '0x',
-                        gasLimit: estimatedGasLimit,
+                        gasLimit,
+                        type: 2, // EIP-1559 transaction type
+                        maxFeePerGas,
+                        maxPriorityFeePerGas,
                     };
     
                     const txResponse = await wallet.sendTransaction(fullTx);
@@ -453,65 +468,145 @@ export abstract class Base {
                     resolveMain({
                         txHash: txResponse.hash,
                         unsubscribe: onStatus ? () => { cancelled = true; } : undefined,
-                        finalize
+                        finalize,
+                        // confirmationMode: mode
                     });
     
-                    // If callback provided, send status updates
+                    // 1. Broadcast status - before tx has been included
                     if (onStatus && !cancelled) {
-                        // 1. Broadcast status
-                        const broadcastStatus: EvmStatusUpdate = {
-                            type: "broadcast",
+                        onStatus({
+                            status: TransactionStatus.BROADCAST,
+                            confirmationMode: mode,
+                            totalConfirmations: 0,
                             hash: txResponse.hash,
                             nonce: txResponse.nonce
-                        };
-                        onStatus(broadcastStatus);
+                        });
                     }
     
-                    // 2. Wait for mining (default)
-                    const receipt1 = await txResponse.wait().finally();
-                    if (!receipt1) {
+                    // Wait for first confirmation
+                    const inclusionReceipt = await txResponse.wait();
+                    if (!inclusionReceipt) {
                         throw new Error('Transaction receipt not found');
                     }
     
-                    if (receipt1.status === 0) {
+                    if (inclusionReceipt.status === 0) {
                         throw new EvmExecutionError('Transaction failed');
                     }
-    
+
+                    // 2. In-Block inclusion - after first block is finalized
                     if (onStatus && !cancelled) {
-                        // Mined status
-                        const minedStatus: EvmStatusUpdate = {
-                            type: "mined",
-                            hash: receipt1.hash,
-                            blockNumber: receipt1.blockNumber,
-                            blockHash: receipt1.blockHash,
-                            gasUsed: receipt1.gasUsed?.toString(),
-                            events: this._formatEvmEvents(receipt1.logs),
-                            confirmations: 1
-                        };
-                        onStatus(minedStatus);
+                        onStatus({
+                            status: TransactionStatus.IN_BLOCK,
+                            confirmationMode: mode,
+                            totalConfirmations: 1,
+                            receipt: inclusionReceipt,
+                            hash: txResponse.hash
+                        });
                     }
-    
-                    // 3. Wait for user-specified confirmations (evm-like finalized)
-                    const receiptN = await txResponse.wait(confirmations);
-                    if (!receiptN) {
-                        throw new Error('Final receipt not found');
+
+                    let userReceipt;
+                    let finalConfirmations: number;
+                    let status: TransactionStatus;
+                    const inclusionBlock   = inclusionReceipt.blockNumber;
+
+                    // Handle different confirmation requirements
+                    switch (mode) {
+                        case ConfirmationMode.FAST:
+                            // Already have 1 confirmation, nothing more needed
+                            finalConfirmations = 1;
+                            status = TransactionStatus.IN_BLOCK;
+                            userReceipt = inclusionReceipt;
+                            break;
+
+                        case ConfirmationMode.CUSTOM:
+                             // 1) wait for the user’s target
+                             const startingFinalized = await provider.getBlock("finalized");
+                             if (!startingFinalized) {
+                                 throw new Error("Could not fetch finalized head");
+                             }
+
+                            const customReceipt = await txResponse.wait(targetConfirmations);
+                            if (!customReceipt) {
+                                throw new Error('Could not get receipt after waiting for confirmations');
+                            }
+                            // reset final receipt in case there was reorg during wait
+                            userReceipt = customReceipt;
+                            
+                            const finalizedHead = await provider.getBlock("finalized");
+                            if (!finalizedHead) {
+                                throw new Error("Could not fetch finalized head");
+                            }
+
+                            const head = await provider.getBlockNumber();
+                            const confirmationsSeen = finalizedHead.number - startingFinalized.number  + 1;
+
+                            // check if finalized head has passed the final receipt block number
+                            if (finalizedHead.number >= inclusionBlock) {
+                                status = TransactionStatus.FINALIZED;
+                            } else {
+                                status = TransactionStatus.IN_BLOCK;
+                            }
+
+                            // 3. Custom confirmations callback - after custom amount of blocks is waited
+                            if (onStatus && !cancelled) {
+                                onStatus({
+                                    status: status,
+                                    confirmationMode: mode,
+                                    totalConfirmations: confirmationsSeen,
+                                    receipt: userReceipt,
+                                    hash: txResponse.hash
+                                });
+                            }
+                            
+                            break;
+
+                        case ConfirmationMode.FINAL:
+                            // Poll until the GRANDPA-finalized head >= inclusion block
+                            let finalizedHeadFINAL;
+                            let startingBlock = await provider.getBlock("finalized");
+                            if (!startingBlock ) {
+                                throw new Error('Could not get finalized block');
+                            }
+                            do {
+                                finalizedHeadFINAL = await provider.getBlock("finalized");
+                                if (!finalizedHeadFINAL) {
+                                    throw new Error('Could not get finalized block');
+                                }
+                                if (finalizedHeadFINAL.number >= inclusionBlock) {
+                                    break;
+                                }
+                                await new Promise(r => setTimeout(r, 1_000)); // poll every second
+                            } while (true);
+                            
+                            // polling for the receipt after the finalized head has passed the inclusion block
+                            // fetching new receipt block number ensures tx is on the correct block in case of an reorg
+                            const finalReceipt = await provider.getTransactionReceipt(inclusionReceipt.hash);
+                            if (!finalReceipt) {
+                                throw new Error("Could not fetch finalized head");
+                            }
+                            userReceipt = finalReceipt;
+
+                            
+                            finalConfirmations = finalReceipt.blockNumber - startingBlock.number;
+                            status = TransactionStatus.FINALIZED;
+
+                            if (onStatus && !cancelled) {
+                                onStatus({
+                                    status: TransactionStatus.FINALIZED,
+                                    confirmationMode: mode,
+                                    totalConfirmations: finalConfirmations,
+                                    receipt: userReceipt,
+                                    hash: txResponse.hash
+                                });
+                            }
+                            break;
                     }
-    
-                    if (onStatus && !cancelled) {
-                        // Finalized status
-                        const finalizedStatus: EvmStatusUpdate = {
-                            type: "confirmations",
-                            hash: receiptN.hash,
-                            blockNumber: receiptN.blockNumber,
-                            blockHash: receiptN.blockHash,
-                            confirmations: confirmations,
-                            gasUsed: receiptN.gasUsed?.toString(),
-                            events: this._formatEvmEvents(receiptN.logs)
-                        };
-                        onStatus(finalizedStatus);
+
+                    // Return the clean EVM receipt without additional fields
+                    if (!userReceipt) {
+                        throw new Error('Transaction receipt not found');
                     }
-    
-                    resolve(this._formatEvmReceipt(receiptN, confirmations));
+                    resolve(userReceipt);
                 } catch (error: any) {
                     // Gas estimation errors should be thrown immediately
                     if (error.code === 'CALL_EXCEPTION') {
@@ -529,45 +624,5 @@ export abstract class Base {
                 rejectMain(error);
             });
         });
-    }
-
-    // Format EVM receipt for consistency
-    protected _formatEvmReceipt(receipt: ethers.TransactionReceipt, confirmations: number): EvmFormattedReceipt {
-        return {
-            blockNumber: receipt.blockNumber.toString(),
-            txHash: receipt.hash,
-            confirmations: confirmations,
-            gasUsed: receipt.gasUsed.toString(),
-            effectiveGasPrice: receipt.gasPrice?.toString() || '0',
-            status: receipt.status || 0,
-            blockHash: receipt.blockHash,
-            receipt: {
-                transactionHash: receipt.hash,
-                transactionIndex: receipt.index,
-                blockHash: receipt.blockHash,
-                from: receipt.from,
-                to: receipt.to,
-                blockNumber: receipt.blockNumber,
-                cumulativeGasUsed: Number(receipt.cumulativeGasUsed),
-                gasUsed: Number(receipt.gasUsed),
-                contractAddress: receipt.contractAddress,
-                status: receipt.status || 0,
-                effectiveGasPrice: Number(receipt.gasPrice) || 0,
-                type: receipt.type,
-                logs: receipt.logs.map(log => ({
-                    address: log.address,
-                    topics: log.topics,
-                    data: log.data,
-                    blockHash: log.blockHash,
-                    blockNumber: log.blockNumber,
-                    transactionHash: log.transactionHash,
-                    transactionIndex: log.transactionIndex,
-                    logIndex: log.index,
-                    transactionLogIndex: `0x${log.index.toString(16)}`,
-                    removed: log.removed || false
-                })),
-                logsBloom: receipt.logsBloom
-            }
-        };
     }
 }

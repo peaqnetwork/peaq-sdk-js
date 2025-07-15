@@ -1,0 +1,568 @@
+// external imports
+import { ApiPromise } from '@polkadot/api';
+import { ethers, JsonRpcProvider, Wallet } from 'ethers';
+import { SubmittableExtrinsic } from '@polkadot/api/types';
+import { ISubmittableResult } from '@polkadot/types/types';
+
+// local imports
+import { Main } from '../main';
+import { 
+    ChainType,
+    SDKMetadata,
+    BuiltCallTransactionResult,
+    BuiltEvmTransactionResult,
+    EvmTransaction,
+    txOptions
+} from '../../types/common';
+import { SubstrateSendResult, EvmSendResult, TransactionStatusCallback } from '../../types/base';
+import { Base } from '../base';
+import {
+    MachineStationFactoryFunctionSignatures,
+    MachineStationWriteResult,
+    DeployedSmartAccountResult,
+    EIP712SignableMessage,
+    UpdateConfigsOptions,
+    DeployMachineSmartAccountOptions,
+    TransferMachineStationBalanceOptions,
+    ExecuteTransactionOptions,
+    ExecuteMachineTransactionOptions,
+    ExecuteMachineBatchTransactionsOptions,
+    ExecuteMachineTransferBalanceOptions,
+    AdminSignDeployMachineSmartAccountOptions,
+    AdminSignTransferMachineStationBalanceOptions,
+    AdminSignTransactionOptions,
+    AdminSignMachineTransactionOptions,
+    AdminSignMachineBatchTransactionsOptions,
+    AdminSignTransferMachineBalanceOptions,
+    MachineSignMachineTransactionOptions,
+    MachineSignTransferMachineBalanceOptions,
+    UpdateConfigsTransactionData,
+    DeployMachineSmartAccountTransactionData,
+    TransferMachineStationBalanceTransactionData,
+    ExecuteTransactionData,
+    ExecuteMachineTransactionData,
+    ExecuteMachineBatchTransactionsData,
+    ExecuteTransferMachineBalanceData
+} from '../../types/machineStation';
+
+/**
+ * Provides methods to interact with the peaq machine station factory smart contract.
+ * Supports configuration updates, smart account deployment, transaction execution, and EIP-712 signature generation.
+ */
+export class MachineStation extends Base {
+    private abiCoder = new ethers.AbiCoder();
+    private sdk: any;
+    private machineStationAddress: string;
+    private machineStationOwnerWallet: Wallet;
+
+    /**
+     * Initializes MachineStation with a connected API instance and shared SDK metadata.
+     * 
+     * @param sdk - Instance of the peaq SDK to create and send txs
+     * @param api - The blockchain API connection (JsonRpcProvider for EVM)
+     * @param metadata - Shared metadata, including chain type and optional signer
+     * @param machineStationAddress - The address of the machine station factory contract
+     * @param machineStationOwnerPrivateKey - Optional private key for machine station owner operations
+     */
+    constructor(
+        sdk: Main,
+        api: JsonRpcProvider, 
+        metadata: SDKMetadata, 
+        machineStationAddress: string,
+        machineStationOwnerPrivateKey: string
+    ) {
+        super(api, metadata);
+        this.sdk = sdk;
+        this.machineStationAddress = machineStationAddress;
+        this.machineStationOwnerWallet = new Wallet(machineStationOwnerPrivateKey, api);
+    }
+
+    // =====================================================================
+    // CONFIGURATION METHODS
+    // =====================================================================
+
+    /**
+     * Updates configuration values in the machine station factory contract.
+     * 
+     * @param options - The configuration update options
+     * @param statusCallback - Optional callback for monitoring transaction status
+     * @param txOptions - Optional transaction confirmation mode settings
+     * @returns Promise resolving to transaction result or transaction data
+     */
+    public async updateConfigs(
+        options: UpdateConfigsOptions,
+        statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
+        txOptions?: txOptions
+    ): Promise<MachineStationWriteResult | UpdateConfigsTransactionData> {
+        const { key, value, sendTransaction = true } = options;
+        
+        try {
+            const functionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.UPDATE_CONFIGS)).substring(0, 10);
+            const keyHash = ethers.keccak256(ethers.toUtf8Bytes(key));
+            
+            const params = this.abiCoder.encode(
+                ["bytes32", "uint256"],
+                [keyHash, value]
+            );
+
+            const payload = params.replace("0x", functionSelector);
+            const tx: EvmTransaction = {
+                to: this.machineStationAddress,
+                data: payload
+            };
+
+            if (!sendTransaction) {
+                return {
+                    transaction_data: tx,
+                    message: "Transaction data ready for manual submission",
+                    machine_station_address: this.machineStationAddress,
+                    function: "update_configs",
+                    config_key: key,
+                    config_value: Number(value),
+                    required_role: "STATION_MANAGER_ROLE"
+                } as UpdateConfigsTransactionData;
+            }
+
+            return await this._handleEvmTx(tx, `update config '${key}' to ${value}`, statusCallback, txOptions);
+        } catch (error: any) {
+            throw new Error(`Failed to update configs: ${error.message}`);
+        }
+    }
+
+    // =====================================================================
+    // SMART ACCOUNT DEPLOYMENT METHODS
+    // =====================================================================
+
+    /**
+     * Deploys a new machine smart account through the factory contract.
+     * 
+     * @param options - The deployment options including owner address and signature
+     * @param statusCallback - Optional callback for monitoring transaction status
+     * @param txOptions - Optional transaction confirmation mode settings
+     * @returns Promise resolving to deployment result with the new account address or transaction data
+     */
+    public async deployMachineSmartAccount(
+        options: DeployMachineSmartAccountOptions,
+        statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
+        txOptions?: txOptions
+    ): Promise<DeployedSmartAccountResult | BuiltEvmTransactionResult | BuiltCallTransactionResult | DeployMachineSmartAccountTransactionData> {
+        const { machineSmartAccountOwnerAddress, nonce, machineStationOwnerSignature, sendTransaction = true } = options;
+        
+        try {
+            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.DEPLOY_MACHINE_SMART_ACCOUNT)).substring(0, 10);
+
+            const params = this.abiCoder.encode(
+                ["address", "uint256", "bytes"],
+                [machineSmartAccountOwnerAddress, nonce, machineStationOwnerSignature]
+            );
+
+            const payload = params.replace("0x", createFunctionSelector);
+            const tx: EvmTransaction = {
+                to: this.machineStationAddress,
+                data: payload
+            };
+
+            if (!sendTransaction) {
+                return {
+                    transaction_data: tx,
+                    message: "Transaction data ready for manual submission",
+                    machine_station_address: this.machineStationAddress,
+                    function: "deploy_machine_smart_account", 
+                    machine_account_owner_address: machineSmartAccountOwnerAddress,
+                    required_role: "STATION_MANAGER_ROLE",
+                    note: "After transaction is mined, listen for MachineSmartAccountDeployed event to get the deployed address"
+                } as DeployMachineSmartAccountTransactionData;
+            }
+
+            const result = await this._handleEvmTx(tx, `deploy machine smart account for ${machineSmartAccountOwnerAddress}`, statusCallback, txOptions);
+            
+            // Extract deployed address from the result
+            let deployedAddress: string | null = null;
+            
+            // Check if we have a receipt with logs (from finalize or direct receipt)
+            if ('receipt' in result && result.receipt) {
+                const receipt = result.receipt as any;
+                if (receipt.logs && Array.isArray(receipt.logs)) {
+                    // Compute the event signature
+                    const eventSignature = ethers.id("MachineSmartAccountDeployed(address)");
+                    
+                    // Find the relevant log
+                    const log = receipt.logs.find((log: any) => log.topics[0] === eventSignature);
+                    
+                    if (log) {
+                        // The deployed address is stored as the second topic (topics[1]) in a 32-byte format
+                        const rawDeployedAddress = log.topics[1];
+                        deployedAddress = ethers.getAddress(`0x${rawDeployedAddress.slice(26)}`); // Extract last 20 bytes
+                    }
+                }
+            }
+            
+            // If we have a finalize function, wait for it and extract address from there
+            if (!deployedAddress && 'finalize' in result && result.finalize) {
+                try {
+                    const finalizedReceipt = await result.finalize;
+                    const receipt = finalizedReceipt as any;
+                    if (receipt.logs && Array.isArray(receipt.logs)) {
+                        const eventSignature = ethers.id("MachineSmartAccountDeployed(address)");
+                        const log = receipt.logs.find((log: any) => log.topics[0] === eventSignature);
+                        
+                        if (log) {
+                            const rawDeployedAddress = log.topics[1];
+                            deployedAddress = ethers.getAddress(`0x${rawDeployedAddress.slice(26)}`);
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Failed to extract deployed address from finalized receipt:', error);
+                }
+            }
+            
+            // If we found a deployed address, return the full result
+            if (deployedAddress) {
+                return {
+                    message: `Successfully deployed machine smart account at address ${deployedAddress}.`,
+                    deployed_address: deployedAddress,
+                    txHash: 'txHash' in result ? result.txHash : undefined,
+                    finalize: 'finalize' in result ? result.finalize : undefined
+                } as DeployedSmartAccountResult;
+            }
+            
+            // If no deployed address found, return the original result
+            return result as DeployedSmartAccountResult | BuiltEvmTransactionResult | BuiltCallTransactionResult;
+        } catch (error: any) {
+            throw new Error(`Failed to deploy machine smart account: ${error.message}`);
+        }
+    }
+
+    // =====================================================================
+    // BALANCE TRANSFER METHODS
+    // =====================================================================
+
+    /**
+     * Transfers the machine station balance to a new machine station address.
+     * 
+     * @param options - The transfer options including new address and signature
+     * @param statusCallback - Optional callback for monitoring transaction status
+     * @param txOptions - Optional transaction confirmation mode settings
+     * @returns Promise resolving to transaction result or transaction data
+     */
+    public async transferMachineStationBalance(
+        options: TransferMachineStationBalanceOptions,
+        statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
+        txOptions?: txOptions
+    ): Promise<MachineStationWriteResult | TransferMachineStationBalanceTransactionData> {
+        const { newMachineStationAddress, nonce, machineStationOwnerSignature, sendTransaction = true } = options;
+        
+        try {
+            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.TRANSFER_MACHINE_STATION_BALANCE)).substring(0, 10);
+
+            const params = this.abiCoder.encode(
+                ["address", "uint256", "bytes"],
+                [newMachineStationAddress, nonce, machineStationOwnerSignature]
+            );
+
+            const payload = params.replace("0x", createFunctionSelector);
+            const tx: EvmTransaction = {
+                to: this.machineStationAddress,
+                data: payload
+            };
+
+            if (!sendTransaction) {
+                return {
+                    transaction_data: tx,
+                    message: "Transaction data ready for manual submission",
+                    machine_station_address: this.machineStationAddress,
+                    function: "execute_transfer_machine_station_balance",
+                    current_machine_station_address: this.machineStationAddress,
+                    new_machine_station_address: newMachineStationAddress,
+                    required_role: "DEFAULT_ADMIN_ROLE"
+                } as TransferMachineStationBalanceTransactionData;
+            }
+
+            return await this._handleEvmTx(tx, `transfer machine station balance to ${newMachineStationAddress}`, statusCallback, txOptions);
+        } catch (error: any) {
+            throw new Error(`Failed to transfer machine station balance: ${error.message}`);
+        }
+    }
+
+    // =====================================================================
+    // TRANSACTION EXECUTION METHODS
+    // =====================================================================
+
+    /**
+     * Executes a transaction through the machine station factory.
+     * 
+     * @param options - The transaction execution options
+     * @param statusCallback - Optional callback for monitoring transaction status
+     * @param txOptions - Optional transaction confirmation mode settings
+     * @returns Promise resolving to transaction result or transaction data
+     */
+    public async executeTransaction(
+        options: ExecuteTransactionOptions,
+        statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
+        txOptions?: txOptions
+    ): Promise<MachineStationWriteResult | ExecuteTransactionData> {
+        // TODO: Implement transaction execution logic
+        throw new Error('executeTransaction not yet implemented');
+    }
+
+    /**
+     * Executes a transaction on behalf of a machine smart account.
+     * 
+     * @param options - The machine transaction execution options
+     * @param statusCallback - Optional callback for monitoring transaction status
+     * @param txOptions - Optional transaction confirmation mode settings
+     * @returns Promise resolving to transaction result or transaction data
+     */
+    public async executeMachineTransaction(
+        options: ExecuteMachineTransactionOptions,
+        statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
+        txOptions?: txOptions
+    ): Promise<MachineStationWriteResult | ExecuteMachineTransactionData> {
+        // TODO: Implement machine transaction execution logic
+        throw new Error('executeMachineTransaction not yet implemented');
+    }
+
+    /**
+     * Executes multiple transactions in a batch on behalf of machine smart accounts.
+     * 
+     * @param options - The batch transaction execution options
+     * @param statusCallback - Optional callback for monitoring transaction status
+     * @param txOptions - Optional transaction confirmation mode settings
+     * @returns Promise resolving to transaction result or transaction data
+     */
+    public async executeMachineBatchTransactions(
+        options: ExecuteMachineBatchTransactionsOptions,
+        statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
+        txOptions?: txOptions
+    ): Promise<MachineStationWriteResult | ExecuteMachineBatchTransactionsData> {
+        // TODO: Implement batch transaction execution logic
+        throw new Error('executeMachineBatchTransactions not yet implemented');
+    }
+
+    /**
+     * Transfers balance from a machine smart account to a recipient.
+     * 
+     * @param options - The balance transfer options
+     * @param statusCallback - Optional callback for monitoring transaction status
+     * @param txOptions - Optional transaction confirmation mode settings
+     * @returns Promise resolving to transaction result or transaction data
+     */
+    public async executeMachineTransferBalance(
+        options: ExecuteMachineTransferBalanceOptions,
+        statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
+        txOptions?: txOptions
+    ): Promise<MachineStationWriteResult | ExecuteTransferMachineBalanceData> {
+        // TODO: Implement machine balance transfer logic
+        throw new Error('executeMachineTransferBalance not yet implemented');
+    }
+
+    // =====================================================================
+    // EIP-712 SIGNATURE GENERATION METHODS (ADMIN)
+    // =====================================================================
+
+    /**
+     * Generates an admin signature for deploying a machine smart account.
+     * Requires machineStationOwnerWallet to be initialized.
+     * 
+     * @param options - The signature options
+     * @returns Promise resolving to the EIP-712 signature string
+     */
+    public async adminSignDeployMachineSmartAccount(
+        options: AdminSignDeployMachineSmartAccountOptions
+    ): Promise<string> {
+        if (!this.machineStationOwnerWallet) {
+            throw new Error('Machine station owner wallet is required for admin signatures');
+        }
+        
+        try {
+            const { machineSmartAccountOwnerAddress, nonce } = options;
+            const chainId = await this.getChainId();
+            const domain = {
+                name: "MachineStationFactory",
+                version: "2",
+                chainId: chainId,
+                verifyingContract: this.machineStationAddress,
+            };
+
+            const types = {
+                DeployMachineSmartAccount: [
+                    { name: "machineOwner", type: "address" },
+                    { name: "nonce", type: "uint256" },
+                ],
+            };
+
+            const message = {
+                machineOwner: machineSmartAccountOwnerAddress,
+                nonce: nonce,
+            };
+
+            const signature = await this.machineStationOwnerWallet.signTypedData(domain, types, message);
+            return signature;
+        } catch (error: any) {
+            throw new Error(`Failed to sign deploy machine smart account: ${error.message}`);
+        }
+    }
+
+    /**
+     * Generates an admin signature for transferring machine station balance.
+     * Requires machineStationOwnerWallet to be initialized.
+     * 
+     * @param options - The signature options
+     * @returns Promise resolving to the EIP-712 signature string
+     */
+    public async adminSignTransferMachineStationBalance(
+        options: AdminSignTransferMachineStationBalanceOptions
+    ): Promise<string> {
+        if (!this.machineStationOwnerWallet) {
+            throw new Error('Machine station owner wallet is required for admin signatures');
+        }
+        
+        try {
+            const { newMachineStationAddress, nonce } = options;
+            const chainId = await this.getChainId();
+            const domain = {
+                name: "MachineStationFactory",
+                version: "2",
+                chainId: chainId,
+                verifyingContract: this.machineStationAddress,
+            };
+
+            const types = {
+                TransferMachineStationBalance: [
+                    { name: "newMachineStationAddress", type: "address" },
+                    { name: "nonce", type: "uint256" },
+                ],
+            };
+
+            const message = {
+                newMachineStationAddress: newMachineStationAddress,
+                nonce: nonce
+            };
+
+            const signature = await this.machineStationOwnerWallet.signTypedData(domain, types, message);
+            return signature;
+        } catch (error: any) {
+            throw new Error(`Failed to sign transfer machine station balance: ${error.message}`);
+        }
+    }
+
+    /**
+     * Generates an admin signature for executing a transaction.
+     * Requires machineStationOwnerWallet to be initialized.
+     * 
+     * @param options - The signature options
+     * @returns Promise resolving to the EIP-712 signature string
+     */
+    public async adminSignTransaction(
+        options: AdminSignTransactionOptions
+    ): Promise<string> {
+        if (!this.machineStationOwnerWallet) {
+            throw new Error('Machine station owner wallet is required for admin signatures');
+        }
+        // TODO: Implement EIP-712 signature generation for transaction
+        throw new Error('adminSignTransaction not yet implemented');
+    }
+
+    /**
+     * Generates an admin signature for executing a machine transaction.
+     * Requires machineStationOwnerWallet to be initialized.
+     * 
+     * @param options - The signature options
+     * @returns Promise resolving to the EIP-712 signature string
+     */
+    public async adminSignMachineTransaction(
+        options: AdminSignMachineTransactionOptions
+    ): Promise<string> {
+        if (!this.machineStationOwnerWallet) {
+            throw new Error('Machine station owner wallet is required for admin signatures');
+        }
+        // TODO: Implement EIP-712 signature generation for machine transaction
+        throw new Error('adminSignMachineTransaction not yet implemented');
+    }
+
+    /**
+     * Generates an admin signature for executing batch transactions.
+     * Requires machineStationOwnerWallet to be initialized.
+     * 
+     * @param options - The signature options
+     * @returns Promise resolving to the EIP-712 signature string
+     */
+    public async adminSignMachineBatchTransactions(
+        options: AdminSignMachineBatchTransactionsOptions
+    ): Promise<string> {
+        if (!this.machineStationOwnerWallet) {
+            throw new Error('Machine station owner wallet is required for admin signatures');
+        }
+        // TODO: Implement EIP-712 signature generation for batch transactions
+        throw new Error('adminSignMachineBatchTransactions not yet implemented');
+    }
+
+    /**
+     * Generates an admin signature for transferring machine balance.
+     * Requires machineStationOwnerWallet to be initialized.
+     * 
+     * @param options - The signature options
+     * @returns Promise resolving to the EIP-712 signature string
+     */
+    public async adminSignTransferMachineBalance(
+        options: AdminSignTransferMachineBalanceOptions
+    ): Promise<string> {
+        if (!this.machineStationOwnerWallet) {
+            throw new Error('Machine station owner wallet is required for admin signatures');
+        }
+        // TODO: Implement EIP-712 signature generation for machine balance transfer
+        throw new Error('adminSignTransferMachineBalance not yet implemented');
+    }
+
+    // =====================================================================
+    // EIP-712 SIGNATURE GENERATION METHODS (MACHINE)
+    // =====================================================================
+
+    /**
+     * Creates a signable EIP-712 message for machine transaction execution.
+     * Returns the message structure for frontend wallet signing.
+     * 
+     * @param options - The signature options
+     * @returns Promise resolving to the EIP-712 signable message object
+     */
+    public async machineSignMachineTransaction(
+        options: MachineSignMachineTransactionOptions
+    ): Promise<EIP712SignableMessage> {
+        // TODO: Implement EIP-712 message creation for machine transaction
+        throw new Error('machineSignMachineTransaction not yet implemented');
+    }
+
+    /**
+     * Creates a signable EIP-712 message for machine balance transfer.
+     * Returns the message structure for frontend wallet signing.
+     * 
+     * @param options - The signature options
+     * @returns Promise resolving to the EIP-712 signable message object
+     */
+    public async machineSignTransferMachineBalance(
+        options: MachineSignTransferMachineBalanceOptions
+    ): Promise<EIP712SignableMessage> {
+        // TODO: Implement EIP-712 message creation for machine balance transfer
+        throw new Error('machineSignTransferMachineBalance not yet implemented');
+    }
+
+    // =====================================================================
+    // PRIVATE HELPER METHODS
+    // =====================================================================
+
+    private async _handleEvmTx(
+        tx: EvmTransaction, 
+        action: string, 
+        statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, 
+        txOptions?: txOptions
+    ): Promise<MachineStationWriteResult> {
+        if (!this.metadata.pair) {
+            return { message: `Constructed ${action} tx (unsigned).`, tx } as BuiltEvmTransactionResult;
+        }
+        try {
+            return await this._send_evm_tx(tx, statusCallback, txOptions);
+        } catch (err: any) {
+            throw new Error(`Failed to ${action}: ${err?.message ?? err}`);
+        }
+    }
+} 
