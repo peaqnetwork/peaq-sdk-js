@@ -329,13 +329,13 @@ export class MachineStation extends Base {
         txOptions?: txOptions
     ): Promise<MachineStationWriteResult | ExecuteMachineTransactionData> {
         const { 
-            machineAccountAddress, 
+            machineAddress, 
             target, 
             calldata, 
             nonce, 
             refundAmount = 0n, 
             machineStationOwnerSignature, 
-            smartAccountOwnerSignature, 
+            machineOwnerSignature, 
             sendTransaction = false 
         } = options;
         
@@ -344,7 +344,7 @@ export class MachineStation extends Base {
 
             const params = this.abiCoder.encode(
                 ["address", "address", "bytes", "uint256", "uint256", "bytes", "bytes"],
-                [machineAccountAddress, target, calldata, nonce, refundAmount, machineStationOwnerSignature, smartAccountOwnerSignature]
+                [machineAddress, target, calldata, nonce, refundAmount, machineStationOwnerSignature, machineOwnerSignature]
             );
 
             const payload = params.replace("0x", createFunctionSelector);
@@ -359,13 +359,13 @@ export class MachineStation extends Base {
                     message: "Transaction data ready for manual submission",
                     machineStationAddress: this.machineStationAddress,
                     function: "execute_machine_transaction",
-                    machineAccountAddress: machineAccountAddress,
+                    machineAddress: machineAddress,
                     target: target,
                     accessControl: "Anyone can call with proper signatures"
                 } as ExecuteMachineTransactionData;
             }
 
-            return await this._handleEvmTx(tx, `execute machine transaction from ${machineAccountAddress} on target ${target}`, statusCallback, txOptions);
+            return await this._handleEvmTx(tx, `execute machine transaction from ${machineAddress} on target ${target}`, statusCallback, txOptions);
         } catch (error: any) {
             throw new Error(`Failed to execute machine transaction: ${error.message}`);
         }
@@ -385,14 +385,14 @@ export class MachineStation extends Base {
         txOptions?: txOptions
     ): Promise<MachineStationWriteResult | ExecuteMachineBatchTransactionsData> {
         const { 
-            smartAccountAddresses, 
+            machineAddresses, 
             targets, 
             calldataList, 
             nonce, 
             refundAmount = 0n, 
             machineNonces = [], 
             machineStationOwnerSignature, 
-            smartAccountOwnerSignatures, 
+            machineOwnerSignatures, 
             sendTransaction = false 
         } = options;
         
@@ -401,7 +401,7 @@ export class MachineStation extends Base {
 
             const params = this.abiCoder.encode(
                 ["address[]", "address[]", "bytes[]", "uint256", "uint256", "uint256[]", "bytes", "bytes[]"],
-                [smartAccountAddresses, targets, calldataList, nonce, refundAmount, machineNonces, machineStationOwnerSignature, smartAccountOwnerSignatures]
+                [machineAddresses, targets, calldataList, nonce, refundAmount, machineNonces, machineStationOwnerSignature, machineOwnerSignatures]
             );
 
             const payload = params.replace("0x", createFunctionSelector);
@@ -411,21 +411,21 @@ export class MachineStation extends Base {
             };
 
             if (!sendTransaction) {
-                const accountsStr = smartAccountAddresses.join(", ");
+                const accountsStr = machineAddresses.join(", ");
                 const targetsStr = targets.join(", ");
                 return {
                     transactionData: tx,
                     message: "Transaction data ready for manual submission",
                     machineStationAddress: this.machineStationAddress,
                     function: "execute_machine_batch_transactions",
-                    machineAccountAddresses: smartAccountAddresses,
+                    machineAddresses: machineAddresses,
                     targets: targets,
                     description: `Batch transactions from accounts [${accountsStr}] on targets [${targetsStr}]`,
                     accessControl: "Anyone can call with proper signatures"
                 } as ExecuteMachineBatchTransactionsData;
             }
 
-            const accountsStr = smartAccountAddresses.join(", ");
+            const accountsStr = machineAddresses.join(", ");
             const targetsStr = targets.join(", ");
             return await this._handleEvmTx(tx, `execute batch transactions from accounts [${accountsStr}] on targets [${targetsStr}]`, statusCallback, txOptions);
         } catch (error: any) {
@@ -447,11 +447,11 @@ export class MachineStation extends Base {
         txOptions?: txOptions
     ): Promise<MachineStationWriteResult | ExecuteTransferMachineBalanceData> {
         const { 
-            smartAccountAddress, 
+            machineAddress, 
             recipientAddress, 
             nonce, 
             machineStationOwnerSignature, 
-            smartAccountOwnerSignature, 
+            machineOwnerSignature, 
             sendTransaction = false 
         } = options;
         
@@ -460,7 +460,7 @@ export class MachineStation extends Base {
 
             const params = this.abiCoder.encode(
                 ["address", "address", "uint256", "bytes", "bytes"],
-                [smartAccountAddress, recipientAddress, nonce, machineStationOwnerSignature, smartAccountOwnerSignature]
+                [machineAddress, recipientAddress, nonce, machineStationOwnerSignature, machineOwnerSignature]
             );
 
             const payload = params.replace("0x", createFunctionSelector);
@@ -475,13 +475,13 @@ export class MachineStation extends Base {
                     message: "Transaction data ready for manual submission",
                     machineStationAddress: this.machineStationAddress,
                     function: "execute_transfer_machine_balance",
-                    machineAccountAddress: smartAccountAddress,
+                    machineAddress: machineAddress,
                     recipientAddress: recipientAddress,
                     requiredRole: "STATION_MANAGER_ROLE"
                 } as ExecuteTransferMachineBalanceData;
             }
 
-            return await this._handleEvmTx(tx, `transfer balance from ${smartAccountAddress} to ${recipientAddress}`, statusCallback, txOptions);
+            return await this._handleEvmTx(tx, `transfer balance from ${machineAddress} to ${recipientAddress}`, statusCallback, txOptions);
         } catch (error: any) {
             throw new Error(`Failed to execute machine transfer balance: ${error.message}`);
         }
@@ -639,7 +639,7 @@ export class MachineStation extends Base {
         }
         
         try {
-            const { machineAccountAddress, target, calldata, nonce, refundAmount = 0n } = options;
+            const { machineAddress, target, calldata, nonce, refundAmount = 0n } = options;
             const chainId = await this.getChainId();
             const domain = {
                 name: "MachineStationFactory",
@@ -659,7 +659,7 @@ export class MachineStation extends Base {
             };
 
             const message = {
-                machineAddress: machineAccountAddress,
+                machineAddress: machineAddress,
                 target: target,
                 data: calldata,
                 nonce: nonce,
@@ -689,7 +689,7 @@ export class MachineStation extends Base {
         
         try {
             const { 
-                smartAccountAddresses, 
+                machineAddresses, 
                 targets, 
                 calldataList, 
                 nonce, 
@@ -717,7 +717,7 @@ export class MachineStation extends Base {
             };
 
             const message = {
-                machineAddresses: smartAccountAddresses,
+                machineAddresses: machineAddresses,
                 targets: targets,
                 data: calldataList,
                 nonce: nonce,
@@ -747,7 +747,7 @@ export class MachineStation extends Base {
         }
         
         try {
-            const { smartAccountAddress, recipientAddress, nonce } = options;
+            const { machineAddress, recipientAddress, nonce } = options;
             const chainId = await this.getChainId();
             const domain = {
                 name: "MachineStationFactory",
@@ -765,7 +765,7 @@ export class MachineStation extends Base {
             };
 
             const message = {
-                machineAddress: smartAccountAddress,
+                machineAddress: machineAddress,
                 recipientAddress: recipientAddress,
                 nonce: nonce,
             };
@@ -792,13 +792,13 @@ export class MachineStation extends Base {
         options: MachineSignMachineTransactionOptions
     ): Promise<EIP712SignableMessage> {
         try {
-            const { machineAccountAddress, target, calldata, nonce } = options;
+            const { machineAddress, target, calldata, nonce } = options;
             const chainId = await this.getChainId();
             const domain = {
                 name: "MachineSmartAccount",
                 version: "2",
                 chainId: chainId,
-                verifyingContract: machineAccountAddress,
+                verifyingContract: machineAddress,
             };
 
             const types = {
@@ -837,13 +837,13 @@ export class MachineStation extends Base {
         options: MachineSignTransferMachineBalanceOptions
     ): Promise<EIP712SignableMessage> {
         try {
-            const { smartAccountAddress, recipientAddress, nonce } = options;
+            const { machineAddress, recipientAddress, nonce } = options;
             const chainId = await this.getChainId();
             const domain = {
                 name: "MachineSmartAccount",
                 version: "2",
                 chainId: chainId,
-                verifyingContract: smartAccountAddress,
+                verifyingContract: machineAddress,
             };
 
             const types = {

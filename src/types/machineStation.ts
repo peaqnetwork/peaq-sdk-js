@@ -60,20 +60,20 @@ export interface ExecuteTransactionData extends MachineStationTransactionData {
 }
 
 export interface ExecuteMachineTransactionData extends MachineStationTransactionData {
-    machineAccountAddress: string;
+    machineAddress: string;
     target: string;
     accessControl: string;
 }
 
 export interface ExecuteMachineBatchTransactionsData extends MachineStationTransactionData {
-    machineAccountAddresses: string[];
+    machineAddresses: string[];
     targets: string[];
     description: string;
     accessControl: string;
 }
 
 export interface ExecuteTransferMachineBalanceData extends MachineStationTransactionData {
-    machineAccountAddress: string;
+    machineAddress: string;
     recipientAddress: string;
     requiredRole: string;
 }
@@ -122,34 +122,34 @@ export interface ExecuteTransactionOptions {
 }
 
 export interface ExecuteMachineTransactionOptions {
-    machineAccountAddress: string;
+    machineAddress: string;
     target: string;
     calldata: string;
     nonce: bigint;
     refundAmount?: bigint;
     machineStationOwnerSignature: string;
-    smartAccountOwnerSignature: string;
+    machineOwnerSignature: string;
     sendTransaction?: boolean;
 }
 
 export interface ExecuteMachineBatchTransactionsOptions {
-    smartAccountAddresses: string[];
+    machineAddresses: string[];
     targets: string[];
     calldataList: string[];
     nonce: bigint;
     refundAmount?: bigint;
     machineNonces?: bigint[];
     machineStationOwnerSignature: string;
-    smartAccountOwnerSignatures: string[];
+    machineOwnerSignatures: string[];
     sendTransaction?: boolean;
 }
 
 export interface ExecuteMachineTransferBalanceOptions {
-    smartAccountAddress: string;
+    machineAddress: string;
     recipientAddress: string;
     nonce: bigint;
     machineStationOwnerSignature: string;
-    smartAccountOwnerSignature: string;
+    machineOwnerSignature: string;
     sendTransaction?: boolean;
 }
 
@@ -172,7 +172,7 @@ export interface AdminSignTransactionOptions {
 }
 
 export interface AdminSignMachineTransactionOptions {
-    machineAccountAddress: string;
+    machineAddress: string;
     target: string;
     calldata: string;
     nonce: bigint;
@@ -180,7 +180,7 @@ export interface AdminSignMachineTransactionOptions {
 }
 
 export interface AdminSignMachineBatchTransactionsOptions {
-    smartAccountAddresses: string[];
+    machineAddresses: string[];
     targets: string[];
     calldataList: string[];
     nonce: bigint;
@@ -189,20 +189,20 @@ export interface AdminSignMachineBatchTransactionsOptions {
 }
 
 export interface AdminSignTransferMachineBalanceOptions {
-    smartAccountAddress: string;
+    machineAddress: string;
     recipientAddress: string;
     nonce: bigint;
 }
 
 export interface MachineSignMachineTransactionOptions {
-    machineAccountAddress: string;
+    machineAddress: string;
     target: string;
     calldata: string;
     nonce: bigint;
 }
 
 export interface MachineSignTransferMachineBalanceOptions {
-    smartAccountAddress: string;
+    machineAddress: string;
     recipientAddress: string;
     nonce: bigint;
 } 
