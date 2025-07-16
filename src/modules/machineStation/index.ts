@@ -384,8 +384,53 @@ export class MachineStation extends Base {
         statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
         txOptions?: txOptions
     ): Promise<MachineStationWriteResult | ExecuteMachineBatchTransactionsData> {
-        // TODO: Implement batch transaction execution logic
-        throw new Error('executeMachineBatchTransactions not yet implemented');
+        const { 
+            smartAccountAddresses, 
+            targets, 
+            calldataList, 
+            nonce, 
+            refundAmount = 0n, 
+            machineNonces = [], 
+            machineStationOwnerSignature, 
+            smartAccountOwnerSignatures, 
+            sendTransaction = false 
+        } = options;
+        
+        try {
+            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.EXECUTE_MACHINE_BATCH_TRANSACTIONS)).substring(0, 10);
+
+            const params = this.abiCoder.encode(
+                ["address[]", "address[]", "bytes[]", "uint256", "uint256", "uint256[]", "bytes", "bytes[]"],
+                [smartAccountAddresses, targets, calldataList, nonce, refundAmount, machineNonces, machineStationOwnerSignature, smartAccountOwnerSignatures]
+            );
+
+            const payload = params.replace("0x", createFunctionSelector);
+            const tx: EvmTransaction = {
+                to: this.machineStationAddress,
+                data: payload
+            };
+
+            if (!sendTransaction) {
+                const accountsStr = smartAccountAddresses.join(", ");
+                const targetsStr = targets.join(", ");
+                return {
+                    transactionData: tx,
+                    message: "Transaction data ready for manual submission",
+                    machineStationAddress: this.machineStationAddress,
+                    function: "execute_machine_batch_transactions",
+                    machineAccountAddresses: smartAccountAddresses,
+                    targets: targets,
+                    description: `Batch transactions from accounts [${accountsStr}] on targets [${targetsStr}]`,
+                    accessControl: "Anyone can call with proper signatures"
+                } as ExecuteMachineBatchTransactionsData;
+            }
+
+            const accountsStr = smartAccountAddresses.join(", ");
+            const targetsStr = targets.join(", ");
+            return await this._handleEvmTx(tx, `execute batch transactions from accounts [${accountsStr}] on targets [${targetsStr}]`, statusCallback, txOptions);
+        } catch (error: any) {
+            throw new Error(`Failed to execute machine batch transactions: ${error.message}`);
+        }
     }
 
     /**
@@ -604,8 +649,50 @@ export class MachineStation extends Base {
         if (!this.machineStationOwnerSigner) {
             throw new Error('Machine station owner signer is required for admin signatures');
         }
-        // TODO: Implement EIP-712 signature generation for batch transactions
-        throw new Error('adminSignMachineBatchTransactions not yet implemented');
+        
+        try {
+            const { 
+                smartAccountAddresses, 
+                targets, 
+                calldataList, 
+                nonce, 
+                refundAmount = 0n, 
+                machineNonces = [] 
+            } = options;
+            
+            const chainId = await this.getChainId();
+            const domain = {
+                name: "MachineStationFactory",
+                version: "2",
+                chainId: chainId,
+                verifyingContract: this.machineStationAddress,
+            };
+
+            const types = {
+                ExecuteMachineBatchTransactions: [
+                    { name: "machineAddresses", type: "address[]" },
+                    { name: "targets", type: "address[]" },
+                    { name: "data", type: "bytes[]" },
+                    { name: "nonce", type: "uint256" },
+                    { name: "refundAmount", type: "uint256" },
+                    { name: "machineNonces", type: "uint256[]" },
+                ],
+            };
+
+            const message = {
+                machineAddresses: smartAccountAddresses,
+                targets: targets,
+                data: calldataList,
+                nonce: nonce,
+                refundAmount: refundAmount,
+                machineNonces: machineNonces
+            };
+
+            const signature = await this.machineStationOwnerSigner.signTypedData(domain, types, message);
+            return signature;
+        } catch (error: any) {
+            throw new Error(`Failed to sign machine batch transactions: ${error.message}`);
+        }
     }
 
     /**
