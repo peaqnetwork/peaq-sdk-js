@@ -282,8 +282,37 @@ export class MachineStation extends Base {
         statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
         txOptions?: txOptions
     ): Promise<MachineStationWriteResult | ExecuteTransactionData> {
-        // TODO: Implement transaction execution logic
-        throw new Error('executeTransaction not yet implemented');
+        const { target, calldata, nonce, refundAmount = 0n, machineStationOwnerSignature, sendTransaction = false } = options;
+        
+        try {
+            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.EXECUTE_TRANSACTION)).substring(0, 10);
+
+            const params = this.abiCoder.encode(
+                ["address", "bytes", "uint256", "uint256", "bytes"],
+                [target, calldata, nonce, refundAmount, machineStationOwnerSignature]
+            );
+
+            const payload = params.replace("0x", createFunctionSelector);
+            const tx: EvmTransaction = {
+                to: this.machineStationAddress,
+                data: payload
+            };
+
+            if (!sendTransaction) {
+                return {
+                    transactionData: tx,
+                    message: "Transaction data ready for manual submission",
+                    machineStationAddress: this.machineStationAddress,
+                    function: "execute_transaction",
+                    target: target,
+                    accessControl: "Anyone can call with proper signatures"
+                } as ExecuteTransactionData;
+            }
+
+            return await this._handleEvmTx(tx, `execute transaction on target ${target}`, statusCallback, txOptions);
+        } catch (error: any) {
+            throw new Error(`Failed to execute transaction: ${error.message}`);
+        }
     }
 
     /**
@@ -440,8 +469,38 @@ export class MachineStation extends Base {
         if (!this.machineStationOwnerSigner) {
             throw new Error('Machine station owner signer is required for admin signatures');
         }
-        // TODO: Implement EIP-712 signature generation for transaction
-        throw new Error('adminSignTransaction not yet implemented');
+        
+        try {
+            const { target, calldata, nonce, refundAmount = 0n } = options;
+            const chainId = await this.getChainId();
+            const domain = {
+                name: "MachineStationFactory",
+                version: "2",
+                chainId: chainId,
+                verifyingContract: this.machineStationAddress,
+            };
+
+            const types = {
+                ExecuteTransaction: [
+                    { name: "target", type: "address" },
+                    { name: "data", type: "bytes" },
+                    { name: "nonce", type: "uint256" },
+                    { name: "refundAmount", type: "uint256" },
+                ],
+            };
+
+            const message = {
+                target: target,
+                data: calldata,
+                nonce: nonce,
+                refundAmount: refundAmount
+            };
+
+            const signature = await this.machineStationOwnerSigner.signTypedData(domain, types, message);
+            return signature;
+        } catch (error: any) {
+            throw new Error(`Failed to sign transaction: ${error.message}`);
+        }
     }
 
     /**
