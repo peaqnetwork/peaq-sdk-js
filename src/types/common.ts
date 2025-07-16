@@ -40,7 +40,8 @@ export interface CreateInstanceOptions {
 export interface CreateMachineStationInstanceOptions {
     baseUrl: string;
     machineStationAddress: string;
-    machineStationOwnerSigner: Signer;
+    stationAdmin: Signer;
+    stationManager?: Signer;
 }
 
 export interface SDKMetadata {

@@ -76,9 +76,7 @@ export class Main extends Base {
     /**
      * Creates and returns a new instance of the SDK configured for a machine station.
      * 
-     * @param baseUrl - The connection URL for the blockchain
-     * @param machineStationAddress - The address of the machine station
-     * @param machineStationOwnerSigner - Signer instance for the machine station owner
+     * @param userOptions - Configuration options including baseUrl, machineStationAddress, stationAdmin, and optional stationManager
      * @returns An initialized SDK object with machine station module
      */
     static async createMachineStationInstance(
@@ -92,14 +90,15 @@ export class Main extends Base {
         };
         const sdk = new Main(options);
         await sdk.connect();
-        await sdk.initializeSigner(userOptions.machineStationOwnerSigner);
+        await sdk.initializeSigner(userOptions.stationAdmin);
 
         sdk.machineStation = new MachineStation(
             sdk,
             sdk.api as JsonRpcProvider,
             sdk.metadata,
             userOptions.machineStationAddress,
-            userOptions.machineStationOwnerSigner
+            userOptions.stationAdmin,
+            userOptions.stationManager
         );
 
         return sdk;

@@ -49,7 +49,8 @@ export class MachineStation extends Base {
     private abiCoder = new ethers.AbiCoder();
     private sdk: any;
     private machineStationAddress: string;
-    private machineStationOwnerSigner: Signer;
+    private stationAdminSigner: Signer;
+    private stationManagerSigner: Signer;
 
     /**
      * Initializes MachineStation with a connected API instance and shared SDK metadata.
@@ -58,19 +59,23 @@ export class MachineStation extends Base {
      * @param api - The blockchain API connection (JsonRpcProvider for EVM)
      * @param metadata - Shared metadata, including chain type and optional signer
      * @param machineStationAddress - The address of the machine station factory contract
-     * @param machineStationOwnerSigner - Signer instance for machine station owner operations
+     * @param stationAdmin - Signer instance for station admin operations (DEFAULT_ADMIN_ROLE)
+     * @param stationManager - Optional signer instance for station manager operations (STATION_MANAGER_ROLE). If not provided, admin will be used.
      */
     constructor(
         sdk: Main,
         api: JsonRpcProvider, 
         metadata: SDKMetadata, 
         machineStationAddress: string,
-        machineStationOwnerSigner: Signer
+        stationAdmin: Signer,
+        stationManager?: Signer
     ) {
         super(api, metadata);
         this.sdk = sdk;
         this.machineStationAddress = machineStationAddress;
-        this.machineStationOwnerSigner = machineStationOwnerSigner.connect(api);
+        this.stationAdminSigner = stationAdmin.connect(api);
+        // Use stationManager if provided, otherwise use stationAdmin for manager operations
+        this.stationManagerSigner = stationManager ? stationManager.connect(api) : this.stationAdminSigner;
     }
 
     // =====================================================================
@@ -119,7 +124,7 @@ export class MachineStation extends Base {
                 } as UpdateConfigsTransactionData;
             }
 
-            return await this._handleEvmTx(tx, `update config '${key}' to ${value}`, statusCallback, txOptions);
+            return await this._handleEvmTx(tx, `update config '${key}' to ${value}`, statusCallback, txOptions, this.stationManagerSigner);
         } catch (error: any) {
             throw new Error(`Failed to update configs: ${error.message}`);
         }
@@ -170,7 +175,7 @@ export class MachineStation extends Base {
                 } as DeployMachineSmartAccountTransactionData;
             }
 
-            const result = await this._handleEvmTx(tx, `deploy machine smart account for ${machineSmartAccountOwnerAddress}`, statusCallback, txOptions);
+            const result = await this._handleEvmTx(tx, `deploy machine smart account for ${machineSmartAccountOwnerAddress}`, statusCallback, txOptions, this.stationManagerSigner);
             
             // Extract deployed address from the result
             let deployedAddress: string | null = null;
@@ -259,7 +264,7 @@ export class MachineStation extends Base {
                 } as TransferMachineStationBalanceTransactionData;
             }
 
-            return await this._handleEvmTx(tx, `transfer machine station balance to ${newMachineStationAddress}`, statusCallback, txOptions);
+            return await this._handleEvmTx(tx, `transfer machine station balance to ${newMachineStationAddress}`, statusCallback, txOptions, this.stationAdminSigner);
         } catch (error: any) {
             throw new Error(`Failed to transfer machine station balance: ${error.message}`);
         }
@@ -309,7 +314,7 @@ export class MachineStation extends Base {
                 } as ExecuteTransactionData;
             }
 
-            return await this._handleEvmTx(tx, `execute transaction on target ${target}`, statusCallback, txOptions);
+            return await this._handleEvmTx(tx, `execute transaction on target ${target}`, statusCallback, txOptions, this.stationManagerSigner);
         } catch (error: any) {
             throw new Error(`Failed to execute transaction: ${error.message}`);
         }
@@ -365,7 +370,7 @@ export class MachineStation extends Base {
                 } as ExecuteMachineTransactionData;
             }
 
-            return await this._handleEvmTx(tx, `execute machine transaction from ${machineAddress} on target ${target}`, statusCallback, txOptions);
+            return await this._handleEvmTx(tx, `execute machine transaction from ${machineAddress} on target ${target}`, statusCallback, txOptions, this.stationManagerSigner);
         } catch (error: any) {
             throw new Error(`Failed to execute machine transaction: ${error.message}`);
         }
@@ -427,7 +432,7 @@ export class MachineStation extends Base {
 
             const accountsStr = machineAddresses.join(", ");
             const targetsStr = targets.join(", ");
-            return await this._handleEvmTx(tx, `execute batch transactions from accounts [${accountsStr}] on targets [${targetsStr}]`, statusCallback, txOptions);
+            return await this._handleEvmTx(tx, `execute batch transactions from accounts [${accountsStr}] on targets [${targetsStr}]`, statusCallback, txOptions, this.stationManagerSigner);
         } catch (error: any) {
             throw new Error(`Failed to execute machine batch transactions: ${error.message}`);
         }
@@ -481,7 +486,7 @@ export class MachineStation extends Base {
                 } as ExecuteTransferMachineBalanceData;
             }
 
-            return await this._handleEvmTx(tx, `transfer balance from ${machineAddress} to ${recipientAddress}`, statusCallback, txOptions);
+            return await this._handleEvmTx(tx, `transfer balance from ${machineAddress} to ${recipientAddress}`, statusCallback, txOptions, this.stationManagerSigner);
         } catch (error: any) {
             throw new Error(`Failed to execute machine transfer balance: ${error.message}`);
         }
@@ -492,8 +497,8 @@ export class MachineStation extends Base {
     // =====================================================================
 
     /**
-     * Generates an admin signature for deploying a machine smart account.
-     * Requires machineStationOwnerSigner to be initialized.
+     * Generates a station manager signature for deploying a machine smart account.
+     * Smart contract requires STATION_MANAGER_ROLE for this operation.
      * 
      * @param options - The signature options
      * @returns Promise resolving to the EIP-712 signature string
@@ -501,8 +506,8 @@ export class MachineStation extends Base {
     public async adminSignDeployMachineSmartAccount(
         options: AdminSignDeployMachineSmartAccountOptions
     ): Promise<string> {
-        if (!this.machineStationOwnerSigner) {
-            throw new Error('Machine station owner signer is required for admin signatures');
+        if (!this.stationManagerSigner) {
+            throw new Error('Station manager signer is required for this operation');
         }
         
         try {
@@ -527,7 +532,7 @@ export class MachineStation extends Base {
                 nonce: nonce,
             };
 
-            const signature = await this.machineStationOwnerSigner.signTypedData(domain, types, message);
+            const signature = await this.stationManagerSigner.signTypedData(domain, types, message);
             return signature;
         } catch (error: any) {
             throw new Error(`Failed to sign deploy machine smart account: ${error.message}`);
@@ -536,7 +541,7 @@ export class MachineStation extends Base {
 
     /**
      * Generates an admin signature for transferring machine station balance.
-     * Requires machineStationOwnerSigner to be initialized.
+     * Smart contract requires DEFAULT_ADMIN_ROLE for this operation.
      * 
      * @param options - The signature options
      * @returns Promise resolving to the EIP-712 signature string
@@ -544,8 +549,8 @@ export class MachineStation extends Base {
     public async adminSignTransferMachineStationBalance(
         options: AdminSignTransferMachineStationBalanceOptions
     ): Promise<string> {
-        if (!this.machineStationOwnerSigner) {
-            throw new Error('Machine station owner signer is required for admin signatures');
+        if (!this.stationAdminSigner) {
+            throw new Error('Station admin signer is required for this operation');
         }
         
         try {
@@ -570,7 +575,7 @@ export class MachineStation extends Base {
                 nonce: nonce
             };
 
-            const signature = await this.machineStationOwnerSigner.signTypedData(domain, types, message);
+            const signature = await this.stationAdminSigner.signTypedData(domain, types, message);
             return signature;
         } catch (error: any) {
             throw new Error(`Failed to sign transfer machine station balance: ${error.message}`);
@@ -578,8 +583,8 @@ export class MachineStation extends Base {
     }
 
     /**
-     * Generates an admin signature for executing a transaction.
-     * Requires machineStationOwnerSigner to be initialized.
+     * Generates a signature for executing a transaction.
+     * Smart contract has no role requirement, can be signed by either admin or manager.
      * 
      * @param options - The signature options
      * @returns Promise resolving to the EIP-712 signature string
@@ -587,8 +592,8 @@ export class MachineStation extends Base {
     public async adminSignTransaction(
         options: AdminSignTransactionOptions
     ): Promise<string> {
-        if (!this.machineStationOwnerSigner) {
-            throw new Error('Machine station owner signer is required for admin signatures');
+        if (!this.stationManagerSigner) {
+            throw new Error('Station manager signer is required for this operation');
         }
         
         try {
@@ -617,7 +622,7 @@ export class MachineStation extends Base {
                 refundAmount: refundAmount
             };
 
-            const signature = await this.machineStationOwnerSigner.signTypedData(domain, types, message);
+            const signature = await this.stationManagerSigner.signTypedData(domain, types, message);
             return signature;
         } catch (error: any) {
             throw new Error(`Failed to sign transaction: ${error.message}`);
@@ -625,8 +630,8 @@ export class MachineStation extends Base {
     }
 
     /**
-     * Generates an admin signature for executing a machine transaction.
-     * Requires machineStationOwnerSigner to be initialized.
+     * Generates a signature for executing a machine transaction.
+     * Smart contract has no role requirement, can be signed by either admin or manager.
      * 
      * @param options - The signature options
      * @returns Promise resolving to the EIP-712 signature string
@@ -634,8 +639,8 @@ export class MachineStation extends Base {
     public async adminSignMachineTransaction(
         options: AdminSignMachineTransactionOptions
     ): Promise<string> {
-        if (!this.machineStationOwnerSigner) {
-            throw new Error('Machine station owner signer is required for admin signatures');
+        if (!this.stationManagerSigner) {
+            throw new Error('Station manager signer is required for this operation');
         }
         
         try {
@@ -666,7 +671,7 @@ export class MachineStation extends Base {
                 refundAmount: refundAmount
             };
 
-            const signature = await this.machineStationOwnerSigner.signTypedData(domain, types, message);
+            const signature = await this.stationManagerSigner.signTypedData(domain, types, message);
             return signature;
         } catch (error: any) {
             throw new Error(`Failed to sign machine transaction: ${error.message}`);
@@ -674,8 +679,8 @@ export class MachineStation extends Base {
     }
 
     /**
-     * Generates an admin signature for executing batch transactions.
-     * Requires machineStationOwnerSigner to be initialized.
+     * Generates a signature for executing batch transactions.
+     * Smart contract has no role requirement, can be signed by either admin or manager.
      * 
      * @param options - The signature options
      * @returns Promise resolving to the EIP-712 signature string
@@ -683,8 +688,8 @@ export class MachineStation extends Base {
     public async adminSignMachineBatchTransactions(
         options: AdminSignMachineBatchTransactionsOptions
     ): Promise<string> {
-        if (!this.machineStationOwnerSigner) {
-            throw new Error('Machine station owner signer is required for admin signatures');
+        if (!this.stationManagerSigner) {
+            throw new Error('Station manager signer is required for this operation');
         }
         
         try {
@@ -725,7 +730,7 @@ export class MachineStation extends Base {
                 machineNonces: machineNonces
             };
 
-            const signature = await this.machineStationOwnerSigner.signTypedData(domain, types, message);
+            const signature = await this.stationManagerSigner.signTypedData(domain, types, message);
             return signature;
         } catch (error: any) {
             throw new Error(`Failed to sign machine batch transactions: ${error.message}`);
@@ -733,8 +738,8 @@ export class MachineStation extends Base {
     }
 
     /**
-     * Generates an admin signature for transferring machine balance.
-     * Requires machineStationOwnerSigner to be initialized.
+     * Generates a station manager signature for transferring machine balance.
+     * Smart contract requires STATION_MANAGER_ROLE for this operation.
      * 
      * @param options - The signature options
      * @returns Promise resolving to the EIP-712 signature string
@@ -742,8 +747,8 @@ export class MachineStation extends Base {
     public async adminSignTransferMachineBalance(
         options: AdminSignTransferMachineBalanceOptions
     ): Promise<string> {
-        if (!this.machineStationOwnerSigner) {
-            throw new Error('Machine station owner signer is required for admin signatures');
+        if (!this.stationManagerSigner) {
+            throw new Error('Station manager signer is required for this operation');
         }
         
         try {
@@ -770,7 +775,7 @@ export class MachineStation extends Base {
                 nonce: nonce,
             };
 
-            const signature = await this.machineStationOwnerSigner.signTypedData(domain, types, message);
+            const signature = await this.stationManagerSigner.signTypedData(domain, types, message);
             return signature;
         } catch (error: any) {
             throw new Error(`Failed to sign transfer machine balance: ${error.message}`);
@@ -877,13 +882,26 @@ export class MachineStation extends Base {
         tx: EvmTransaction, 
         action: string, 
         statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, 
-        txOptions?: txOptions
+        txOptions?: txOptions,
+        signer?: Signer
     ): Promise<MachineStationWriteResult> {
-        if (!this.metadata.pair) {
+        if (!this.metadata.pair && !signer) {
             return { message: `Constructed ${action} tx (unsigned).`, tx } as BuiltEvmTransactionResult;
         }
         try {
-            return await this._send_evm_tx(tx, statusCallback, txOptions);
+            // If a specific signer is provided, temporarily override the metadata.pair
+            if (signer) {
+                const originalSigner = this.metadata.pair;
+                this.metadata.pair = signer;
+                try {
+                    return await this._send_evm_tx(tx, statusCallback, txOptions);
+                } finally {
+                    // Restore the original signer
+                    this.metadata.pair = originalSigner;
+                }
+            } else {
+                return await this._send_evm_tx(tx, statusCallback, txOptions);
+            }
         } catch (err: any) {
             throw new Error(`Failed to ${action}: ${err?.message ?? err}`);
         }
