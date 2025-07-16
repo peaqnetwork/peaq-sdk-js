@@ -109,13 +109,13 @@ export class MachineStation extends Base {
 
             if (!sendTransaction) {
                 return {
-                    transaction_data: tx,
+                    transactionData: tx,
                     message: "Transaction data ready for manual submission",
-                    machine_station_address: this.machineStationAddress,
+                    machineStationAddress: this.machineStationAddress,
                     function: "update_configs",
-                    config_key: key,
-                    config_value: Number(value),
-                    required_role: "STATION_MANAGER_ROLE"
+                    configKey: key,
+                    configValue: Number(value),
+                    requiredRole: "STATION_MANAGER_ROLE"
                 } as UpdateConfigsTransactionData;
             }
 
@@ -160,12 +160,12 @@ export class MachineStation extends Base {
 
             if (!sendTransaction) {
                 return {
-                    transaction_data: tx,
+                    transactionData: tx,
                     message: "Transaction data ready for manual submission",
-                    machine_station_address: this.machineStationAddress,
+                    machineStationAddress: this.machineStationAddress,
                     function: "deploy_machine_smart_account", 
-                    machine_account_owner_address: machineSmartAccountOwnerAddress,
-                    required_role: "STATION_MANAGER_ROLE",
+                    machineAccountOwnerAddress: machineSmartAccountOwnerAddress,
+                    requiredRole: "STATION_MANAGER_ROLE",
                     note: "After transaction is mined, listen for MachineSmartAccountDeployed event to get the deployed address"
                 } as DeployMachineSmartAccountTransactionData;
             }
@@ -201,7 +201,7 @@ export class MachineStation extends Base {
             if (deployedAddress) {
                 return {
                     message: `Successfully deployed machine smart account at address ${deployedAddress}.`,
-                    deployed_address: deployedAddress,
+                    deployedAddress: deployedAddress,
                     txHash: 'txHash' in result ? result.txHash : undefined,
                     receipt: 'receipt' in result ? result.receipt : undefined
                 } as DeployedSmartAccountResult;
@@ -249,13 +249,13 @@ export class MachineStation extends Base {
 
             if (!sendTransaction) {
                 return {
-                    transaction_data: tx,
+                    transactionData: tx,
                     message: "Transaction data ready for manual submission",
-                    machine_station_address: this.machineStationAddress,
+                    machineStationAddress: this.machineStationAddress,
                     function: "execute_transfer_machine_station_balance",
-                    current_machine_station_address: this.machineStationAddress,
-                    new_machine_station_address: newMachineStationAddress,
-                    required_role: "DEFAULT_ADMIN_ROLE"
+                    currentMachineStationAddress: this.machineStationAddress,
+                    newMachineStationAddress: newMachineStationAddress,
+                    requiredRole: "DEFAULT_ADMIN_ROLE"
                 } as TransferMachineStationBalanceTransactionData;
             }
 

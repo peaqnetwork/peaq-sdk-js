@@ -23,59 +23,59 @@ export enum MachineStationConfigKeys {
 
 // Result interfaces
 export interface DeployedSmartAccountResult extends EvmSendResult {
-    deployed_address: string;
+    deployedAddress: string;
 }
 
 export type MachineStationWriteResult = SubstrateSendResult | EvmSendResult | BuiltEvmTransactionResult | BuiltCallTransactionResult | DeployedSmartAccountResult;
 
 // Transaction data interfaces for when sendTransaction = false
 export interface MachineStationTransactionData {
-    transaction_data: EvmTransaction;
+    transactionData: EvmTransaction;
     message: string;
-    machine_station_address: string;
+    machineStationAddress: string;
     function: string;
 }
 
 export interface UpdateConfigsTransactionData extends MachineStationTransactionData {
-    config_key: string;
-    config_value: number;
-    required_role: string;
+    configKey: string;
+    configValue: number;
+    requiredRole: string;
 }
 
 export interface DeployMachineSmartAccountTransactionData extends MachineStationTransactionData {
-    machine_account_owner_address: string;
-    required_role: string;
+    machineAccountOwnerAddress: string;
+    requiredRole: string;
     note: string;
 }
 
 export interface TransferMachineStationBalanceTransactionData extends MachineStationTransactionData {
-    current_machine_station_address: string;
-    new_machine_station_address: string;
-    required_role: string;
+    currentMachineStationAddress: string;
+    newMachineStationAddress: string;
+    requiredRole: string;
 }
 
 export interface ExecuteTransactionData extends MachineStationTransactionData {
     target: string;
-    access_control: string;
+    accessControl: string;
 }
 
 export interface ExecuteMachineTransactionData extends MachineStationTransactionData {
-    machine_account_address: string;
+    machineAccountAddress: string;
     target: string;
-    access_control: string;
+    accessControl: string;
 }
 
 export interface ExecuteMachineBatchTransactionsData extends MachineStationTransactionData {
-    machine_account_addresses: string[];
+    machineAccountAddresses: string[];
     targets: string[];
     description: string;
-    access_control: string;
+    accessControl: string;
 }
 
 export interface ExecuteTransferMachineBalanceData extends MachineStationTransactionData {
-    machine_account_address: string;
-    recipient_address: string;
-    required_role: string;
+    machineAccountAddress: string;
+    recipientAddress: string;
+    requiredRole: string;
 }
 
 // EIP-712 signable message object for frontend signing
