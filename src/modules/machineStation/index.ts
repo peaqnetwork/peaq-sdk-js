@@ -328,8 +328,47 @@ export class MachineStation extends Base {
         statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
         txOptions?: txOptions
     ): Promise<MachineStationWriteResult | ExecuteMachineTransactionData> {
-        // TODO: Implement machine transaction execution logic
-        throw new Error('executeMachineTransaction not yet implemented');
+        const { 
+            machineAccountAddress, 
+            target, 
+            calldata, 
+            nonce, 
+            refundAmount = 0n, 
+            machineStationOwnerSignature, 
+            smartAccountOwnerSignature, 
+            sendTransaction = false 
+        } = options;
+        
+        try {
+            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.EXECUTE_MACHINE_TRANSACTION)).substring(0, 10);
+
+            const params = this.abiCoder.encode(
+                ["address", "address", "bytes", "uint256", "uint256", "bytes", "bytes"],
+                [machineAccountAddress, target, calldata, nonce, refundAmount, machineStationOwnerSignature, smartAccountOwnerSignature]
+            );
+
+            const payload = params.replace("0x", createFunctionSelector);
+            const tx: EvmTransaction = {
+                to: this.machineStationAddress,
+                data: payload
+            };
+
+            if (!sendTransaction) {
+                return {
+                    transactionData: tx,
+                    message: "Transaction data ready for manual submission",
+                    machineStationAddress: this.machineStationAddress,
+                    function: "execute_machine_transaction",
+                    machineAccountAddress: machineAccountAddress,
+                    target: target,
+                    accessControl: "Anyone can call with proper signatures"
+                } as ExecuteMachineTransactionData;
+            }
+
+            return await this._handleEvmTx(tx, `execute machine transaction from ${machineAccountAddress} on target ${target}`, statusCallback, txOptions);
+        } catch (error: any) {
+            throw new Error(`Failed to execute machine transaction: ${error.message}`);
+        }
     }
 
     /**
@@ -516,8 +555,40 @@ export class MachineStation extends Base {
         if (!this.machineStationOwnerSigner) {
             throw new Error('Machine station owner signer is required for admin signatures');
         }
-        // TODO: Implement EIP-712 signature generation for machine transaction
-        throw new Error('adminSignMachineTransaction not yet implemented');
+        
+        try {
+            const { machineAccountAddress, target, calldata, nonce, refundAmount = 0n } = options;
+            const chainId = await this.getChainId();
+            const domain = {
+                name: "MachineStationFactory",
+                version: "2",
+                chainId: chainId,
+                verifyingContract: this.machineStationAddress
+            };
+
+            const types = {
+                ExecuteMachineTransaction: [
+                    { name: "machineAddress", type: "address" },
+                    { name: "target", type: "address" },
+                    { name: "data", type: "bytes" },
+                    { name: "nonce", type: "uint256" },
+                    { name: "refundAmount", type: "uint256" },
+                ],
+            };
+
+            const message = {
+                machineAddress: machineAccountAddress,
+                target: target,
+                data: calldata,
+                nonce: nonce,
+                refundAmount: refundAmount
+            };
+
+            const signature = await this.machineStationOwnerSigner.signTypedData(domain, types, message);
+            return signature;
+        } catch (error: any) {
+            throw new Error(`Failed to sign machine transaction: ${error.message}`);
+        }
     }
 
     /**
@@ -568,8 +639,39 @@ export class MachineStation extends Base {
     public async machineSignMachineTransaction(
         options: MachineSignMachineTransactionOptions
     ): Promise<EIP712SignableMessage> {
-        // TODO: Implement EIP-712 message creation for machine transaction
-        throw new Error('machineSignMachineTransaction not yet implemented');
+        try {
+            const { machineAccountAddress, target, calldata, nonce } = options;
+            const chainId = await this.getChainId();
+            const domain = {
+                name: "MachineSmartAccount",
+                version: "2",
+                chainId: chainId,
+                verifyingContract: machineAccountAddress,
+            };
+
+            const types = {
+                Execute: [
+                    { name: "target", type: "address" },
+                    { name: "data", type: "bytes" },
+                    { name: "nonce", type: "uint256" },
+                ],
+            };
+
+            const message = {
+                target: target,
+                data: calldata,
+                nonce: nonce
+            };
+
+            return {
+                domain,
+                types,
+                message,
+                primaryType: "Execute"
+            };
+        } catch (error: any) {
+            throw new Error(`Failed to create signable message for machine transaction: ${error.message}`);
+        }
     }
 
     /**
