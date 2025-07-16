@@ -788,14 +788,17 @@ export class MachineStation extends Base {
 
     /**
      * Creates a signable EIP-712 message for machine transaction execution.
-     * Returns the message structure for frontend wallet signing.
+     * If machineOwnerSigner is provided, signs the message and returns the signature.
+     * Otherwise, returns the message structure for frontend wallet signing.
      * 
      * @param options - The signature options
-     * @returns Promise resolving to the EIP-712 signable message object
+     * @param machineOwnerSigner - Optional signer to sign the message directly
+     * @returns Promise resolving to either the signature string or EIP-712 signable message object
      */
     public async machineSignMachineTransaction(
-        options: MachineSignMachineTransactionOptions
-    ): Promise<EIP712SignableMessage> {
+        options: MachineSignMachineTransactionOptions,
+        machineOwnerSigner?: Signer
+    ): Promise<string | EIP712SignableMessage> {
         try {
             const { machineAddress, target, calldata, nonce } = options;
             const chainId = await this.getChainId();
@@ -820,6 +823,13 @@ export class MachineStation extends Base {
                 nonce: nonce
             };
 
+            // If signer is provided, sign the message and return signature
+            if (machineOwnerSigner) {
+                const signature = await machineOwnerSigner.signTypedData(domain, types, message);
+                return signature;
+            }
+
+            // Otherwise return the signable message object
             return {
                 domain,
                 types,
@@ -833,14 +843,17 @@ export class MachineStation extends Base {
 
     /**
      * Creates a signable EIP-712 message for machine balance transfer.
-     * Returns the message structure for frontend wallet signing.
+     * If machineOwnerSigner is provided, signs the message and returns the signature.
+     * Otherwise, returns the message structure for frontend wallet signing.
      * 
      * @param options - The signature options
-     * @returns Promise resolving to the EIP-712 signable message object
+     * @param machineOwnerSigner - Optional signer to sign the message directly
+     * @returns Promise resolving to either the signature string or EIP-712 signable message object
      */
     public async machineSignTransferMachineBalance(
-        options: MachineSignTransferMachineBalanceOptions
-    ): Promise<EIP712SignableMessage> {
+        options: MachineSignTransferMachineBalanceOptions,
+        machineOwnerSigner?: Signer
+    ): Promise<string | EIP712SignableMessage> {
         try {
             const { machineAddress, recipientAddress, nonce } = options;
             const chainId = await this.getChainId();
@@ -863,6 +876,13 @@ export class MachineStation extends Base {
                 nonce: nonce,
             };
 
+            // If signer is provided, sign the message and return signature
+            if (machineOwnerSigner) {
+                const signature = await machineOwnerSigner.signTypedData(domain, types, message);
+                return signature;
+            }
+
+            // Otherwise return the signable message object
             return {
                 domain,
                 types,
