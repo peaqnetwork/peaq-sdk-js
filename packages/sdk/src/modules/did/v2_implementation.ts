@@ -388,7 +388,7 @@ export class DIDV2Implementation extends Base {
   }
 
   private async _handleEvmTx(tx: EvmTransaction, action: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<DidWriteResult> {
-    if (!this.metadata.pair || this.metadata.machineStation) {
+    if (!this.metadata.pair) {
       return { message: `Constructed ${action} tx (unsigned).`, tx } as BuiltEvmTransactionResult;
     }
     try {

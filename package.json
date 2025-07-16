@@ -1,40 +1,23 @@
 {
-  "name": "peaq-sdk",
+  "name": "peaq-network",
   "version": "1.0.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "files": [
-    "dist/**/*",
-    "peaq-did-proto-js.d.ts"
+  "description": "peaq network SDK Monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*"
   ],
   "scripts": {
-    "build": "tsc",
-    "pack": "npm run build && npm pack",
-    "start": "ts-node src/main.ts",
-    "test": "node --expose-gc ./node_modules/.bin/jest --runInBand",
-    "test:verbose": "node --expose-gc ./node_modules/.bin/jest --runInBand --verbose",
-    "test:debug": "node --expose-gc ./node_modules/.bin/jest --runInBand --detectOpenHandles --logHeapUsage --verbose",
-    "test:memory": "node --expose-gc --max-old-space-size=4096 ./node_modules/.bin/jest --runInBand --logHeapUsage",
-    "test:single": "node --expose-gc ./node_modules/.bin/jest --runInBand --testTimeout=300000"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "dependencies": {
-    "@polkadot/api": "16.2.1",
-    "bs58": "^6.0.0",
-    "ethers": "^6.14.4",
-    "peaq-did-proto-js": "^2.1.0",
-    "uuid": "^11.1.0"
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "pack:sdk": "npm run pack --workspace=@peaqnetwork/sdk",
+    "pack:machine-station": "npm run pack --workspace=@peaqnetwork/machine-station",
+    "pack:all": "npm run pack --workspaces"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.14",
     "@types/node": "^24.0.1",
-    "dotenv": "^16.4.7",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.3.4",
-    "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

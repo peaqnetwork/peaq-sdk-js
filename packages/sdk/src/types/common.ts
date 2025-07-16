@@ -37,18 +37,11 @@ export interface CreateInstanceOptions {
     didVersion?: DIDVersion;
     keyType?: KeyType;
 }
-export interface CreateMachineStationInstanceOptions {
-    baseUrl: string;
-    machineStationAddress: string;
-    stationAdmin: Signer;
-    stationManager?: Signer;
-}
 
 export interface SDKMetadata {
     baseUrl: string;
     chainType: ChainType;
     pair?: KeyringPair | Signer;
-    machineStation: boolean;
     didVersion?: DIDVersion;
     keyType?: KeyType;
 }

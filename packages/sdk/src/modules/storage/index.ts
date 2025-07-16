@@ -305,7 +305,7 @@ export class Storage extends Base {
     }
 
     private async _handleEvmTx(tx: EvmTransaction, action: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<StorageWriteResult> {
-        if (!this.metadata.pair || this.metadata.machineStation) {
+        if (!this.metadata.pair) {
             return { message: `Constructed ${action} tx (unsigned).`, tx } as BuiltEvmTransactionResult;
         }
         try {

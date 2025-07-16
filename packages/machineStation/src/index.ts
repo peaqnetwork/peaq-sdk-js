@@ -1,10 +1,10 @@
-export { Main as Sdk } from './modules/main';
+export { Main as MST } from './modules/main';
 
-// Export machine station types and enums for external use
+// Export machine station factory smart contract types and enums
 export { 
     MachineStationConfigKeys,
     MachineStationFactoryFunctionSignatures 
 } from './types/machineStation';
 
-// Export common enums for easier access
+// Export common EVM transaction enums
 export { ChainType, ConfirmationMode, VerificationMethodType } from './types/common';

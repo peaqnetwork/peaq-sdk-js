@@ -1,5 +1,5 @@
-import { BuiltEvmTransactionResult, BuiltCallTransactionResult, EvmTransaction } from './common';
-import { SubstrateSendResult, EvmSendResult } from './base';
+import { BuiltEvmTransactionResult, EvmTransaction } from './common';
+import { EvmSendResult } from './base';
 
 // Used for Machine Station Factory Smart Contract
 export enum MachineStationFactoryFunctionSignatures {
@@ -26,7 +26,7 @@ export interface DeployedSmartAccountResult extends EvmSendResult {
     deployedAddress: string;
 }
 
-export type MachineStationWriteResult = SubstrateSendResult | EvmSendResult | BuiltEvmTransactionResult | BuiltCallTransactionResult | DeployedSmartAccountResult;
+export type MachineStationWriteResult = EvmSendResult | BuiltEvmTransactionResult | DeployedSmartAccountResult;
 
 // Transaction data interfaces for when sendTransaction = false
 export interface MachineStationTransactionData {
@@ -101,14 +101,14 @@ export interface UpdateConfigsOptions {
 export interface DeployMachineSmartAccountOptions {
     machineSmartAccountOwnerAddress: string;
     nonce: bigint;
-    machineStationOwnerSignature: string;
+    stationManagerSignature: string;
     sendTransaction?: boolean;
 }
 
 export interface TransferMachineStationBalanceOptions {
     newMachineStationAddress: string;
     nonce: bigint;
-    machineStationOwnerSignature: string;
+    stationAdminSignature: string;
     sendTransaction?: boolean;
 }
 
@@ -148,7 +148,7 @@ export interface ExecuteMachineTransferBalanceOptions {
     machineAddress: string;
     recipientAddress: string;
     nonce: bigint;
-    machineStationOwnerSignature: string;
+    stationManagerSignature: string;
     machineOwnerSignature: string;
     sendTransaction?: boolean;
 }
