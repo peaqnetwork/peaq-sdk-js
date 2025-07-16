@@ -446,8 +446,45 @@ export class MachineStation extends Base {
         statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
         txOptions?: txOptions
     ): Promise<MachineStationWriteResult | ExecuteTransferMachineBalanceData> {
-        // TODO: Implement machine balance transfer logic
-        throw new Error('executeMachineTransferBalance not yet implemented');
+        const { 
+            smartAccountAddress, 
+            recipientAddress, 
+            nonce, 
+            machineStationOwnerSignature, 
+            smartAccountOwnerSignature, 
+            sendTransaction = false 
+        } = options;
+        
+        try {
+            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.EXECUTE_MACHINE_TRANSFER_BALANCE)).substring(0, 10);
+
+            const params = this.abiCoder.encode(
+                ["address", "address", "uint256", "bytes", "bytes"],
+                [smartAccountAddress, recipientAddress, nonce, machineStationOwnerSignature, smartAccountOwnerSignature]
+            );
+
+            const payload = params.replace("0x", createFunctionSelector);
+            const tx: EvmTransaction = {
+                to: this.machineStationAddress,
+                data: payload
+            };
+
+            if (!sendTransaction) {
+                return {
+                    transactionData: tx,
+                    message: "Transaction data ready for manual submission",
+                    machineStationAddress: this.machineStationAddress,
+                    function: "execute_transfer_machine_balance",
+                    machineAccountAddress: smartAccountAddress,
+                    recipientAddress: recipientAddress,
+                    requiredRole: "STATION_MANAGER_ROLE"
+                } as ExecuteTransferMachineBalanceData;
+            }
+
+            return await this._handleEvmTx(tx, `transfer balance from ${smartAccountAddress} to ${recipientAddress}`, statusCallback, txOptions);
+        } catch (error: any) {
+            throw new Error(`Failed to execute machine transfer balance: ${error.message}`);
+        }
     }
 
     // =====================================================================
@@ -708,8 +745,36 @@ export class MachineStation extends Base {
         if (!this.machineStationOwnerSigner) {
             throw new Error('Machine station owner signer is required for admin signatures');
         }
-        // TODO: Implement EIP-712 signature generation for machine balance transfer
-        throw new Error('adminSignTransferMachineBalance not yet implemented');
+        
+        try {
+            const { smartAccountAddress, recipientAddress, nonce } = options;
+            const chainId = await this.getChainId();
+            const domain = {
+                name: "MachineStationFactory",
+                version: "2",
+                chainId: chainId,
+                verifyingContract: this.machineStationAddress,
+            };
+
+            const types = {
+                ExecuteMachineTransferBalance: [
+                    { name: "machineAddress", type: "address" },
+                    { name: "recipientAddress", type: "address" },
+                    { name: "nonce", type: "uint256" },
+                ],
+            };
+
+            const message = {
+                machineAddress: smartAccountAddress,
+                recipientAddress: recipientAddress,
+                nonce: nonce,
+            };
+
+            const signature = await this.machineStationOwnerSigner.signTypedData(domain, types, message);
+            return signature;
+        } catch (error: any) {
+            throw new Error(`Failed to sign transfer machine balance: ${error.message}`);
+        }
     }
 
     // =====================================================================
@@ -771,8 +836,37 @@ export class MachineStation extends Base {
     public async machineSignTransferMachineBalance(
         options: MachineSignTransferMachineBalanceOptions
     ): Promise<EIP712SignableMessage> {
-        // TODO: Implement EIP-712 message creation for machine balance transfer
-        throw new Error('machineSignTransferMachineBalance not yet implemented');
+        try {
+            const { smartAccountAddress, recipientAddress, nonce } = options;
+            const chainId = await this.getChainId();
+            const domain = {
+                name: "MachineSmartAccount",
+                version: "2",
+                chainId: chainId,
+                verifyingContract: smartAccountAddress,
+            };
+
+            const types = {
+                TransferMachineBalance: [
+                    { name: "recipientAddress", type: "address" },
+                    { name: "nonce", type: "uint256" },
+                ],
+            };
+
+            const message = {
+                recipientAddress: recipientAddress,
+                nonce: nonce,
+            };
+
+            return {
+                domain,
+                types,
+                message,
+                primaryType: "TransferMachineBalance"
+            };
+        } catch (error: any) {
+            throw new Error(`Failed to create signable message for machine balance transfer: ${error.message}`);
+        }
     }
 
     // =====================================================================
