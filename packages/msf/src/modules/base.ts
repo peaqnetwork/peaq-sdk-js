@@ -165,7 +165,7 @@ export abstract class Base {
     /**
      * Enhanced EVM transaction with fire-and-forget and live-status modes
      */
-    protected async _send_evm_tx(
+    protected async _executeEvmTransaction(
         unsignedTx: EvmTransaction,
         onStatus?: (result: TransactionStatusCallback) => void | Promise<void>,
         opts: txOptions = {},
