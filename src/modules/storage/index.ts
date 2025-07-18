@@ -139,7 +139,8 @@ export class Storage extends Base {
         }
 
         // Get the appropriate address and convert if needed
-        const accountAddress = address || this.metadata.pair?.address;
+        let accountAddress = address || (this.metadata.pair as any)?.address;
+
         if (!accountAddress) {
             throw new Error('Address is required when no signer is set');
         }

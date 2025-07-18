@@ -1,7 +1,7 @@
 import { ApiPromise, Keyring } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 
-import { ethers, JsonRpcProvider, Wallet } from 'ethers';
+import { ethers, JsonRpcProvider, Wallet, Signer } from 'ethers';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { ISubmittableResult } from '@polkadot/types/types';
 import { hexToU8a, isHex } from '@polkadot/util';
@@ -21,7 +21,6 @@ type Address = string;
 export abstract class Base {
     private _api: ApiPromise | JsonRpcProvider;
     private _metadata: SDKMetadata;
-    protected maxAttempts: number = 5;
     private _nonceStore: Map<Address, BN>;
 
     /**
@@ -100,29 +99,43 @@ export abstract class Base {
     }
 
     /**
-     * Generates a blockchain key pair from a seed string.
-     * @param seed - Hex private key (EVM) or mnemonic phrase (Substrate)
-     * @param keyType - The type of key to create for Substrate chains (ignored for EVM)
-     * @throws Error if seed is empty or invalid
+     * Sets the signer from auth input - handles Signer, KeyringPair, or string.
+     * @param auth - Signer instance (EVM), KeyringPair instance (Substrate), or string (private key/mnemonic)
+     * @throws Error if auth is invalid or incompatible with chain type
      */
-    protected _createKeyPair(seed: string, keyType?: KeyType): KeyringPair | Wallet {
-        if (!seed) {
-            throw new Error('Seed is required');
+    protected _setSigner(auth: string | KeyringPair | Signer): KeyringPair | Signer {
+        if (!auth) {
+            throw new Error('Authorization method is required');
         }
 
+        // If auth is already a Wallet or KeyringPair, validate and use directly
+        if (typeof auth !== 'string') {
+            if (this.metadata.chainType === ChainType.EVM) {
+                this.metadata.pair = auth;
+                return auth;
+            } else if (this.metadata.chainType === ChainType.SUBSTRATE) {
+                this.metadata.pair = auth;
+                return auth;
+            }
+            else {
+                throw new Error('Invalid chain type');
+            }
+        }
+
+        // For string auth, create the appropriate signer based on chain type
         if (this.metadata.chainType === ChainType.EVM) {
-            const wallet = new ethers.Wallet(seed);
+            const wallet = new ethers.Wallet(auth);
             this.metadata.pair = wallet;
             return wallet;
         } else {
             // Substrate - use the specified key type or default to sr25519
-            const selectedKeyType = keyType || KeyType.SR25519;
+            const selectedKeyType = this.metadata.keyType || KeyType.SR25519;
             
             // Map KeyType enum to Polkadot keyring type string
             const keyringType = selectedKeyType === KeyType.ED25519 ? 'ed25519' : 'sr25519';
             
             const keyring = new Keyring({ type: keyringType, ss58Format: 42 });
-            const pair = keyring.addFromMnemonic(seed);
+            const pair = keyring.addFromMnemonic(auth);
             this.metadata.pair = pair;
             return pair;
         }
@@ -433,12 +446,12 @@ export abstract class Base {
             throw new EvmExecutionError('API must be JsonRpcProvider instance for EVM transactions');
         }
     
-        if (!this.metadata.pair || !(this.metadata.pair instanceof Wallet)) {
-            throw new EvmExecutionError('No wallet available for signing');
+        if (!this.metadata.pair) {
+            throw new EvmExecutionError('No signer available for signing');
         }
         
         const provider = this.api;
-        const wallet = (this.metadata.pair as Wallet).connect(provider);
+        const signer = (this.metadata.pair as Signer).connect(provider);
 
         // Handle confirmation modes
         const mode = opts.mode ?? ConfirmationMode.FAST;
@@ -454,17 +467,18 @@ export abstract class Base {
         return new Promise<EvmSendResult>(async (resolveMain, rejectMain) => {
             let cancelled = false;
             
-            const finalize = new Promise<EvmFormattedReceipt>(async (resolve, reject) => {
+            const receipt = new Promise<EvmFormattedReceipt>(async (resolve, reject) => {
                 try {
                     // Build and send transaction
-                    const tx = await this._buildEvmTx(unsignedTx, wallet, opts);
-                    const txResponse = await wallet.sendTransaction(tx);
+                    const tx = await this._buildEvmTx(unsignedTx, signer, opts);
+                    const txResponse = await signer.sendTransaction(tx);
                     
                     // Return immediately with transaction hash
                     resolveMain({
                         txHash: txResponse.hash,
                         unsubscribe: onStatus ? () => { cancelled = true; } : undefined,
-                        finalize,
+                        receipt,
+                        // confirmationMode: mode
                     });
     
                     // Emit broadcast status
@@ -519,7 +533,7 @@ export abstract class Base {
             });
     
             // Handle cases where finalize rejects before we return
-            finalize.catch((error) => {
+            receipt.catch((error) => {
                 rejectMain(error);
             });
         });
@@ -530,11 +544,11 @@ export abstract class Base {
      */
     private async _buildEvmTx(
         unsignedTx: EvmTransaction, 
-        wallet: Wallet, 
+        signer: Signer, 
         opts: txOptions
     ): Promise<any> {
         const provider = this.api as JsonRpcProvider;
-        const address = wallet.address;
+        const address = signer.getAddress();
 
         // Estimate gas as source of truth
         const estimatedGasLimit = await provider.estimateGas({

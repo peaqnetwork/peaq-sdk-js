@@ -72,7 +72,7 @@ export interface SubstrateSendResult {
 export interface EvmSendResult {
     txHash: string;
     unsubscribe?: () => void;
-    finalize: Promise<EvmFormattedReceipt>;
+    receipt: Promise<EvmFormattedReceipt>;
 }
 
 export interface FormattedReceipt {
