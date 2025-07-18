@@ -46,6 +46,9 @@ import {
  * Supports configuration updates, smart account deployment, transaction execution, and EIP-712 signature generation.
  */
 export class MachineStation extends Base {
+    // Constants
+    private static readonly ACCESS_CONTROL_ANYONE = "Anyone can call with proper signatures";
+    
     private abiCoder = new ethers.AbiCoder();
     private sdk: any;
     private machineStationAddress: string;
@@ -98,19 +101,12 @@ export class MachineStation extends Base {
         const { key, value, sendTransaction = true } = options;
         
         try {
-            const functionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.UPDATE_CONFIGS)).substring(0, 10);
             const keyHash = ethers.keccak256(ethers.toUtf8Bytes(key));
-            
-            const params = this.abiCoder.encode(
+            const tx = this._buildEvmTransaction(
+                MachineStationFactoryFunctionSignatures.UPDATE_CONFIGS,
                 ["bytes32", "uint256"],
                 [keyHash, value]
             );
-
-            const payload = params.replace("0x", functionSelector);
-            const tx: EvmTransaction = {
-                to: this.machineStationAddress,
-                data: payload
-            };
 
             if (!sendTransaction) {
                 return {
@@ -150,18 +146,11 @@ export class MachineStation extends Base {
         const { machineSmartAccountOwnerAddress, nonce, machineStationOwnerSignature, sendTransaction = true } = options;
         
         try {
-            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.DEPLOY_MACHINE_SMART_ACCOUNT)).substring(0, 10);
-
-            const params = this.abiCoder.encode(
+            const tx = this._buildEvmTransaction(
+                MachineStationFactoryFunctionSignatures.DEPLOY_MACHINE_SMART_ACCOUNT,
                 ["address", "uint256", "bytes"],
                 [machineSmartAccountOwnerAddress, nonce, machineStationOwnerSignature]
             );
-
-            const payload = params.replace("0x", createFunctionSelector);
-            const tx: EvmTransaction = {
-                to: this.machineStationAddress,
-                data: payload
-            };
 
             if (!sendTransaction) {
                 return {
@@ -202,18 +191,23 @@ export class MachineStation extends Base {
                 }
             }
             
-            // If we found a deployed address, return the full result
-            if (deployedAddress) {
-                return {
-                    message: `Successfully deployed machine smart account at address ${deployedAddress}.`,
-                    deployedAddress: deployedAddress,
-                    txHash: 'txHash' in result ? result.txHash : undefined,
-                    receipt: 'receipt' in result ? result.receipt : undefined
-                } as DeployedSmartAccountResult;
+            let message = `Successfully deployed machine smart account at address ${deployedAddress}.`;
+            let success = true;
+
+            if (!deployedAddress) {
+                success = false;
+                message = "Deployed address not found in receipt logs";
+                
+                console.warn(`No deployed address found in logs. Result:`, result);
             }
             
-            // If no deployed address found, return the original result
-            return result as DeployedSmartAccountResult | BuiltEvmTransactionResult | BuiltCallTransactionResult;
+            return {
+                success: success,
+                message: message,
+                deployedAddress: deployedAddress,
+                txHash: 'txHash' in result ? result.txHash : undefined,
+                receipt: 'receipt' in result ? result.receipt : undefined
+            } as DeployedSmartAccountResult;
         } catch (error: any) {
             throw new Error(`Failed to deploy machine smart account: ${error.message}`);
         }
@@ -239,18 +233,11 @@ export class MachineStation extends Base {
         const { newMachineStationAddress, nonce, machineStationOwnerSignature, sendTransaction = true } = options;
         
         try {
-            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.TRANSFER_MACHINE_STATION_BALANCE)).substring(0, 10);
-
-            const params = this.abiCoder.encode(
+            const tx = this._buildEvmTransaction(
+                MachineStationFactoryFunctionSignatures.TRANSFER_MACHINE_STATION_BALANCE,
                 ["address", "uint256", "bytes"],
                 [newMachineStationAddress, nonce, machineStationOwnerSignature]
             );
-
-            const payload = params.replace("0x", createFunctionSelector);
-            const tx: EvmTransaction = {
-                to: this.machineStationAddress,
-                data: payload
-            };
 
             if (!sendTransaction) {
                 return {
@@ -290,18 +277,11 @@ export class MachineStation extends Base {
         const { target, calldata, nonce, refundAmount = 0n, machineStationOwnerSignature, sendTransaction = false } = options;
         
         try {
-            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.EXECUTE_TRANSACTION)).substring(0, 10);
-
-            const params = this.abiCoder.encode(
+            const tx = this._buildEvmTransaction(
+                MachineStationFactoryFunctionSignatures.EXECUTE_TRANSACTION,
                 ["address", "bytes", "uint256", "uint256", "bytes"],
                 [target, calldata, nonce, refundAmount, machineStationOwnerSignature]
             );
-
-            const payload = params.replace("0x", createFunctionSelector);
-            const tx: EvmTransaction = {
-                to: this.machineStationAddress,
-                data: payload
-            };
 
             if (!sendTransaction) {
                 return {
@@ -310,7 +290,7 @@ export class MachineStation extends Base {
                     machineStationAddress: this.machineStationAddress,
                     function: "execute_transaction",
                     target: target,
-                    accessControl: "Anyone can call with proper signatures"
+                    accessControl: MachineStation.ACCESS_CONTROL_ANYONE
                 } as ExecuteTransactionData;
             }
 
@@ -345,18 +325,11 @@ export class MachineStation extends Base {
         } = options;
         
         try {
-            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.EXECUTE_MACHINE_TRANSACTION)).substring(0, 10);
-
-            const params = this.abiCoder.encode(
+            const tx = this._buildEvmTransaction(
+                MachineStationFactoryFunctionSignatures.EXECUTE_MACHINE_TRANSACTION,
                 ["address", "address", "bytes", "uint256", "uint256", "bytes", "bytes"],
                 [machineAddress, target, calldata, nonce, refundAmount, machineStationOwnerSignature, machineOwnerSignature]
             );
-
-            const payload = params.replace("0x", createFunctionSelector);
-            const tx: EvmTransaction = {
-                to: this.machineStationAddress,
-                data: payload
-            };
 
             if (!sendTransaction) {
                 return {
@@ -366,7 +339,7 @@ export class MachineStation extends Base {
                     function: "execute_machine_transaction",
                     machineAddress: machineAddress,
                     target: target,
-                    accessControl: "Anyone can call with proper signatures"
+                    accessControl: MachineStation.ACCESS_CONTROL_ANYONE
                 } as ExecuteMachineTransactionData;
             }
 
@@ -402,18 +375,11 @@ export class MachineStation extends Base {
         } = options;
         
         try {
-            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.EXECUTE_MACHINE_BATCH_TRANSACTIONS)).substring(0, 10);
-
-            const params = this.abiCoder.encode(
+            const tx = this._buildEvmTransaction(
+                MachineStationFactoryFunctionSignatures.EXECUTE_MACHINE_BATCH_TRANSACTIONS,
                 ["address[]", "address[]", "bytes[]", "uint256", "uint256", "uint256[]", "bytes", "bytes[]"],
                 [machineAddresses, targets, calldataList, nonce, refundAmount, machineNonces, machineStationOwnerSignature, machineOwnerSignatures]
             );
-
-            const payload = params.replace("0x", createFunctionSelector);
-            const tx: EvmTransaction = {
-                to: this.machineStationAddress,
-                data: payload
-            };
 
             if (!sendTransaction) {
                 const accountsStr = machineAddresses.join(", ");
@@ -426,7 +392,7 @@ export class MachineStation extends Base {
                     machineAddresses: machineAddresses,
                     targets: targets,
                     description: `Batch transactions from accounts [${accountsStr}] on targets [${targetsStr}]`,
-                    accessControl: "Anyone can call with proper signatures"
+                    accessControl: MachineStation.ACCESS_CONTROL_ANYONE
                 } as ExecuteMachineBatchTransactionsData;
             }
 
@@ -461,18 +427,11 @@ export class MachineStation extends Base {
         } = options;
         
         try {
-            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.EXECUTE_MACHINE_TRANSFER_BALANCE)).substring(0, 10);
-
-            const params = this.abiCoder.encode(
+            const tx = this._buildEvmTransaction(
+                MachineStationFactoryFunctionSignatures.EXECUTE_MACHINE_TRANSFER_BALANCE,
                 ["address", "address", "uint256", "bytes", "bytes"],
                 [machineAddress, recipientAddress, nonce, machineStationOwnerSignature, machineOwnerSignature]
             );
-
-            const payload = params.replace("0x", createFunctionSelector);
-            const tx: EvmTransaction = {
-                to: this.machineStationAddress,
-                data: payload
-            };
 
             if (!sendTransaction) {
                 return {
@@ -512,13 +471,7 @@ export class MachineStation extends Base {
         
         try {
             const { machineSmartAccountOwnerAddress, nonce } = options;
-            const chainId = await this.getChainId();
-            const domain = {
-                name: "MachineStationFactory",
-                version: "2",
-                chainId: chainId,
-                verifyingContract: this.machineStationAddress,
-            };
+            const domain = await this._getMachineStationDomain("MachineStationFactory");
 
             const types = {
                 DeployMachineSmartAccount: [
@@ -555,13 +508,7 @@ export class MachineStation extends Base {
         
         try {
             const { newMachineStationAddress, nonce } = options;
-            const chainId = await this.getChainId();
-            const domain = {
-                name: "MachineStationFactory",
-                version: "2",
-                chainId: chainId,
-                verifyingContract: this.machineStationAddress,
-            };
+            const domain = await this._getMachineStationDomain("MachineStationFactory");
 
             const types = {
                 TransferMachineStationBalance: [
@@ -598,13 +545,7 @@ export class MachineStation extends Base {
         
         try {
             const { target, calldata, nonce, refundAmount = 0n } = options;
-            const chainId = await this.getChainId();
-            const domain = {
-                name: "MachineStationFactory",
-                version: "2",
-                chainId: chainId,
-                verifyingContract: this.machineStationAddress,
-            };
+            const domain = await this._getMachineStationDomain("MachineStationFactory");
 
             const types = {
                 ExecuteTransaction: [
@@ -645,13 +586,7 @@ export class MachineStation extends Base {
         
         try {
             const { machineAddress, target, calldata, nonce, refundAmount = 0n } = options;
-            const chainId = await this.getChainId();
-            const domain = {
-                name: "MachineStationFactory",
-                version: "2",
-                chainId: chainId,
-                verifyingContract: this.machineStationAddress
-            };
+            const domain = await this._getMachineStationDomain("MachineStationFactory");
 
             const types = {
                 ExecuteMachineTransaction: [
@@ -702,13 +637,7 @@ export class MachineStation extends Base {
                 machineNonces = [] 
             } = options;
             
-            const chainId = await this.getChainId();
-            const domain = {
-                name: "MachineStationFactory",
-                version: "2",
-                chainId: chainId,
-                verifyingContract: this.machineStationAddress,
-            };
+            const domain = await this._getMachineStationDomain("MachineStationFactory");
 
             const types = {
                 ExecuteMachineBatchTransactions: [
@@ -753,13 +682,7 @@ export class MachineStation extends Base {
         
         try {
             const { machineAddress, recipientAddress, nonce } = options;
-            const chainId = await this.getChainId();
-            const domain = {
-                name: "MachineStationFactory",
-                version: "2",
-                chainId: chainId,
-                verifyingContract: this.machineStationAddress,
-            };
+            const domain = await this._getMachineStationDomain("MachineStationFactory");
 
             const types = {
                 ExecuteMachineTransferBalance: [
@@ -801,13 +724,7 @@ export class MachineStation extends Base {
     ): Promise<string | EIP712SignableMessage> {
         try {
             const { machineAddress, target, calldata, nonce } = options;
-            const chainId = await this.getChainId();
-            const domain = {
-                name: "MachineSmartAccount",
-                version: "2",
-                chainId: chainId,
-                verifyingContract: machineAddress,
-            };
+            const domain = await this._getMachineAccountDomain("MachineSmartAccount", machineAddress);
 
             const types = {
                 Execute: [
@@ -856,13 +773,7 @@ export class MachineStation extends Base {
     ): Promise<string | EIP712SignableMessage> {
         try {
             const { machineAddress, recipientAddress, nonce } = options;
-            const chainId = await this.getChainId();
-            const domain = {
-                name: "MachineSmartAccount",
-                version: "2",
-                chainId: chainId,
-                verifyingContract: machineAddress,
-            };
+            const domain = await this._getMachineAccountDomain("MachineSmartAccount", machineAddress);
 
             const types = {
                 TransferMachineBalance: [
@@ -897,6 +808,66 @@ export class MachineStation extends Base {
     // =====================================================================
     // PRIVATE HELPER METHODS
     // =====================================================================
+
+    /**
+     * Generates a function selector (4-byte signature) from a function signature string.
+     * 
+     * @param signature - The function signature string
+     * @returns The 4-byte function selector
+     */
+    private _getFunctionSelector(signature: string): string {
+        return ethers.keccak256(ethers.toUtf8Bytes(signature)).substring(0, 10);
+    }
+
+    /**
+     * Generates an EIP-712 domain for MachineStationFactory contract.
+     * 
+     * @param name - The domain name
+     * @returns Promise resolving to the EIP-712 domain object
+     */
+    private async _getMachineStationDomain(name: string): Promise<{ name: string, version: string, chainId: number, verifyingContract: string }> {
+        const chainId = await this.getChainId();
+        return {
+            name,
+            version: "2",
+            chainId,
+            verifyingContract: this.machineStationAddress
+        };
+    }
+
+    /**
+     * Generates an EIP-712 domain for MachineSmartAccount contract.
+     * 
+     * @param name - The domain name
+     * @param verifyingContract - The machine smart account address
+     * @returns Promise resolving to the EIP-712 domain object
+     */
+    private async _getMachineAccountDomain(name: string, verifyingContract: string): Promise<{ name: string, version: string, chainId: number, verifyingContract: string }> {
+        const chainId = await this.getChainId();
+        return {
+            name,
+            version: "2",
+            chainId,
+            verifyingContract
+        };
+    }
+
+    /**
+     * Builds an EVM transaction with encoded parameters.
+     * 
+     * @param signature - The function signature
+     * @param paramTypes - Array of parameter types for ABI encoding
+     * @param paramValues - Array of parameter values
+     * @returns The constructed EVM transaction
+     */
+    private _buildEvmTransaction(signature: string, paramTypes: string[], paramValues: any[]): EvmTransaction {
+        const selector = this._getFunctionSelector(signature);
+        const encodedParams = this.abiCoder.encode(paramTypes, paramValues);
+        return {
+            to: this.machineStationAddress,
+            data: selector + encodedParams.slice(2)
+        };
+    }
 
     private async _handleEvmTx(
         tx: EvmTransaction, 
