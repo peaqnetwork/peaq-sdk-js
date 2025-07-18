@@ -7,8 +7,8 @@ import { hexToU8a, u8aToHex } from '@polkadot/util';
 import { evmToAddress } from '@polkadot/util-crypto';
 
 import { Base } from '../base';
-import { ChainType, SDKMetadata, EvmTransaction, PrecompileAddresses, BuiltCallTransactionResult, BuiltEvmTransactionResult, WrittenTransactionResult, EvmTxOptions } from '../../types/common';
-import { SendResult, EvmSendResult, TransactionStatusCallback } from '../../types/base';
+import { ChainType, SDKMetadata, EvmTransaction, PrecompileAddresses, BuiltCallTransactionResult, BuiltEvmTransactionResult, txOptions, VerificationMethodType } from '../../types/common';
+import { TransactionStatusCallback } from '../../types/base';
 import { createStorageKeys, CreateStorageKeysEnum, generateEvmPublicKeyMultibase, generateEd25519PublicKeyMultibase, generateSr25519PublicKeyMultibase } from '../crypto/';
 import {
   DIDV2Document,
@@ -45,7 +45,7 @@ export class DIDV2Implementation extends Base {
   // ---------------------------------------------------------
   public async create(options: CreateDIDOptions,
     statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
-    txOptions?: EvmTxOptions
+    txOptions?: txOptions
   ): Promise<DidWriteResult> {
     const { name, controller, verificationMethods = [], services = [], signature } = options;
 
@@ -69,6 +69,7 @@ export class DIDV2Implementation extends Base {
     if (this.metadata.chainType === ChainType.EVM) {
       return this._createEvm(name, effectiveController[0], didDocumentHex, statusCallback, txOptions);
     }
+    // TODO: MACTH: Don't default to substrate, just offer as another option. If not other options his, then default to an error saying chain type is not supported.
     return this._createSubstrate(name, effectiveController[0], didDocumentHex, statusCallback);
   }
 
@@ -78,6 +79,7 @@ export class DIDV2Implementation extends Base {
   public async read(options: ReadDIDOptions): Promise<ReadDIDResult | null> {
     const { name, address } = options;
     
+    // switch statement to determine chain type. If not supported throw an error
     if (this.metadata.chainType === ChainType.EVM) {
       const evmAddress = address || (this.metadata.pair as any)?.address;
       if (!evmAddress) {
@@ -131,11 +133,11 @@ export class DIDV2Implementation extends Base {
   // UPDATE
   // ---------------------------------------------------------
   public async update(options: UpdateDIDOptions,
-    statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>
+    statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
+    txOptions?: txOptions
   ): Promise<DidWriteResult> {
     const { name, controller, verificationMethods, services, signature } = options;
 
-    // Re-generate full DID Document with new data (simple replace strategy)
     const primaryController = controller?.[0] ?? ((this.metadata.pair as any)?.address ?? '');
     const didDocumentHex = await this._generateDidDocument(primaryController, {
       controller: controller ?? [],
@@ -145,7 +147,7 @@ export class DIDV2Implementation extends Base {
     });
 
     if (this.metadata.chainType === ChainType.EVM) {
-      return this._updateEvm(name, primaryController, didDocumentHex, statusCallback);
+      return this._updateEvm(name, primaryController, didDocumentHex, statusCallback, txOptions);
     }
     return this._updateSubstrate(name, primaryController, didDocumentHex, statusCallback);
   }
@@ -154,12 +156,13 @@ export class DIDV2Implementation extends Base {
   // REMOVE / deactivate
   // ---------------------------------------------------------
   public async remove(options: RemoveDIDOptions,
-    statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>
+    statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
+    txOptions?: txOptions
   ): Promise<DidWriteResult> {
     const { name, address } = options;
 
     if (this.metadata.chainType === ChainType.EVM) {
-      return this._removeEvm(name, (this.metadata.pair as any)?.address || address, statusCallback);
+      return this._removeEvm(name, (this.metadata.pair as any)?.address || address, statusCallback, txOptions);
     }
     return this._removeSubstrate(name, (this.metadata.pair as any)?.address || address, statusCallback);
   }
@@ -223,10 +226,9 @@ export class DIDV2Implementation extends Base {
       }
       if (this.api instanceof JsonRpcProvider && this.metadata.chainType === ChainType.EVM) {
         const chainId = await this.getChainId();
-        method.setBlockchainAccountId(`eip155:${chainId}:${address}`);
+        method.setPublicKeyMultibase(`eip155:${chainId}:${address}`);
+        // method.setBlockchainAccountId(`eip155:${chainId}:${address}`);
       }
-      // const chainId = await this.getChainId();
-      // method.setBlockchainAccountId(`eip155:${chainId}:${address}`)
 
       // TODO add assertionMethod, keyAgreement, capabilityInvocation, capabilityDelegation in v3
       doc.addVerificationMethods(method);
@@ -260,7 +262,7 @@ export class DIDV2Implementation extends Base {
 
   private _generateMultibase(address: string, type: string): string {
     switch (type) {
-        case 'EcdsaSecp256k1RecoveryMethod2020':
+        case VerificationMethodType.ECDSA:
             if (this.metadata.chainType !== ChainType.EVM) {
                 throw new Error('EcdsaSecp256k1RecoveryMethod2020 is only supported on EVM chains');
             }
@@ -269,18 +271,18 @@ export class DIDV2Implementation extends Base {
                 return ''; // Return empty string as fallback
             }
             return generateEvmPublicKeyMultibase(this.metadata.pair as any);
-        case 'Ed25519VerificationKey2020':
+        case VerificationMethodType.ED25519:
             if (this.metadata.chainType !== ChainType.SUBSTRATE) {
                 throw new Error('Ed25519VerificationKey2020 is only supported on Substrate chains');
             }
           return generateEd25519PublicKeyMultibase(address);
-        case 'Sr25519VerificationKey2020':
+        case VerificationMethodType.SR25519:
             if (this.metadata.chainType !== ChainType.SUBSTRATE) {
                 throw new Error('Sr25519VerificationKey2020 is only supported on Substrate chains');
             }
             return generateSr25519PublicKeyMultibase(address);
         default:
-            throw new Error(`Unsupported DID version: ${type}`);
+            throw new Error(`Unsupported DID verification method type: ${type}`);
     }
   }
 
@@ -294,7 +296,7 @@ export class DIDV2Implementation extends Base {
         type: m.getType(),
         controller: m.getController(),
         publicKeyMultibase: m.getPublicKeyMultibase(),
-        blockchainAccountId: m.getBlockchainAccountId()
+        // blockchainAccountId: m.getBlockchainAccountId()
       })),
       authentication: doc.getAuthentications(),
       service: (doc.getServices() || []).map((s: any) => ({
@@ -311,7 +313,7 @@ export class DIDV2Implementation extends Base {
   }
 
   // ---------------  EVM helpers ----------------
-  private async _createEvm(name: string, address: string, didHex: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: EvmTxOptions): Promise<DidWriteResult> {
+  private async _createEvm(name: string, address: string, didHex: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<DidWriteResult> {
     const selector = ethers.keccak256(ethers.toUtf8Bytes(FunctionSignatures.ADD_ATTRIBUTE)).substring(0, 10);
     const params = this.abiCoder.encode(
       ['address', 'bytes', 'bytes', 'uint32'],
@@ -322,13 +324,10 @@ export class DIDV2Implementation extends Base {
       data: params.replace('0x', selector)
     };
 
-    if (!this.metadata.pair || this.metadata.machineStation) {
-      return { message: 'Constructed create DID tx (unsigned).', tx } as BuiltEvmTransactionResult;
-    }
-    return this._handleEvmTx(tx, `create DID ${name}`, statusCallback, txOptions);
+    return this._handleEvmTx(tx, `create DID ${name} for ${address}`, statusCallback, txOptions);
   }
 
-  private async _updateEvm(name: string, address: string, didHex: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<DidWriteResult> {
+  private async _updateEvm(name: string, address: string, didHex: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<DidWriteResult> {
     const selector = ethers.keccak256(ethers.toUtf8Bytes(FunctionSignatures.UPDATE_ATTRIBUTE)).substring(0, 10);
     const params = this.abiCoder.encode(
       ['address', 'bytes', 'bytes', 'uint32'],
@@ -338,13 +337,11 @@ export class DIDV2Implementation extends Base {
       to: PrecompileAddresses.DID,
       data: params.replace('0x', selector)
     };
-    if (!this.metadata.pair || this.metadata.machineStation) {
-      return { message: 'Constructed update DID tx (unsigned).', tx } as BuiltEvmTransactionResult;
-    }
-    return this._handleEvmTx(tx, `update DID ${name}`, statusCallback);
+
+    return this._handleEvmTx(tx, `update DID ${name}`, statusCallback, txOptions);
   }
 
-  private async _removeEvm(name: string, address: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<DidWriteResult> {
+  private async _removeEvm(name: string, address: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<DidWriteResult> {
     const selector = ethers.keccak256(ethers.toUtf8Bytes(FunctionSignatures.REMOVE_ATTRIBUTE)).substring(0, 10);
     const params = this.abiCoder.encode(
       ['address', 'bytes'],
@@ -355,10 +352,7 @@ export class DIDV2Implementation extends Base {
       data: params.replace('0x', selector)
     };
 
-    if (!this.metadata.pair || this.metadata.machineStation) {
-      return { message: 'Constructed remove DID tx (unsigned).', tx } as BuiltEvmTransactionResult;
-    }
-    return this._handleEvmTx(tx, `remove DID ${name}`, statusCallback);
+    return this._handleEvmTx(tx, `remove DID ${name}`, statusCallback, txOptions);
   }
 
   // ---------------  Substrate helpers ----------------
@@ -380,23 +374,26 @@ export class DIDV2Implementation extends Base {
     return this._handleSubstrateTx(call, `remove DID ${name}`, statusCallback);
   }
 
-  private async _handleSubstrateTx(call: SubmittableExtrinsic<'promise', ISubmittableResult>, action: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<BuiltCallTransactionResult | SendResult> {
+  private async _handleSubstrateTx(call: SubmittableExtrinsic<'promise', ISubmittableResult>, action: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<DidWriteResult> {
     if (!this.metadata.pair) {
       return { message: `Constructed ${action} call (unsigned).`, extrinsic: call } as BuiltCallTransactionResult;
     }
     try {
       // Now both methods accept the unified TransactionStatusCallback type
-      return await this._send_substrate_tx(call, statusCallback);
+        return await this._submitSubstrateTransaction(call, statusCallback);
     } catch (err: any) {
       // Throw error instead of returning signable extrinsic
       throw new Error(`Failed to ${action}: ${err?.message ?? err}`);
     }
   }
 
-  private async _handleEvmTx(tx: EvmTransaction, action: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: EvmTxOptions): Promise<EvmSendResult> {
+  private async _handleEvmTx(tx: EvmTransaction, action: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<DidWriteResult> {
+    if (!this.metadata.pair || this.metadata.machineStation) {
+      return { message: `Constructed ${action} tx (unsigned).`, tx } as BuiltEvmTransactionResult;
+    }
     try {
-      // The _send_evm_tx method already handles EVM status updates properly
-      return await this._send_evm_tx(tx, statusCallback, txOptions);
+              // The _executeEvmTransaction method already handles EVM status updates properly
+        return await this._executeEvmTransaction(tx, statusCallback, txOptions);
     } catch (err: any) {
       // Throw error instead of returning signable extrinsic
       throw new Error(`Failed to ${action}: ${err?.message ?? err}`);

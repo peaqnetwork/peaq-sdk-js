@@ -1,7 +1,7 @@
 import { ApiPromise, Keyring } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 
-import { ethers, JsonRpcProvider, Wallet, TransactionResponse } from 'ethers';
+import { ethers, JsonRpcProvider, Wallet } from 'ethers';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { ISubmittableResult } from '@polkadot/types/types';
 import { hexToU8a, isHex } from '@polkadot/util';
@@ -9,8 +9,8 @@ import { BN } from '@polkadot/util';
 import { GenericExtrinsic } from '@polkadot/types';
 import { AnyTuple } from '@polkadot/types-codec/types';
 
-import { ChainType, SDKMetadata, EvmTransaction, EvmTxOptions, KeyType, PrecompileAddresses, CreateInstanceOptions } from '../types/common';
-import { FormattedReceipt, PeaqEvent, PeaqEventData, TErrorData, EvmExecutionError, SendResult, EvmSendResult, EvmFormattedReceipt, TransactionStatusCallback, EvmStatusUpdate, EvmEvent } from '../types/base';
+import { ChainType, SDKMetadata, EvmTransaction, txOptions, KeyType, PrecompileAddresses, ConfirmationMode, TransactionStatus } from '../types/common';
+import { FormattedReceipt, PeaqEvent, PeaqEventData, TErrorData, EvmExecutionError, SubstrateSendResult, EvmSendResult, EvmFormattedReceipt, TransactionStatusCallback, EvmStatusUpdate, EvmEvent } from '../types/base';
 
 type Address = string;
 
@@ -67,11 +67,13 @@ export abstract class Base {
             this._nonceStore.has(address) ? this._nonceStore.get(address) : new BN(0)
         ) as BN;
 
-        const nonce = onChainNonce?.gt(currentNonce) ? onChainNonce : currentNonce;
-        const newNonce = nonce?.addn(1);
+        // Use the higher of on-chain nonce or our stored nonce to avoid conflicts
+        const currentUsedNonce = onChainNonce?.gt(currentNonce) ? onChainNonce : currentNonce;
+        // Store the next nonce for future transactions
+        const nextNonce = currentUsedNonce?.addn(1);
 
-        this._nonceStore.set(address, newNonce);
-        return nonce;
+        this._nonceStore.set(address, nextNonce);
+        return currentUsedNonce;
     }
 
     /**
@@ -129,10 +131,10 @@ export abstract class Base {
     /**
      * Enhanced substrate transaction with fire-and-forget and live-status modes
      */
-    protected async _send_substrate_tx(
+    protected async _submitSubstrateTransaction(
         call: SubmittableExtrinsic<"promise", ISubmittableResult>,
         onStatus?: (result: TransactionStatusCallback) => void | Promise<void>
-    ): Promise<SendResult> {
+    ): Promise<SubstrateSendResult> {
         if (!this.metadata.pair) {
             throw new Error('No keypair available for signing');
         }
@@ -146,32 +148,62 @@ export abstract class Base {
         // Get managed nonce
         const nonce = await this._getNonce(keyPair.address);
 
-        return new Promise<SendResult>(async (resolveMain, rejectMain) => {
-            let unsub: (() => void) | null = null;
-            let actualTxHash: string = '';
+        // Extract finalization logic to separate method
+        const finalizeResult = this._signAndMonitorSubstrateTx(call, keyPair, nonce, onStatus);
+
+        return new Promise<SubstrateSendResult>(async (resolveMain, rejectMain) => {
             let hasReturned = false;
 
-            // A promise that only resolves on finality (or rejects on drop/invalid/error)
-            const finalize = new Promise<FormattedReceipt>(async (resolve, reject) => {
-                try {
-                    // Sign the transaction first
-                    await call.signAsync(keyPair, { nonce });
+            // Handle cases where finalize rejects before we return
+            finalizeResult.catch((error) => {
+                if (!hasReturned) {
+                    rejectMain(error);
+                }
+            });
 
-                    // Send and monitor the transaction
-                    unsub = await call.send(async (result: ISubmittableResult) => {
+            try {
+                // Wait for the first status update to get the transaction hash
+                const { txHash, unsubscribe, receipt } = await finalizeResult;
+                
+                if (!hasReturned) {
+                    hasReturned = true;
+                    resolveMain({
+                        txHash,
+                        unsubscribe,
+                        finalize: Promise.resolve(receipt)
+                    });
+                }
+            } catch (error: any) {
+                if (!hasReturned) {
+                    rejectMain(error);
+                }
+            }
+        });
+    }
+
+    /**
+     * Signs and monitors a Substrate transaction
+     */
+    private async _signAndMonitorSubstrateTx(
+        call: SubmittableExtrinsic<"promise", ISubmittableResult>,
+        keyPair: KeyringPair,
+        nonce: BN,
+        onStatus?: (result: TransactionStatusCallback) => void | Promise<void>
+    ): Promise<{ txHash: string; unsubscribe: () => void; receipt: FormattedReceipt }> {
+        return new Promise<{ txHash: string; unsubscribe: () => void; receipt: FormattedReceipt }>(async (resolve, reject) => {
+            let unsub: (() => void) | null = null;
+            let actualTxHash: string = '';
+
+            try {
+                // Sign the transaction first
+                await this._signSubstrateTx(call, keyPair, nonce);
+
+                // Send and monitor the transaction
+                unsub = await call.send(async (result: ISubmittableResult) => {
+                    try {
                         // Capture the real transaction hash from the first result
                         if (!actualTxHash && result.txHash) {
                             actualTxHash = result.txHash.toHex();
-                            
-                            // Return the SendResult immediately on first status update
-                            if (!hasReturned) {
-                                hasReturned = true;
-                                resolveMain({
-                                    txHash: actualTxHash,
-                                    unsubscribe: () => unsub && unsub(),
-                                    finalize
-                                });
-                            }
                         }
                         
                         // Forward status to user callback if provided
@@ -181,70 +213,77 @@ export abstract class Base {
 
                         // Check for early failures when inBlock
                         if (result.status.isInBlock) {
-                            const blockHash = result.status.asInBlock.toString();
-                            
-                            // Check for extrinsic failures early to fail fast
-                            const events = result.events;
-                            const peaqEvents = events.map(({ event, phase }) => {
-                                const { section, method, data } = event;
-                                const eventData: PeaqEventData = { lookupName: method, data: data };
-                                return {
-                                    event,
-                                    phase,
-                                    section,
-                                    method,
-                                    eventData: [eventData],
-                                    blockHash: blockHash
-                                } as PeaqEvent;
-                            });
-                            
-                            // Check for any failed extrinsics
-                            const extrinsicFailedEvents = peaqEvents.filter(peaqEvent => peaqEvent.method === "ExtrinsicFailed");
-                            if (extrinsicFailedEvents.length > 0) {
-                                const eventData = extrinsicFailedEvents[0].eventData[0];
-                                const errorResp = await this._transactionError(extrinsicFailedEvents[0].method, eventData);
-                                unsub && unsub();
-                                return reject(
-                                    new Error(
-                                        `${errorResp?.name} for ${errorResp?.section}.`
-                                    )
-                                );
-                            }
+                            await this._checkForSubstrateErrors(result);
                         }
 
                         // Handle finalization
                         if (result.status.isFinalized) {
-                            unsub && unsub();
                             const receipt = this._formatReceipt(result);
-                            resolve(receipt);
+                            resolve({
+                                txHash: actualTxHash,
+                                unsubscribe: () => unsub && unsub(),
+                                receipt
+                            });
                         } 
                         // Handle error states
                         else if (result.status.isInvalid || result.status.isDropped) {
-                            unsub && unsub();
                             reject(new Error(
                                 result.status.isInvalid
                                     ? "Transaction is invalid"
                                     : "Transaction was dropped"
                             ));
                         }
-                    });
-                } catch (error: any) {
-                    if (unsub) unsub();
-                    if (!hasReturned) {
-                        rejectMain(error);
-                    } else {
-                        reject(error);
+                    } finally {
+                        // Ensure unsub is called regardless of how the callback exits
+                        unsub && unsub();
                     }
-                }
-            });
-
-            // Handle cases where finalize rejects before we return
-            finalize.catch((error) => {
-                if (!hasReturned) {
-                    rejectMain(error);
-                }
-            });
+                });
+            } catch (error: any) {
+                if (unsub) unsub();
+                reject(error);
+            }
         });
+    }
+
+    /**
+     * Signs a Substrate transaction
+     */
+    private async _signSubstrateTx(
+        call: SubmittableExtrinsic<"promise", ISubmittableResult>,
+        keyPair: KeyringPair,
+        nonce: BN
+    ): Promise<void> {
+        await call.signAsync(keyPair, { nonce });
+    }
+
+    /**
+     * Checks for Substrate transaction errors
+     */
+    private async _checkForSubstrateErrors(result: ISubmittableResult): Promise<void> {
+        const blockHash = result.status.asInBlock.toString();
+        
+        // Check for extrinsic failures early to fail fast
+        const events = result.events;
+        const peaqEvents = events.map(({ event, phase }) => {
+            const { section, method, data } = event;
+            const eventData: PeaqEventData = { lookupName: method, data: data };
+            return {
+                event,
+                phase,
+                section,
+                method,
+                eventData: [eventData],
+                blockHash: blockHash
+            } as PeaqEvent;
+        });
+
+        // Check for any failed extrinsics
+        const extrinsicFailedEvents = peaqEvents.filter(peaqEvent => peaqEvent.method === "ExtrinsicFailed");
+        if (extrinsicFailedEvents.length > 0) {
+            const eventData = extrinsicFailedEvents[0].eventData[0];
+            const errorResp = await this._transactionError(extrinsicFailedEvents[0].method, eventData);
+            throw new Error(`${errorResp?.name} for ${errorResp?.section}.`);
+        }
     }
 
 
@@ -280,6 +319,13 @@ export abstract class Base {
         method: string,
         eventData: PeaqEventData
     ): Promise<{ documentation: string[]; name: string, section: string } | null> {
+        // Extract repeated fallback object to constant for better maintainability
+        const UNKNOWN_ERROR = {
+            documentation: ['Unknown error'],
+            name: 'UnknownError',
+            section: 'UnknownSection'
+        };
+
         const failedEvent = method === 'ExtrinsicFailed';
         const api = this.api;
         if (!(api instanceof ApiPromise)) {
@@ -304,20 +350,12 @@ export abstract class Base {
                         section: decode.section
                     };
                 } catch (error) {
-                    return {
-                        documentation: ['Unknown error'],
-                        name: 'UnknownError',
-                        section: 'UnknownSection'
-                    };
+                    return UNKNOWN_ERROR;
                 }
             }
         }
         
-        return {
-            documentation: ['Unknown error'],
-            name: 'UnknownError',
-            section: 'UnknownSection'
-        };
+        return UNKNOWN_ERROR;
     }
 
     /**
@@ -353,14 +391,8 @@ export abstract class Base {
         }));
     }
 
-    /**
-     * Convert ethers logs to our EvmEvent format
-     */
-    private _formatEvmEvents(logs: readonly ethers.Log[]): EvmEvent[] {
-        return this._formatEvmLogs(logs);
-    }
 
-    // Add this helper function before the _send_evm_tx method
+    // Add this helper function before the _executeEvmTransaction method
     private _parseEvmError(error: any): string {
         if (!error) return 'Unknown error occurred';
 
@@ -392,10 +424,10 @@ export abstract class Base {
     /**
      * Enhanced EVM transaction with fire-and-forget and live-status modes
      */
-    protected async _send_evm_tx(
+    protected async _executeEvmTransaction(
         unsignedTx: EvmTransaction,
         onStatus?: (result: TransactionStatusCallback) => void | Promise<void>,
-        opts: EvmTxOptions = {}
+        opts: txOptions = {}
     ): Promise<EvmSendResult> {
         if (!(this.api instanceof JsonRpcProvider)) {
             throw new EvmExecutionError('API must be JsonRpcProvider instance for EVM transactions');
@@ -407,100 +439,79 @@ export abstract class Base {
         
         const provider = this.api;
         const wallet = (this.metadata.pair as Wallet).connect(provider);
-        const address = wallet.address;
-        const confirmations = opts.confirmations ?? 1; // Default to 1 if not specified
+
+        // Handle confirmation modes
+        const mode = opts.mode ?? ConfirmationMode.FAST;
+        let targetConfirmations = 1;  // Default to 1 for FAST mode
+        
+        if (mode === ConfirmationMode.CUSTOM) {
+            if (!opts.confirmations) {
+                throw new Error('confirmations must be set when using ConfirmationMode.CUSTOM');
+            }
+            targetConfirmations = opts.confirmations;
+        }
     
         return new Promise<EvmSendResult>(async (resolveMain, rejectMain) => {
             let cancelled = false;
             
-            // A promise that resolves after user-specified confirmations
             const finalize = new Promise<EvmFormattedReceipt>(async (resolve, reject) => {
                 try {
-                    // Estimate gas as source of truth
-                    const estimatedGasLimit = await provider.estimateGas({
-                        from: address,
-                        to: unsignedTx.to,
-                        data: unsignedTx.data ?? '0x',
-                    });
-    
                     // Build and send transaction
-                    const fullTx = {
-                        to: unsignedTx.to,
-                        data: unsignedTx.data ?? '0x',
-                        gasLimit: estimatedGasLimit,
-                    };
-    
-                    const txResponse = await wallet.sendTransaction(fullTx);
+                    const tx = await this._buildEvmTx(unsignedTx, wallet, opts);
+                    const txResponse = await wallet.sendTransaction(tx);
                     
                     // Return immediately with transaction hash
                     resolveMain({
                         txHash: txResponse.hash,
                         unsubscribe: onStatus ? () => { cancelled = true; } : undefined,
-                        finalize
+                        finalize,
                     });
     
-                    // If callback provided, send status updates
-                    if (onStatus && !cancelled) {
-                        // 1. Broadcast status
-                        const broadcastStatus: EvmStatusUpdate = {
-                            type: "broadcast",
-                            hash: txResponse.hash,
-                            nonce: txResponse.nonce
-                        };
-                        onStatus(broadcastStatus);
-                    }
+                    // Emit broadcast status
+                    this._emitStatusCallback(onStatus, cancelled, {
+                        status: TransactionStatus.BROADCAST,
+                        confirmationMode: mode,
+                        totalConfirmations: 0,
+                        hash: txResponse.hash,
+                        nonce: txResponse.nonce
+                    });
     
-                    // 2. Wait for mining (default)
-                    const receipt1 = await txResponse.wait().finally();
-                    if (!receipt1) {
+                    // Wait for first confirmation
+                    const inclusionReceipt = await txResponse.wait();
+                    if (!inclusionReceipt) {
                         throw new Error('Transaction receipt not found');
                     }
     
-                    if (receipt1.status === 0) {
+                    if (inclusionReceipt.status === 0) {
                         throw new EvmExecutionError('Transaction failed');
                     }
-    
-                    if (onStatus && !cancelled) {
-                        // Mined status
-                        const minedStatus: EvmStatusUpdate = {
-                            type: "mined",
-                            hash: receipt1.hash,
-                            blockNumber: receipt1.blockNumber,
-                            blockHash: receipt1.blockHash,
-                            gasUsed: receipt1.gasUsed?.toString(),
-                            events: this._formatEvmEvents(receipt1.logs),
-                            confirmations: 1
-                        };
-                        onStatus(minedStatus);
-                    }
-    
-                    // 3. Wait for user-specified confirmations (evm-like finalized)
-                    const receiptN = await txResponse.wait(confirmations);
-                    if (!receiptN) {
-                        throw new Error('Final receipt not found');
-                    }
-    
-                    if (onStatus && !cancelled) {
-                        // Finalized status
-                        const finalizedStatus: EvmStatusUpdate = {
-                            type: "confirmations",
-                            hash: receiptN.hash,
-                            blockNumber: receiptN.blockNumber,
-                            blockHash: receiptN.blockHash,
-                            confirmations: confirmations,
-                            gasUsed: receiptN.gasUsed?.toString(),
-                            events: this._formatEvmEvents(receiptN.logs)
-                        };
-                        onStatus(finalizedStatus);
-                    }
-    
-                    resolve(this._formatEvmReceipt(receiptN, confirmations));
+
+                    // Emit in-block status
+                    this._emitStatusCallback(onStatus, cancelled, {
+                        status: TransactionStatus.IN_BLOCK,
+                        confirmationMode: mode,
+                        totalConfirmations: 1,
+                        receipt: inclusionReceipt,
+                        hash: txResponse.hash
+                    });
+
+                    // Wait for confirmations based on mode
+                    const userReceipt = await this._waitForConfirmations(
+                        txResponse, 
+                        inclusionReceipt, 
+                        mode, 
+                        targetConfirmations, 
+                        provider, 
+                        onStatus, 
+                        cancelled
+                    );
+
+                    resolve(userReceipt);
                 } catch (error: any) {
                     // Gas estimation errors should be thrown immediately
                     if (error.code === 'CALL_EXCEPTION') {
                         const errorMessage = this._parseEvmError(error);
-                        reject(new EvmExecutionError(errorMessage));
-                        return;
+                        return reject(new EvmExecutionError(errorMessage));
                     }
                     
                     reject(error);
@@ -514,43 +525,155 @@ export abstract class Base {
         });
     }
 
-    // Format EVM receipt for consistency
-    protected _formatEvmReceipt(receipt: ethers.TransactionReceipt, confirmations: number): EvmFormattedReceipt {
+    /**
+     * Builds an EVM transaction with gas estimation and fee calculation
+     */
+    private async _buildEvmTx(
+        unsignedTx: EvmTransaction, 
+        wallet: Wallet, 
+        opts: txOptions
+    ): Promise<any> {
+        const provider = this.api as JsonRpcProvider;
+        const address = wallet.address;
+
+        // Estimate gas as source of truth
+        const estimatedGasLimit = await provider.estimateGas({
+            from: address,
+            to: unsignedTx.to,
+            data: unsignedTx.data ?? '0x',
+        });
+
+        // Get current fee data for EIP-1559
+        const feeData = await provider.getFeeData();
+        
+        // Use custom values if provided, otherwise use network defaults
+        const maxFeePerGas = opts.maxFeePerGas ?? feeData.maxFeePerGas;
+        const maxPriorityFeePerGas = opts.maxPriorityFeePerGas ?? feeData.maxPriorityFeePerGas;
+        const gasLimit = opts.gasLimit ?? estimatedGasLimit;
+        
+        // Build EIP-1559 transaction
         return {
-            blockNumber: receipt.blockNumber.toString(),
-            txHash: receipt.hash,
-            confirmations: confirmations,
-            gasUsed: receipt.gasUsed.toString(),
-            effectiveGasPrice: receipt.gasPrice?.toString() || '0',
-            status: receipt.status || 0,
-            blockHash: receipt.blockHash,
-            receipt: {
-                transactionHash: receipt.hash,
-                transactionIndex: receipt.index,
-                blockHash: receipt.blockHash,
-                from: receipt.from,
-                to: receipt.to,
-                blockNumber: receipt.blockNumber,
-                cumulativeGasUsed: Number(receipt.cumulativeGasUsed),
-                gasUsed: Number(receipt.gasUsed),
-                contractAddress: receipt.contractAddress,
-                status: receipt.status || 0,
-                effectiveGasPrice: Number(receipt.gasPrice) || 0,
-                type: receipt.type,
-                logs: receipt.logs.map(log => ({
-                    address: log.address,
-                    topics: log.topics,
-                    data: log.data,
-                    blockHash: log.blockHash,
-                    blockNumber: log.blockNumber,
-                    transactionHash: log.transactionHash,
-                    transactionIndex: log.transactionIndex,
-                    logIndex: log.index,
-                    transactionLogIndex: `0x${log.index.toString(16)}`,
-                    removed: log.removed || false
-                })),
-                logsBloom: receipt.logsBloom
-            }
+            to: unsignedTx.to,
+            data: unsignedTx.data ?? '0x',
+            gasLimit,
+            type: 2, // EIP-1559 transaction type
+            maxFeePerGas,
+            maxPriorityFeePerGas,
         };
+    }
+
+    /**
+     * Emits status callback if provided and not cancelled
+     */
+    private _emitStatusCallback(
+        onStatus: ((result: TransactionStatusCallback) => void | Promise<void>) | undefined,
+        cancelled: boolean | undefined,
+        statusUpdate: TransactionStatusCallback
+    ): void {
+        if (onStatus && !cancelled) {
+            onStatus(statusUpdate);
+        }
+    }
+
+    /**
+     * Waits for confirmations based on the specified mode
+     */
+    private async _waitForConfirmations(
+        txResponse: any,
+        inclusionReceipt: any,
+        mode: ConfirmationMode,
+        targetConfirmations: number,
+        provider: JsonRpcProvider,
+        onStatus?: (result: TransactionStatusCallback) => void | Promise<void>,
+        cancelled?: boolean
+    ): Promise<EvmFormattedReceipt> {
+        const inclusionBlock = inclusionReceipt.blockNumber;
+
+        switch (mode) {
+            case ConfirmationMode.FAST:
+                // Already have 1 confirmation, nothing more needed
+                return inclusionReceipt;
+
+            case ConfirmationMode.CUSTOM:
+                // Wait for user's target confirmations
+                const startingFinalized = await provider.getBlock("finalized");
+                if (!startingFinalized) {
+                    throw new Error("Could not fetch finalized head");
+                }
+
+                const customReceipt = await txResponse.wait(targetConfirmations);
+                if (!customReceipt) {
+                    throw new Error('Could not get receipt after waiting for confirmations');
+                }
+                
+                // Validate the receipt is still canonical to guard against chain reorgs
+                const canonicalReceipt = await provider.getTransactionReceipt(txResponse.hash);
+                if (!canonicalReceipt) {
+                    throw new Error('Could not fetch canonical transaction receipt');
+                }
+                
+                const finalizedHead = await provider.getBlock("finalized");
+                if (!finalizedHead) {
+                    throw new Error("Could not fetch finalized head");
+                }
+
+                const confirmationsSeen = finalizedHead.number - startingFinalized.number + 1;
+                const status = finalizedHead.number >= inclusionBlock 
+                    ? TransactionStatus.FINALIZED 
+                    : TransactionStatus.IN_BLOCK;
+
+                // Emit custom confirmations callback
+                this._emitStatusCallback(onStatus, cancelled, {
+                    status,
+                    confirmationMode: mode,
+                    totalConfirmations: confirmationsSeen,
+                    receipt: canonicalReceipt,
+                    hash: txResponse.hash
+                });
+                
+                return canonicalReceipt;
+
+            case ConfirmationMode.FINAL:
+                // Poll until the GRANDPA-finalized head >= inclusion block
+                const FINALITY_POLL_INTERVAL_MS = 1000;
+                let finalizedHeadFINAL;
+                let startingBlock = await provider.getBlock("finalized");
+                if (!startingBlock) {
+                    throw new Error('Could not get finalized block');
+                }
+                
+                do {
+                    finalizedHeadFINAL = await provider.getBlock("finalized");
+                    if (!finalizedHeadFINAL) {
+                        throw new Error('Could not get finalized block');
+                    }
+                    if (finalizedHeadFINAL.number >= inclusionBlock) {
+                        break;
+                    }
+                    await new Promise(r => setTimeout(r, FINALITY_POLL_INTERVAL_MS));
+                } while (true);
+                
+                // Fetch new receipt after finalized head has passed inclusion block
+                const finalReceipt = await provider.getTransactionReceipt(inclusionReceipt.hash);
+                if (!finalReceipt) {
+                    throw new Error("Could not fetch finalized head");
+                }
+
+                const finalConfirmations = finalReceipt.blockNumber - startingBlock.number;
+
+                // Emit finalized status callback
+                this._emitStatusCallback(onStatus, cancelled, {
+                    status: TransactionStatus.FINALIZED,
+                    confirmationMode: mode,
+                    totalConfirmations: finalConfirmations,
+                    receipt: finalReceipt,
+                    hash: txResponse.hash
+                });
+                
+                return finalReceipt;
+
+            default:
+                throw new Error(`Unknown confirmation mode: ${mode}`);
+        }
     }
 }

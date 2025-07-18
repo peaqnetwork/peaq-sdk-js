@@ -4,7 +4,7 @@ import { JsonRpcProvider } from 'ethers';
 import { cryptoWaitReady, mnemonicValidate } from '@polkadot/util-crypto';
 
 import { Base } from './base';
-import { ChainType, SDKMetadata, CreateInstanceOptions, KeyType } from '../types/common';
+import { ChainType, SDKMetadata, CreateInstanceOptions, KeyType, ConfirmationMode, VerificationMethodType } from '../types/common';
 
 import { Did } from './did';
 import { DIDVersion } from '../types/did';
@@ -20,6 +20,9 @@ import { Storage } from './storage';
  */
 export class Main extends Base {
     static ChainType = ChainType;
+    static ConfirmationMode = ConfirmationMode;
+    static VerificationMethodType = VerificationMethodType;
+
     public readonly did: Did;
     public readonly storage: Storage;
 

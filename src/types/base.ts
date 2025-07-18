@@ -2,6 +2,8 @@ import { Codec } from '@polkadot/types/types';
 import { Event, Phase } from '@polkadot/types/interfaces';
 import { TransactionResponse } from 'ethers';
 import { ISubmittableResult } from '@polkadot/types/types';
+import { TransactionReceipt } from 'ethers';
+import { ConfirmationMode, TransactionStatus } from './common';
 
 export interface PeaqEventData {
     lookupName: string;
@@ -43,25 +45,24 @@ export interface EvmEvent {
 
 // EVM status object for callbacks
 export interface EvmStatusUpdate {
-    type: "broadcast" | "mined" | "confirmations";
-    hash: string;
+    hash?: string;
     nonce?: number;
-    blockNumber?: number;
-    blockHash?: string;
-    gasUsed?: string;
-    confirmations?: number;
-    events?: EvmEvent[];
+    confirmationMode?: ConfirmationMode;
+    status?: TransactionStatus;
+    totalConfirmations?: number;
+    receipt?: TransactionReceipt;
 }
 
 // Unified callback type for both EVM and Substrate transactions
-export type TransactionStatusCallback = ISubmittableResult | EvmStatusUpdate;
+export type TransactionStatusCallback = ISubmittableResult | EvmStatusUpdate | TransactionReceipt;
 
-export interface SubstrateTransactionResult {
-    receipt: FormattedReceipt;
-    unsubscribe: () => void;
-}
+// export interface SubstrateTransactionResult {
+//     receipt: FormattedReceipt;
+//     unsubscribe: () => void;
+// }
 
-export interface SendResult {
+// TODO update with substrate receipt
+export interface SubstrateSendResult {
     txHash: string;
     unsubscribe: () => void;
     finalize: Promise<FormattedReceipt>;
@@ -95,42 +96,7 @@ export interface FormattedReceipt {
 }
 
 // EVM equivalent of FormattedReceipt
-export interface EvmFormattedReceipt {
-    blockNumber: string;
-    txHash: string;
-    confirmations: number;
-    gasUsed: string;
-    effectiveGasPrice: string;
-    status: number; // 1 for success, 0 for failure
-    blockHash: string;
-    receipt: {
-        transactionHash: string;
-        transactionIndex: number;
-        blockHash: string;
-        from: string;
-        to: string | null;
-        blockNumber: number;
-        cumulativeGasUsed: number;
-        gasUsed: number;
-        contractAddress: string | null;
-        status: number;
-        effectiveGasPrice: number;
-        type: number;
-        logs: {
-            address: string;
-            topics: readonly string[];
-            data: string;
-            blockHash: string;
-            blockNumber: number;
-            transactionHash: string;
-            transactionIndex: number;
-            logIndex: number;
-            transactionLogIndex: string;
-            removed: boolean;
-        }[];
-        logsBloom: string;
-    };
-}
+export type EvmFormattedReceipt = TransactionReceipt;
 
 export class EvmExecutionError extends Error {
     constructor(message: string) {

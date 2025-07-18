@@ -1,3 +1,6 @@
+import { SubstrateSendResult, EvmSendResult } from '../types/base';
+import { BuiltEvmTransactionResult, BuiltCallTransactionResult } from '../types/common';
+
 export interface AddItemOptions {
     itemType: string;
     item: Object;
@@ -9,7 +12,7 @@ export interface RemoveItemOptions {
 
 export interface UpdateItemOptions {
     itemType: string;
-    newItem: Object;
+    item: Object;
 }
 
 export interface GetItemOptions {
@@ -38,3 +41,5 @@ export type StorageOperation = {
     type: StorageOperationType;
     options: AddItemOptions | RemoveItemOptions | UpdateItemOptions;
 };
+
+export type StorageWriteResult = SubstrateSendResult | EvmSendResult | BuiltEvmTransactionResult | BuiltCallTransactionResult;
