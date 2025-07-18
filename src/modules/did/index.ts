@@ -1,12 +1,11 @@
 import { ApiPromise } from '@polkadot/api';
 import { JsonRpcProvider } from 'ethers';
-import { SDKMetadata } from '../../types/common';
+import { SDKMetadata, txOptions } from '../../types/common';
 import { Base } from '../base';
 import { DIDVersion, CreateDIDOptions, UpdateDIDOptions, RemoveDIDOptions, ReadDIDOptions, ReadDIDResult, DidWriteResult } from '../../types/did';
 import { DIDV2Implementation } from './v2_implementation';
 import { DIDV3Implementation } from './v3_implementation';
 import { TransactionStatusCallback } from '../../types/base';
-import { txOptions } from '../../types/common';
 export class Did extends Base {
     private implementation: DIDV2Implementation | DIDV3Implementation;
 
