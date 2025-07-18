@@ -51,26 +51,26 @@ export class DIDV2Implementation extends Base {
 
     // Get the connected wallet/keypair address
     const connectedAddress = (this.metadata.pair as any)?.address;
-    if (!connectedAddress) {
+    if (!connectedAddress && !controller) {
       throw new Error('No wallet/keypair connected. Please either provide a controller or connect a wallet/keypair.');
     }
 
     // Use provided controller or default to connected address
-    const effectiveController = controller || [connectedAddress];
+    const effectiveController = controller || connectedAddress;
 
     // Build DID Document (protobuf) -> hex string
-    const didDocumentHex = await this._generateDidDocument(effectiveController[0], {
-      controller: effectiveController,
+    const didDocumentHex = await this._generateDidDocument(effectiveController, {
+      controller: [effectiveController],
       verificationMethods,
       services,
       signature
     });
 
     if (this.metadata.chainType === ChainType.EVM) {
-      return this._createEvm(name, effectiveController[0], didDocumentHex, statusCallback, txOptions);
+      return this._createEvm(name, effectiveController, didDocumentHex, statusCallback, txOptions);
     }
     // TODO: MACTH: Don't default to substrate, just offer as another option. If not other options his, then default to an error saying chain type is not supported.
-    return this._createSubstrate(name, effectiveController[0], didDocumentHex, statusCallback);
+    return this._createSubstrate(name, effectiveController, didDocumentHex, statusCallback);
   }
 
   // ---------------------------------------------------------
@@ -138,18 +138,27 @@ export class DIDV2Implementation extends Base {
   ): Promise<DidWriteResult> {
     const { name, controller, verificationMethods, services, signature } = options;
 
-    const primaryController = controller?.[0] ?? ((this.metadata.pair as any)?.address ?? '');
-    const didDocumentHex = await this._generateDidDocument(primaryController, {
-      controller: controller ?? [],
+    // Get the connected wallet/keypair address
+    const connectedAddress = (this.metadata.pair as any)?.address;
+    if (!connectedAddress && !controller) {
+      throw new Error('No wallet/keypair connected. Please either provide a controller or connect a wallet/keypair.');
+    }
+
+    // Use provided controller or default to connected address
+    const effectiveController = controller || connectedAddress;
+
+    // Build DID Document (protobuf) -> hex string
+    const didDocumentHex = await this._generateDidDocument(effectiveController, {
+      controller: [effectiveController],
       verificationMethods: verificationMethods || [],
       services: services || [],
       signature
     });
 
     if (this.metadata.chainType === ChainType.EVM) {
-      return this._updateEvm(name, primaryController, didDocumentHex, statusCallback, txOptions);
+      return this._updateEvm(name, effectiveController, didDocumentHex, statusCallback, txOptions);
     }
-    return this._updateSubstrate(name, primaryController, didDocumentHex, statusCallback);
+    return this._updateSubstrate(name, effectiveController, didDocumentHex, statusCallback);
   }
 
   // ---------------------------------------------------------
@@ -220,14 +229,15 @@ export class DIDV2Implementation extends Base {
       method.setController(vm.controller || `did:peaq:${address}`);
 
       // user can manually set the multibase if they would like
-      if (vm.publicKeyMultibase) method.setPublicKeyMultibase(vm.publicKeyMultibase);
-      else {
-        method.setPublicKeyMultibase(this._generateMultibase(address, vm.type));
-      }
-      if (this.api instanceof JsonRpcProvider && this.metadata.chainType === ChainType.EVM) {
+      if (vm.publicKeyMultibase) {
+        method.setPublicKeyMultibase(vm.publicKeyMultibase);
+      } else if (this.api instanceof JsonRpcProvider && this.metadata.chainType === ChainType.EVM) {
+        // For EVM chains, use EIP-155 format: eip155:chain_id:address
         const chainId = await this.getChainId();
         method.setPublicKeyMultibase(`eip155:${chainId}:${address}`);
-        // method.setBlockchainAccountId(`eip155:${chainId}:${address}`);
+      } else {
+        // For other chains, use the traditional multibase generation
+        method.setPublicKeyMultibase(this._generateMultibase(address, vm.type));
       }
 
       // TODO add assertionMethod, keyAgreement, capabilityInvocation, capabilityDelegation in v3
@@ -240,9 +250,20 @@ export class DIDV2Implementation extends Base {
       const s = new peaqDidProto.Service();
       s.setId(srv.id);
       s.setType(srv.type);
-      if (typeof srv.serviceEndpoint === 'string') {
+      
+      // At least one of serviceEndpoint or data should be provided
+      if (srv.serviceEndpoint) {
         s.setServiceEndpoint(srv.serviceEndpoint);
       }
+      if (srv.data) {
+        s.setData(srv.data);
+      }
+      
+      // Validate that at least one field is set
+      if (!srv.serviceEndpoint && !srv.data) {
+        throw new Error(`Service ${srv.id} must have either serviceEndpoint or data`);
+      }
+      
       doc.addServices(s);
     });
 
@@ -266,11 +287,13 @@ export class DIDV2Implementation extends Base {
             if (this.metadata.chainType !== ChainType.EVM) {
                 throw new Error('EcdsaSecp256k1RecoveryMethod2020 is only supported on EVM chains');
             }
-            if (!this.metadata.pair || !('signingKey' in this.metadata.pair)) {
-                console.warn('EVM wallet required for EcdsaSecp256k1RecoveryMethod2020. Cannot generate multibase without a signing key. Please provide publicKeyMultibase manually or connect an EVM wallet.');
-                return ''; // Return empty string as fallback
+            // Note: EVM case should be handled in _generateDidDocument using EIP-155 format
+            // This fallback attempts to generate from signing key if available
+            if (this.metadata.pair && ('signingKey' in this.metadata.pair)) {
+                return generateEvmPublicKeyMultibase(this.metadata.pair as any);
             }
-            return generateEvmPublicKeyMultibase(this.metadata.pair as any);
+            // If no signing key, return empty string (caller should handle EIP-155 format)
+            return '';
         case VerificationMethodType.ED25519:
             if (this.metadata.chainType !== ChainType.SUBSTRATE) {
                 throw new Error('Ed25519VerificationKey2020 is only supported on Substrate chains');
@@ -302,7 +325,8 @@ export class DIDV2Implementation extends Base {
       service: (doc.getServices() || []).map((s: any) => ({
         id: s.getId(),
         type: s.getType(),
-        serviceEndpoint: s.getServiceEndpoint()
+        serviceEndpoint: s.getServiceEndpoint(),
+        data: s.getData()
       })),
       signature: doc.getSignature ? (doc.getSignature() ? {
         type: doc.getSignature()?.getType(),

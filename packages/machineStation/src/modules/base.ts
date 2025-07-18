@@ -1,5 +1,5 @@
 import { JsonRpcProvider, Signer } from 'ethers';
-import { ChainType, SDKMetadata, EvmTransaction, txOptions, ConfirmationMode, TransactionStatus } from '../types/common';
+import { ChainType, SDKMetadata, EvmTransaction, txOptions, ConfirmationMode, TransactionStatus, PrecompileAddresses } from '../types/common';
 import { EvmExecutionError, EvmSendResult, EvmFormattedReceipt, TransactionStatusCallback } from '../types/base';
 
 /**
@@ -74,33 +74,92 @@ export abstract class Base {
         }
     }
 
-    // Add this helper function before the _send_evm_tx method
-    private _parseEvmError(error: any): string {
+    /**
+     * Extract target contract address from transaction data
+     */
+    private _extractTargetAddress(transactionData: string): string | null {
+        try {
+            if (transactionData && transactionData.length > 74) {
+                // The target address should be in the first 32 bytes after the function selector
+                const targetHex = transactionData.slice(34, 74);
+                return '0x' + targetHex.slice().toLowerCase();
+            }
+        } catch (error) {
+            // Return null if extraction fails
+        }
+        return null;
+    }
+
+    /**
+     * Get friendly name for precompile addresses
+     */
+    private _getPrecompileName(address: string): string | null {
+        switch (address.toLowerCase()) {
+            case PrecompileAddresses.STORAGE.toLowerCase():
+                return 'Storage';
+            case PrecompileAddresses.DID.toLowerCase():
+                return 'DID';
+            case PrecompileAddresses.RBAC.toLowerCase():
+                return 'RBAC';
+            case PrecompileAddresses.IERC20.toLowerCase():
+                return 'IERC20';
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Enhanced error parsing for smart contract errors.
+     * This method uses the ethers Interface to decode known errors from the ABI,
+     * while also handling wrapped errors from target contracts.
+     * 
+     * @param error - The error object from ethers
+     * @param iface - Optional ethers Interface to decode custom errors
+     * @returns A human-readable error message
+     */
+    private _parseEvmError(error: any, iface?: any): string {
         if (!error) return 'Unknown error occurred';
 
-        // Check if it's a revert error with a message
-        if (error.reason) {
-            // Extract message from Some("...") pattern
-            const someMessageMatch = error.reason.match(/Some\("([^"]+)"\)/);
-            if (someMessageMatch) {
-                return someMessageMatch[1];
+        // Contract exception
+        if (error.code === 'CALL_EXCEPTION') {
+            // Try to decode MachineStationFactory errors first
+            if (error.data && iface) {
+                try {
+                    const decodedError = iface.parseError(error.data);
+                    if (decodedError) {
+                        // Format the decoded error nicely
+                        const args = decodedError.args.length > 0 ? 
+                            ` (${decodedError.args.map((arg: any) => 
+                                typeof arg === 'string' && arg.startsWith('0x') && arg.length === 42 
+                                    ? arg.slice(0, 6) + '...' + arg.slice(-4)  // Shorten addresses
+                                    : arg.toString()
+                            ).join(', ')})` : '';
+                        return `Contract error: ${decodedError.name}${args}`;
+                    }
+                } catch (decodeError) {
+                    // Fall through to wrapped error handling
+                }
             }
-            return error.reason;
         }
 
-        // Handle other common error cases
-        if (error.code === 'INSUFFICIENT_FUNDS') {
-            return 'Insufficient funds to complete the transaction';
-        }
-        if (error.code === 'NONCE_EXPIRED') {
-            return 'Transaction nonce has expired. Please try again';
-        }
-        if (error.code === 'REPLACEMENT_UNDERPRICED') {
-            return 'Gas price too low to replace pending transaction';
+        // Precompile error
+        if (error.shortMessage) {
+            const errorData = error.data;
+
+            // Handle unknown custom error with helpful messages
+            if (error.shortMessage === 'execution reverted (unknown custom error)') {
+                const targetAddress = this._extractTargetAddress(error.transaction?.data);
+                if (targetAddress) {
+                    const precompileName = this._getPrecompileName(targetAddress);
+                    if (precompileName) {
+                        return `${precompileName} contract error: Operation failed with selector ${errorData.slice(0, 10)} (likely item already exists, insufficient permissions, invalid parameters, or machine station factory out of gas)`;
+                    }
+                }
+            }
+            return error.shortMessage;
         }
 
-        // If we can't parse it specifically, return the message or toString()
-        return error.message || error.toString();
+            return 'Transaction reverted without a reason string';
     }
 
     /**
@@ -109,7 +168,8 @@ export abstract class Base {
     protected async _send_evm_tx(
         unsignedTx: EvmTransaction,
         onStatus?: (result: TransactionStatusCallback) => void | Promise<void>,
-        opts: txOptions = {}
+        opts: txOptions = {},
+        iface?: any // Optional interface for better error decoding
     ): Promise<EvmSendResult> {
         if (!(this.api instanceof JsonRpcProvider)) {
             throw new EvmExecutionError('API must be JsonRpcProvider instance for EVM transactions');
@@ -140,11 +200,12 @@ export abstract class Base {
             const receipt = new Promise<EvmFormattedReceipt>(async (resolve, reject) => {
                 try {
                     // Estimate gas as source of truth
-                    const estimatedGasLimit = await provider.estimateGas({
-                        from: address,
-                        to: unsignedTx.to,
-                        data: unsignedTx.data ?? '0x',
-                    });
+                const estimatedGasLimit = await provider.estimateGas({
+                    from: address,
+                    to: unsignedTx.to,
+                    data: unsignedTx.data ?? '0x',
+                });
+
     
                     // Get current fee data for EIP-1559
                     const feeData = await provider.getFeeData();
@@ -221,7 +282,7 @@ export abstract class Base {
                             break;
 
                         case ConfirmationMode.CUSTOM:
-                             // 1) wait for the user’s target
+                             // 1) wait for the user's target
                              const startingFinalized = await provider.getBlock("finalized");
                              if (!startingFinalized) {
                                  throw new Error("Could not fetch finalized head");
@@ -310,14 +371,9 @@ export abstract class Base {
                     }
                     resolve(userReceipt);
                 } catch (error: any) {
-                    // Gas estimation errors should be thrown immediately
-                    if (error.code === 'CALL_EXCEPTION') {
-                        const errorMessage = this._parseEvmError(error);
-                        reject(new EvmExecutionError(errorMessage));
-                        return;
-                    }
-                    
-                    reject(error);
+                    // Parse and reject with improved error message
+                    const errorMessage = this._parseEvmError(error, iface);
+                    reject(new EvmExecutionError(errorMessage));
                 }
             });
     

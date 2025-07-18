@@ -2,8 +2,7 @@ export { Main as MSF } from './modules/main';
 
 // Export machine station factory smart contract types and enums
 export { 
-    MachineStationConfigKeys,
-    MachineStationFactoryFunctionSignatures 
+    MachineStationConfigKeys 
 } from './types/machineStation';
 
 // Export common EVM transaction enums

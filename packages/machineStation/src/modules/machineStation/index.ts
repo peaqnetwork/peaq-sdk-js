@@ -10,7 +10,6 @@ import {
 import { TransactionStatusCallback } from '../../types/base';
 import { Base } from '../base';
 import {
-    MachineStationFactoryFunctionSignatures,
     MachineStationWriteResult,
     DeployedSmartAccountResult,
     EIP712SignableMessage,
@@ -38,12 +37,15 @@ import {
     ExecuteTransferMachineBalanceData
 } from '../../types/machineStation';
 
+// Import the ABI
+import MachineStationFactoryABI from "../../abi/msf_abi.json";
+
 /**
  * Provides methods to interact with the peaq machine station factory smart contract.
  * Supports configuration updates, smart account deployment, transaction execution, and EIP-712 signature generation.
  */
 export class MachineStation extends Base {
-    private abiCoder = new ethers.AbiCoder();
+    private iface: ethers.Interface;
     private machineStationAddress: string;
     private stationAdminSigner: Signer;
     private stationManagerSigner: Signer;
@@ -69,6 +71,9 @@ export class MachineStation extends Base {
         this.stationAdminSigner = stationAdmin;
         // Use stationManager if provided, otherwise use stationAdmin for manager operations
         this.stationManagerSigner = stationManager || this.stationAdminSigner;
+        
+        // Create ethers Interface from ABI
+        this.iface = new ethers.Interface(MachineStationFactoryABI);
     }
 
     // =====================================================================
@@ -93,15 +98,9 @@ export class MachineStation extends Base {
         const { key, value, sendTransaction = true } = options;
         
         try {
-            const functionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.UPDATE_CONFIGS)).substring(0, 10);
             const keyHash = ethers.keccak256(ethers.toUtf8Bytes(key));
+            const payload = this.iface.encodeFunctionData("updateConfigs", [keyHash, value]);
             
-            const params = this.abiCoder.encode(
-                ["bytes32", "uint256"],
-                [keyHash, value]
-            );
-
-            const payload = params.replace("0x", functionSelector);
             const tx: EvmTransaction = {
                 to: this.machineStationAddress,
                 data: payload
@@ -148,14 +147,12 @@ export class MachineStation extends Base {
         const { machineSmartAccountOwnerAddress, nonce, stationManagerSignature, sendTransaction = true } = options;
         
         try {
-            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.DEPLOY_MACHINE_SMART_ACCOUNT)).substring(0, 10);
+            const payload = this.iface.encodeFunctionData("deployMachineSmartAccount", [
+                machineSmartAccountOwnerAddress, 
+                nonce, 
+                stationManagerSignature
+            ]);
 
-            const params = this.abiCoder.encode(
-                ["address", "uint256", "bytes"],
-                [machineSmartAccountOwnerAddress, nonce, stationManagerSignature]
-            );
-
-            const payload = params.replace("0x", createFunctionSelector);
             const tx: EvmTransaction = {
                 to: this.machineStationAddress,
                 data: payload
@@ -240,14 +237,12 @@ export class MachineStation extends Base {
         const { newMachineStationAddress, nonce, stationAdminSignature, sendTransaction = true } = options;
         
         try {
-            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.TRANSFER_MACHINE_STATION_BALANCE)).substring(0, 10);
+            const payload = this.iface.encodeFunctionData("transferMachineStationBalance", [
+                newMachineStationAddress, 
+                nonce, 
+                stationAdminSignature
+            ]);
 
-            const params = this.abiCoder.encode(
-                ["address", "uint256", "bytes"],
-                [newMachineStationAddress, nonce, stationAdminSignature]
-            );
-
-            const payload = params.replace("0x", createFunctionSelector);
             const tx: EvmTransaction = {
                 to: this.machineStationAddress,
                 data: payload
@@ -294,14 +289,14 @@ export class MachineStation extends Base {
         const { target, calldata, nonce, refundAmount = 0n, machineStationOwnerSignature, sendTransaction = false } = options;
         
         try {
-            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.EXECUTE_TRANSACTION)).substring(0, 10);
+            const payload = this.iface.encodeFunctionData("executeTransaction", [
+                target, 
+                calldata, 
+                nonce, 
+                refundAmount, 
+                machineStationOwnerSignature
+            ]);
 
-            const params = this.abiCoder.encode(
-                ["address", "bytes", "uint256", "uint256", "bytes"],
-                [target, calldata, nonce, refundAmount, machineStationOwnerSignature]
-            );
-
-            const payload = params.replace("0x", createFunctionSelector);
             const tx: EvmTransaction = {
                 to: this.machineStationAddress,
                 data: payload
@@ -353,14 +348,16 @@ export class MachineStation extends Base {
         } = options;
         
         try {
-            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.EXECUTE_MACHINE_TRANSACTION)).substring(0, 10);
+            const payload = this.iface.encodeFunctionData("executeMachineTransaction", [
+                machineAddress, 
+                target, 
+                calldata, 
+                nonce, 
+                refundAmount, 
+                machineStationOwnerSignature, 
+                machineOwnerSignature
+            ]);
 
-            const params = this.abiCoder.encode(
-                ["address", "address", "bytes", "uint256", "uint256", "bytes", "bytes"],
-                [machineAddress, target, calldata, nonce, refundAmount, machineStationOwnerSignature, machineOwnerSignature]
-            );
-
-            const payload = params.replace("0x", createFunctionSelector);
             const tx: EvmTransaction = {
                 to: this.machineStationAddress,
                 data: payload
@@ -414,14 +411,17 @@ export class MachineStation extends Base {
         } = options;
         
         try {
-            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.EXECUTE_MACHINE_BATCH_TRANSACTIONS)).substring(0, 10);
+            const payload = this.iface.encodeFunctionData("executeMachineBatchTransactions", [
+                machineAddresses, 
+                targets, 
+                calldataList, 
+                nonce, 
+                refundAmount, 
+                machineNonces, 
+                machineStationOwnerSignature, 
+                machineOwnerSignatures
+            ]);
 
-            const params = this.abiCoder.encode(
-                ["address[]", "address[]", "bytes[]", "uint256", "uint256", "uint256[]", "bytes", "bytes[]"],
-                [machineAddresses, targets, calldataList, nonce, refundAmount, machineNonces, machineStationOwnerSignature, machineOwnerSignatures]
-            );
-
-            const payload = params.replace("0x", createFunctionSelector);
             const tx: EvmTransaction = {
                 to: this.machineStationAddress,
                 data: payload
@@ -477,14 +477,14 @@ export class MachineStation extends Base {
         } = options;
         
         try {
-            const createFunctionSelector = ethers.keccak256(ethers.toUtf8Bytes(MachineStationFactoryFunctionSignatures.EXECUTE_MACHINE_TRANSFER_BALANCE)).substring(0, 10);
+            const payload = this.iface.encodeFunctionData("executeMachineTransferBalance", [
+                machineAddress, 
+                recipientAddress, 
+                nonce, 
+                stationManagerSignature, 
+                machineOwnerSignature
+            ]);
 
-            const params = this.abiCoder.encode(
-                ["address", "address", "uint256", "bytes", "bytes"],
-                [machineAddress, recipientAddress, nonce, stationManagerSignature, machineOwnerSignature]
-            );
-
-            const payload = params.replace("0x", createFunctionSelector);
             const tx: EvmTransaction = {
                 to: this.machineStationAddress,
                 data: payload
@@ -948,13 +948,13 @@ export class MachineStation extends Base {
                 const originalSigner = this.metadata.pair;
                 this.metadata.pair = signer;
                 try {
-                    return await this._send_evm_tx(tx, statusCallback, txOptions);
+                    return await this._send_evm_tx(tx, statusCallback, txOptions, this.iface);
                 } finally {
                     // Restore the original signer
                     this.metadata.pair = originalSigner;
                 }
             } else {
-                return await this._send_evm_tx(tx, statusCallback, txOptions);
+                return await this._send_evm_tx(tx, statusCallback, txOptions, this.iface);
             }
         } catch (err: any) {
             throw new Error(`Failed to ${action}: ${err?.message ?? err}`);
