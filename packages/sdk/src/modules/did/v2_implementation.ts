@@ -8,7 +8,7 @@ import { evmToAddress } from '@polkadot/util-crypto';
 
 import { Base } from '../base';
 import { ChainType, SDKMetadata, EvmTransaction, PrecompileAddresses, BuiltCallTransactionResult, BuiltEvmTransactionResult, txOptions, VerificationMethodType } from '../../types/common';
-import { SubstrateSendResult, EvmSendResult, TransactionStatusCallback } from '../../types/base';
+import { TransactionStatusCallback } from '../../types/base';
 import { createStorageKeys, CreateStorageKeysEnum, generateEvmPublicKeyMultibase, generateEd25519PublicKeyMultibase, generateSr25519PublicKeyMultibase } from '../crypto/';
 import {
   DIDV2Document,

@@ -69,4 +69,8 @@ export enum TransactionStatus {
 export interface txOptions {
     mode?: ConfirmationMode;
     confirmations?: number;
+    // Custom gas and fee parameters
+    gasLimit?: bigint;
+    maxFeePerGas?: bigint;
+    maxPriorityFeePerGas?: bigint;
 }

@@ -28,6 +28,15 @@ export class Storage extends Base {
     private abiCoder = new ethers.AbiCoder();
 
     /**
+     * Validates that the API instance is of the correct type
+     */
+    private _validateApiInstance(): void {
+        if (!(this.api instanceof ApiPromise || this.api instanceof JsonRpcProvider)) {
+            throw new Error('Invalid API instance');
+        }
+    }
+
+    /**
      * Initializes Storage with a connected API instance and shared SDK metadata.
      * 
      * @param api - The blockchain API connection, which may be ApiPromise (Substrate) or JsonRpcProvider (EVM)
@@ -58,9 +67,7 @@ export class Storage extends Base {
         statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
         txOptions?: txOptions
     ): Promise<StorageWriteResult> {
-        if (!(this.api instanceof ApiPromise || this.api instanceof JsonRpcProvider)) {
-            throw new Error('Invalid API instance');
-        }
+        this._validateApiInstance();
 
         const { itemType, item } = options;
 
@@ -90,9 +97,7 @@ export class Storage extends Base {
         statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
         txOptions?: txOptions
     ): Promise<StorageWriteResult> {
-        if (!(this.api instanceof ApiPromise || this.api instanceof JsonRpcProvider)) {
-            throw new Error('Invalid API instance');
-        }
+        this._validateApiInstance();
 
         const { itemType } = options;
 
@@ -126,25 +131,18 @@ export class Storage extends Base {
     public async getItem(
         options: GetItemOptions
     ): Promise<GetItemResult | null> {
-        if (!(this.api instanceof ApiPromise || this.api instanceof JsonRpcProvider)) {
-            throw new Error('Invalid API instance');
-        }
+        this._validateApiInstance();
 
         const { itemType, address = ''} = options;
-        if (!itemType) {
+        if (typeof itemType !== 'string' || itemType.trim() === '') {
             throw new Error('Item Type name is required');
-        }
-
-        // If no metadata.pair is set, address must be provided
-        if (!this.metadata.pair && !address) {
-            throw new Error('Address is required when no signer is set');
         }
 
         // Get the appropriate address and convert if needed
         let accountAddress = address || (this.metadata.pair as any)?.address;
 
         if (!accountAddress) {
-            throw new Error('Address is required');
+            throw new Error('Address is required when no signer is set');
         }
 
         // EVM chains: create temporary API connection to read from Substrate
@@ -187,9 +185,7 @@ export class Storage extends Base {
         statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
         txOptions?: txOptions
     ): Promise<StorageWriteResult> {
-        if (!(this.api instanceof ApiPromise || this.api instanceof JsonRpcProvider)) {
-            throw new Error('Invalid API instance');
-        }
+        this._validateApiInstance();
 
         const { itemType, item } = options;
 
@@ -225,8 +221,9 @@ export class Storage extends Base {
             return null;
         }
 
+        const humanValue = item.toHuman?.() ?? item.toString?.() ?? '';
         return {
-            [itemType]: `${item.toHuman()}`,
+            [itemType]: `${humanValue}`,
         };
     }
 
