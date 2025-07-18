@@ -914,13 +914,13 @@ export class MachineStation extends Base {
                 const originalSigner = this.metadata.pair;
                 this.metadata.pair = signer;
                 try {
-                    return await this._send_evm_tx(tx, statusCallback, txOptions);
+                    return await this._executeEvmTransaction(tx, statusCallback, txOptions);
                 } finally {
                     // Restore the original signer
                     this.metadata.pair = originalSigner;
                 }
             } else {
-                return await this._send_evm_tx(tx, statusCallback, txOptions);
+                return await this._executeEvmTransaction(tx, statusCallback, txOptions);
             }
         } catch (err: any) {
             throw new Error(`Failed to ${action}: ${err?.message ?? err}`);
