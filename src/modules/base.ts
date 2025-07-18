@@ -131,7 +131,7 @@ export abstract class Base {
     /**
      * Enhanced substrate transaction with fire-and-forget and live-status modes
      */
-    protected async _send_substrate_tx(
+    protected async _submitSubstrateTransaction(
         call: SubmittableExtrinsic<"promise", ISubmittableResult>,
         onStatus?: (result: TransactionStatusCallback) => void | Promise<void>
     ): Promise<SubstrateSendResult> {
@@ -392,7 +392,7 @@ export abstract class Base {
     }
 
 
-    // Add this helper function before the _send_evm_tx method
+    // Add this helper function before the _executeEvmTransaction method
     private _parseEvmError(error: any): string {
         if (!error) return 'Unknown error occurred';
 
@@ -424,7 +424,7 @@ export abstract class Base {
     /**
      * Enhanced EVM transaction with fire-and-forget and live-status modes
      */
-    protected async _send_evm_tx(
+    protected async _executeEvmTransaction(
         unsignedTx: EvmTransaction,
         onStatus?: (result: TransactionStatusCallback) => void | Promise<void>,
         opts: txOptions = {}

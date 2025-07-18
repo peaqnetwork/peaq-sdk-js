@@ -380,7 +380,7 @@ export class DIDV2Implementation extends Base {
     }
     try {
       // Now both methods accept the unified TransactionStatusCallback type
-      return await this._send_substrate_tx(call, statusCallback);
+        return await this._submitSubstrateTransaction(call, statusCallback);
     } catch (err: any) {
       // Throw error instead of returning signable extrinsic
       throw new Error(`Failed to ${action}: ${err?.message ?? err}`);
@@ -392,8 +392,8 @@ export class DIDV2Implementation extends Base {
       return { message: `Constructed ${action} tx (unsigned).`, tx } as BuiltEvmTransactionResult;
     }
     try {
-      // The _send_evm_tx method already handles EVM status updates properly
-      return await this._send_evm_tx(tx, statusCallback, txOptions);
+              // The _executeEvmTransaction method already handles EVM status updates properly
+        return await this._executeEvmTransaction(tx, statusCallback, txOptions);
     } catch (err: any) {
       // Throw error instead of returning signable extrinsic
       throw new Error(`Failed to ${action}: ${err?.message ?? err}`);
