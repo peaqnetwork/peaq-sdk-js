@@ -3,7 +3,7 @@ name: NPM Prerelease
 on:
   push:
     branches:
-      - ci/18072025_publish-to-npm-registry
+      - dev
 
 jobs:
   publish-sdk-prerelease:
@@ -30,25 +30,25 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Configure Git
-        if: steps.changed-sdk-files.outputs.any_changed == 'true'
+        if: steps.changed-sdk-files.outputs.any_changed == 'false'
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
       - name: Install dependencies
-        if: steps.changed-sdk-files.outputs.any_changed == 'true'
+        if: steps.changed-sdk-files.outputs.any_changed == 'false'
         run: npm install
 
       - name: Build SDK
-        if: steps.changed-sdk-files.outputs.any_changed == 'true'
+        if: steps.changed-sdk-files.outputs.any_changed == 'false'
         run: npm run build --workspace=@peaq-network/sdk
 
       - name: Bump SDK Prerelease Version
-        if: steps.changed-sdk-files.outputs.any_changed == 'true'
+        if: steps.changed-sdk-files.outputs.any_changed == 'false'
         run: npm version prerelease --git-tag-version=false --workspace=@peaq-network/sdk
 
       - name: Commit and Push SDK Version Bump
-        if: steps.changed-sdk-files.outputs.any_changed == 'true'
+        if: steps.changed-sdk-files.outputs.any_changed == 'false'
         run: |
           git add packages/sdk/package.json
           git commit -m "ci: bump sdk prerelease version"
@@ -56,7 +56,7 @@ jobs:
           sleep 5
 
       - name: Publish SDK Prerelease
-        if: steps.changed-sdk-files.outputs.any_changed == 'true'
+        if: steps.changed-sdk-files.outputs.any_changed == 'false'
         run: npm publish --workspace=@peaq-network/sdk --tag next
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -78,32 +78,32 @@ jobs:
           path: packages/msf
 
       - name: Set up Node.js
-        if: steps.changed-ms-files.outputs.any_changed == 'true'
+        if: steps.changed-ms-files.outputs.any_changed == 'false'
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Configure Git
-        if: steps.changed-ms-files.outputs.any_changed == 'true'
+        if: steps.changed-ms-files.outputs.any_changed == 'false'
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
       - name: Install dependencies
-        if: steps.changed-ms-files.outputs.any_changed == 'true'
+        if: steps.changed-ms-files.outputs.any_changed == 'false'
         run: npm install
 
       - name: Build Machine Station
-        if: steps.changed-ms-files.outputs.any_changed == 'true'
+        if: steps.changed-ms-files.outputs.any_changed == 'false'
         run: npm run build --workspace=@peaq-network/msf
 
       - name: Bump Machine Station Prerelease Version
-        if: steps.changed-ms-files.outputs.any_changed == 'true'
+        if: steps.changed-ms-files.outputs.any_changed == 'false'
         run: npm version prerelease --git-tag-version=false --workspace=@peaq-network/msf
 
       - name: Commit and Push Machine Station Version Bump
-        if: steps.changed-ms-files.outputs.any_changed == 'true'
+        if: steps.changed-ms-files.outputs.any_changed == 'false'
         run: |
           git add packages/msf/package.json
           git commit -m "ci: bump machine station prerelease version"
@@ -113,7 +113,7 @@ jobs:
           git push https://x-access-token:${{ secrets.PAT }}@github.com/${{ github.repository }} HEAD:${{ github.ref }}
 
       - name: Publish Machine Station Prerelease
-        if: steps.changed-ms-files.outputs.any_changed == 'true'
+        if: steps.changed-ms-files.outputs.any_changed == 'false'
         run: npm publish --workspace=@peaq-network/msf --tag next
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
