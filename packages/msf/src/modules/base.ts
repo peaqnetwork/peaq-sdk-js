@@ -150,10 +150,10 @@ export abstract class Base {
             if (error.shortMessage === 'execution reverted (unknown custom error)') {
                 const targetAddress = this._extractTargetAddress(error.transaction?.data);
                 if (targetAddress) {
-                    const precompileName = this._getPrecompileName(targetAddress);
-                    if (precompileName) {
-                        return `${precompileName} contract error: Operation failed with selector ${errorData.slice(0, 10)} (likely item already exists, insufficient permissions, invalid parameters, or machine station factory out of gas)`;
-                    }
+                    // const precompileName = this._getPrecompileName(targetAddress);
+                    // if (precompileName) {
+                        return `Contract error: Operation failed with selector ${errorData.slice(0, 10)} (likely item already exists, incorrect machine owner signature, insufficient permissions, invalid parameters, or machine station factory out of gas)`;
+                    // }
                 }
             }
             return error.shortMessage;

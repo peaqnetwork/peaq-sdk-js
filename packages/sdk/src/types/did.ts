@@ -19,7 +19,7 @@ export interface DIDV2Document {
 // V3.0.0 specific interfaces
 export interface DIDV3Document {
     id: string;
-    controller: string[];
+    controller: string;
     verificationMethod: VerificationMethod[];
     authentication: string[];
     assertionMethod: string[];
@@ -72,7 +72,8 @@ export interface Signature {
 
 export interface CreateDIDOptions {
     name: string;
-    controller?: string[];
+    controller?: string;
+    didAddress?: string; // Address to use for DID ID generation (did:peaq:${didAddress})
     verificationMethods?: VerificationMethod[];
     services?: Service[];
     signature?: Signature;
@@ -80,7 +81,8 @@ export interface CreateDIDOptions {
 
 export interface UpdateDIDOptions {
     name: string;
-    controller?: string[];
+    controller?: string;
+    didAddress?: string; // Address to use for DID ID generation (did:peaq:${didAddress})
     verificationMethods?: VerificationMethod[];
     services?: Service[];
     signature?: Signature;

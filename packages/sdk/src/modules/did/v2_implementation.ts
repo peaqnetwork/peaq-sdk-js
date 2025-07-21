@@ -47,7 +47,7 @@ export class DIDV2Implementation extends Base {
     statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
     txOptions?: txOptions
   ): Promise<DidWriteResult> {
-    const { name, controller, verificationMethods = [], services = [], signature } = options;
+    const { name, controller, didAddress, verificationMethods = [], services = [], signature } = options;
 
     // Get the connected wallet/keypair address
     const connectedAddress = (this.metadata.pair as any)?.address;
@@ -57,10 +57,13 @@ export class DIDV2Implementation extends Base {
 
     // Use provided controller or default to connected address
     const effectiveController = controller || connectedAddress;
+    
+    // Use provided didAddress for ID generation, otherwise use effectiveController
+    const idAddress = didAddress || effectiveController;
 
     // Build DID Document (protobuf) -> hex string
-    const didDocumentHex = await this._generateDidDocument(effectiveController, {
-      controller: [effectiveController],
+    const didDocumentHex = await this._generateDidDocument(idAddress, {
+      controller: effectiveController,
       verificationMethods,
       services,
       signature
@@ -136,7 +139,7 @@ export class DIDV2Implementation extends Base {
     statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
     txOptions?: txOptions
   ): Promise<DidWriteResult> {
-    const { name, controller, verificationMethods, services, signature } = options;
+    const { name, controller, didAddress, verificationMethods, services, signature } = options;
 
     // Get the connected wallet/keypair address
     const connectedAddress = (this.metadata.pair as any)?.address;
@@ -146,10 +149,13 @@ export class DIDV2Implementation extends Base {
 
     // Use provided controller or default to connected address
     const effectiveController = controller || connectedAddress;
+    
+    // Use provided didAddress for ID generation, otherwise use effectiveController
+    const idAddress = didAddress || effectiveController;
 
     // Build DID Document (protobuf) -> hex string
-    const didDocumentHex = await this._generateDidDocument(effectiveController, {
-      controller: [effectiveController],
+    const didDocumentHex = await this._generateDidDocument(idAddress, {
+      controller: effectiveController,
       verificationMethods: verificationMethods || [],
       services: services || [],
       signature
@@ -213,20 +219,20 @@ export class DIDV2Implementation extends Base {
     };
   }
 
-  private async _generateDidDocument(address: string, extra: { controller: string[]; verificationMethods: VerificationMethod[]; services: Service[]; signature?: Signature }): Promise<string> {
+  private async _generateDidDocument(idAddress: string, extra: { controller: string; verificationMethods: VerificationMethod[]; services: Service[]; signature?: Signature }): Promise<string> {
     // Create new Doc and set id & controller
     const doc = new peaqDidProto.Document();
-    doc.setId(`did:peaq:${address}`);
-    doc.setController(`did:peaq:${address}`);
+    doc.setId(`did:peaq:${idAddress}`);
+    doc.setController(`did:peaq:${extra.controller}`);
 
     // Add verification methods
 
     // TODO update multibase calc logic, and make mulitbase for eth just the address
     for (const [idx, vm] of extra.verificationMethods.entries()) {
       const method = new peaqDidProto.VerificationMethod();
-      method.setId(vm.id || `did:peaq:${address}#keys-${idx + 1}`);
+      method.setId(vm.id || `did:peaq:${idAddress}#keys-${idx + 1}`);
       method.setType(vm.type);
-      method.setController(vm.controller || `did:peaq:${address}`);
+      method.setController(vm.controller || `did:peaq:${extra.controller}`);
 
       // user can manually set the multibase if they would like
       if (vm.publicKeyMultibase) {
@@ -234,10 +240,10 @@ export class DIDV2Implementation extends Base {
       } else if (this.api instanceof JsonRpcProvider && this.metadata.chainType === ChainType.EVM) {
         // For EVM chains, use EIP-155 format: eip155:chain_id:address
         const chainId = await this.getChainId();
-        method.setPublicKeyMultibase(`eip155:${chainId}:${address}`);
+        method.setPublicKeyMultibase(`eip155:${chainId}:${extra.controller}`);
       } else {
         // For other chains, use the traditional multibase generation
-        method.setPublicKeyMultibase(this._generateMultibase(address, vm.type));
+        method.setPublicKeyMultibase(this._generateMultibase(extra.controller, vm.type));
       }
 
       // TODO add assertionMethod, keyAgreement, capabilityInvocation, capabilityDelegation in v3

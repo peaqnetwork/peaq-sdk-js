@@ -21,7 +21,7 @@ export class DIDV3Implementation extends Base {
         }
 
         // Use provided controller or default to connected address
-        const effectiveController = options.controller || [connectedAddress];
+        const effectiveController = options.controller || connectedAddress;
 
         // This is a skeleton implementation - actual implementation will be added later
         const document: DIDV3Document = {
