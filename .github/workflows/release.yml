@@ -1,0 +1,75 @@
+name: NPM Latest Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Which package to release'
+        required: true
+        type: choice
+        options:
+          - sdk
+          - msf
+      version_type:
+        description: 'Version type (minor, or major)'
+        required: true
+        default: 'minor'
+        type: choice
+        options:
+          - minor
+          - major
+
+jobs:
+  publish-latest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check user authorization
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const authorizedUsers = '${{ secrets.AUTHORIZED_RELEASER }}'.split(',').map(u => u.trim());
+            const actor = '${{ github.actor }}';
+            if (!authorizedUsers.includes(actor)) {
+              core.setFailed(`User @${actor} is not authorized to perform this release.`);
+            }
+            console.log(`User @${actor} is authorized. Proceeding with release.`);
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PAT }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Configure Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build package
+        run: npm run build --workspace=@peaq-network/${{ github.event.inputs.package }}
+
+      - name: Bump Version
+        run: |
+         npm version ${{ github.event.inputs.version_type }} --workspace=@peaq-network/${{ github.event.inputs.package }} -m "chore(release): ${{ github.event.inputs.package }} %s"
+
+      - name: Pull and Push changes
+        run: |
+          git add packages/${{ github.event.inputs.package }}/package.json
+          git commit -m "ci: bump latest release"
+          git stash
+          git pull --rebase
+          git stash pop
+          git push https://x-access-token:${{ secrets.PAT }}@github.com/${{ github.repository }} HEAD:${{ github.ref }} --follow-tags
+
+      - name: Publish Package
+        run: npm publish --workspace=@peaq-network/${{ github.event.inputs.package }} --tag latest
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
