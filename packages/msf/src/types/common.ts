@@ -1,8 +1,4 @@
-import { KeyringPair } from '@polkadot/keyring/types';
 import { Signer, TransactionRequest } from 'ethers';
-import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { ISubmittableResult } from '@polkadot/types/types';
-import { DIDVersion } from './did';
 
 export enum ChainType {
     EVM = "evm",
@@ -29,14 +25,6 @@ export enum PrecompileAddresses {
     RBAC = "0x0000000000000000000000000000000000000802",
     IERC20 = "0x0000000000000000000000000000000000000809"
 }
-export interface CreateInstanceOptions {
-    baseUrl: string;
-    chainType: ChainType;
-    auth?: string | KeyringPair | Signer;
-    machineStation?: boolean;
-    didVersion?: DIDVersion;
-    keyType?: KeyType;
-}
 export interface CreateMachineStationInstanceOptions {
     baseUrl: string;
     machineStationAddress: string;
@@ -47,14 +35,8 @@ export interface CreateMachineStationInstanceOptions {
 export interface SDKMetadata {
     baseUrl: string;
     chainType: ChainType;
-    pair?: KeyringPair | Signer;
+    pair?: Signer;
     machineStation: boolean;
-    didVersion?: DIDVersion;
-    keyType?: KeyType;
-}
-export interface BuiltCallTransactionResult {
-    message: string
-    extrinsic: SubmittableExtrinsic<"promise", ISubmittableResult>
 }
 export interface BuiltEvmTransactionResult {
     message: string

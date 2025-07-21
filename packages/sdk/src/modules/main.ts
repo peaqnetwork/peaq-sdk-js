@@ -5,12 +5,11 @@ import { JsonRpcProvider, Signer } from 'ethers';
 import { cryptoWaitReady, mnemonicValidate } from '@polkadot/util-crypto';
 
 import { Base } from './base';
-import { ChainType, SDKMetadata, CreateInstanceOptions, KeyType, ConfirmationMode, VerificationMethodType, CreateMachineStationInstanceOptions } from '../types/common';
+import { ChainType, SDKMetadata, CreateInstanceOptions, KeyType, ConfirmationMode, VerificationMethodType } from '../types/common';
 
 import { Did } from './did';
 import { DIDVersion } from '../types/did';
 import { Storage } from './storage';
-import { MachineStation } from './machineStation';
 
 /**
  * Entry point for the TypeScript SDK.
@@ -26,7 +25,6 @@ export class Main extends Base {
 
     public readonly did: Did;
     public readonly storage: Storage;
-    public machineStation?: MachineStation;
 
 
     /**
@@ -41,7 +39,6 @@ export class Main extends Base {
             baseUrl: options.baseUrl,
             chainType: options.chainType,
             pair: undefined,
-            machineStation: options.machineStation || false,
             didVersion: DIDVersion.V2_1_0, // HARDCODE to V2.1.0 until v3.0.0 is released
             keyType: options.chainType === ChainType.EVM 
                 ? KeyType.ECDSA  // EVM always uses ECDSA (no user override)
@@ -70,37 +67,6 @@ export class Main extends Base {
         const sdk = new Main(options);
         await sdk.connect();
         await sdk.initializeSigner(options.auth);
-        return sdk;
-    }
-
-    /**
-     * Creates and returns a new instance of the SDK configured for a machine station.
-     * 
-     * @param userOptions - Configuration options including baseUrl, machineStationAddress, stationAdmin, and optional stationManager
-     * @returns An initialized SDK object with machine station module
-     */
-    static async createMachineStationInstance(
-        userOptions: CreateMachineStationInstanceOptions
-    ): Promise<Main> {
-        await cryptoWaitReady();
-        const options: CreateInstanceOptions = {
-            baseUrl: userOptions.baseUrl,
-            chainType: ChainType.EVM,
-            machineStation: true
-        };
-        const sdk = new Main(options);
-        await sdk.connect();
-        await sdk.initializeSigner(userOptions.stationAdmin);
-
-        sdk.machineStation = new MachineStation(
-            sdk,
-            sdk.api as JsonRpcProvider,
-            sdk.metadata,
-            userOptions.machineStationAddress,
-            userOptions.stationAdmin,
-            userOptions.stationManager
-        );
-
         return sdk;
     }
 

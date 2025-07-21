@@ -60,7 +60,8 @@ export interface VerificationMethod {
 export interface Service {
     id: string;
     type: string;
-    serviceEndpoint: string | string[] | Record<string, any>;
+    serviceEndpoint?: string;
+    data?: string;
 }
 
 export interface Signature {
