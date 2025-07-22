@@ -23,7 +23,7 @@ jobs:
           path: packages/sdk
 
       - name: Set up Node.js
-        if: steps.changed-sdk-files.outputs.any_changed == 'true'
+        if: steps.changed-sdk-files.outputs.any_changed == 'false'
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
