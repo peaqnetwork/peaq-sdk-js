@@ -1,7 +1,7 @@
 import { JsonRpcProvider, Signer } from 'ethers';
 
 import { Base } from './base';
-import { ChainType, SDKMetadata, ConfirmationMode, VerificationMethodType, CreateMachineStationInstanceOptions } from '../types/common';
+import { ChainType, SDKMetadata, ConfirmationMode, VerificationMethodType, CreateInstanceOptions } from '../types/common';
 import { MachineStation } from './machineStation';
 
 /**
@@ -25,7 +25,7 @@ export class Main extends Base {
      * @param options - Configuration options for the machine station instance including EVM RPC URL and signers
      */
     constructor(
-        options: CreateMachineStationInstanceOptions
+        options: CreateInstanceOptions
     ) {
         const metadata: SDKMetadata = {
             baseUrl: options.baseUrl,
@@ -53,8 +53,8 @@ export class Main extends Base {
      * @param options - Configuration options including EVM RPC baseUrl, machineStationAddress, stationAdmin, and optional stationManager signers
      * @returns An initialized Machine Station SDK instance ready for smart contract interactions
      */
-    static async createMachineStationInstance(
-        options: CreateMachineStationInstanceOptions
+    static async createInstance(
+        options: CreateInstanceOptions
     ): Promise<Main> {
         const sdk = new Main(options);
         

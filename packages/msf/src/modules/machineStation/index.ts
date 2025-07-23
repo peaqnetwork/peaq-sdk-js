@@ -150,11 +150,11 @@ export class MachineStation extends Base {
         statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
         txOptions?: txOptions
     ): Promise<DeployedSmartAccountResult | DeployMachineSmartAccountTransactionData> {
-        const { machineSmartAccountOwnerAddress, nonce, stationManagerSignature, sendTransaction = true } = options;
+        const { machineOwnerAddress, nonce, stationManagerSignature, sendTransaction = true } = options;
         
         try {
             const payload = this.iface.encodeFunctionData("deployMachineSmartAccount", [
-                machineSmartAccountOwnerAddress, 
+                machineOwnerAddress, 
                 nonce, 
                 stationManagerSignature
             ]);
@@ -170,13 +170,13 @@ export class MachineStation extends Base {
                     message: "Transaction data ready for manual submission",
                     machineStationAddress: this.machineStationAddress,
                     function: "deploy_machine_smart_account", 
-                    machineAccountOwnerAddress: machineSmartAccountOwnerAddress,
+                    machineOwnerAddress: machineOwnerAddress,
                     requiredRole: "STATION_MANAGER_ROLE",
                     note: "After transaction is mined, listen for MachineSmartAccountDeployed event to get the deployed address"
                 } as DeployMachineSmartAccountTransactionData;
             }
 
-            const result = await this._handleEvmTx(tx, `deploy machine smart account for ${machineSmartAccountOwnerAddress}`, statusCallback, txOptions, this.stationManagerSigner);
+            const result = await this._handleEvmTx(tx, `deploy machine smart account for ${machineOwnerAddress}`, statusCallback, txOptions, this.stationManagerSigner);
             
             // Extract deployed address from the result
             let deployedAddress: string | null = null;
@@ -541,7 +541,7 @@ export class MachineStation extends Base {
         }
         
         try {
-            const { machineSmartAccountOwnerAddress, nonce } = options;
+            const { machineOwnerAddress, nonce } = options;
             const domain = await this._getMachineStationDomain("MachineStationFactory");
 
             const types = {
@@ -552,7 +552,7 @@ export class MachineStation extends Base {
             };
 
             const message = {
-                machineOwner: machineSmartAccountOwnerAddress,
+                machineOwner: machineOwnerAddress,
                 nonce: nonce,
             };
 
