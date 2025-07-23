@@ -43,7 +43,7 @@ export interface UpdateConfigsTransactionData extends MachineStationTransactionD
 }
 
 export interface DeployMachineSmartAccountTransactionData extends MachineStationTransactionData {
-    machineAccountOwnerAddress: string;
+    machineOwnerAddress: string;
     requiredRole: string;
     note: string;
 }
@@ -99,7 +99,7 @@ export interface UpdateConfigsOptions {
 }
 
 export interface DeployMachineSmartAccountOptions {
-    machineSmartAccountOwnerAddress: string;
+    machineOwnerAddress: string;
     nonce: bigint;
     stationManagerSignature: string;
     sendTransaction?: boolean;
@@ -155,7 +155,7 @@ export interface ExecuteMachineTransferBalanceOptions {
 
 // Signature generation options
 export interface AdminSignDeployMachineSmartAccountOptions {
-    machineSmartAccountOwnerAddress: string;
+    machineOwnerAddress: string;
     nonce: bigint;
 }
 

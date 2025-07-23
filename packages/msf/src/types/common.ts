@@ -25,7 +25,7 @@ export enum PrecompileAddresses {
     RBAC = "0x0000000000000000000000000000000000000802",
     IERC20 = "0x0000000000000000000000000000000000000809"
 }
-export interface CreateMachineStationInstanceOptions {
+export interface CreateInstanceOptions {
     baseUrl: string;
     machineStationAddress: string;
     stationAdmin: Signer;
