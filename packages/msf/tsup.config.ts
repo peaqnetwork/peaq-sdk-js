@@ -7,7 +7,8 @@ export default defineConfig({
   // DTS emitted via tsc in package build script
   dts: false,
   tsconfig: './tsconfig.json',
-  sourcemap: true,
+  sourcemap: false,
+  minify: true,
   clean: true,
   treeshake: true,
 

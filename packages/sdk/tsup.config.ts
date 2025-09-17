@@ -7,7 +7,8 @@ export default defineConfig({
   // Keep bundle for default import; types served from dist/esm
   dts: false,
   tsconfig: './tsconfig.json',
-  sourcemap: true,
+  sourcemap: false,
+  minify: true,
   clean: true,
   treeshake: true,
 
