@@ -121,7 +121,7 @@ export class Main extends Base {
                 throw new Error('Invalid base URL for Substrate chain. Must start with wss://');
             }
             const provider = new WsProvider(baseUrl);
-            return new ApiPromise({ provider });
+            return new ApiPromise({ provider, noInitWarn: true });
         }
     }
     /**

@@ -9,7 +9,7 @@ import { evmToAddress } from '@polkadot/util-crypto';
 import { Base } from '../base';
 import { ChainType, SDKMetadata, EvmTransaction, PrecompileAddresses, BuiltCallTransactionResult, BuiltEvmTransactionResult, txOptions, VerificationMethodType } from '../../types/common';
 import { TransactionStatusCallback } from '../../types/base';
-import { createStorageKeys, CreateStorageKeysEnum, generateEvmPublicKeyMultibase, generateEd25519PublicKeyMultibase, generateSr25519PublicKeyMultibase } from '../crypto/';
+import { createStorageKeys, CreateStorageKeysEnum, generateEvmPublicKeyMultibase, generateEd25519PublicKeyMultibase, generateSr25519PublicKeyMultibase } from '../crypto';
 import {
   DIDV2Document,
   FunctionSignatures,
@@ -94,7 +94,7 @@ export class DIDV2Implementation extends Base {
       
       // Create temporary Substrate API connection
       const provider = new HttpProvider(this.metadata.baseUrl);
-      const tempApi = await ApiPromise.create({ provider: provider });
+      const tempApi = await ApiPromise.create({ provider: provider, noInitWarn: true });
       
       try {
         const result = await this._readFromSubstrate(name, ownerAddress, tempApi);
@@ -198,7 +198,9 @@ export class DIDV2Implementation extends Base {
     const valueHex = (human.value ?? human['value']) as string;
     if (!valueHex) return null;
     
-    const protoDoc = peaqDidProto.Document.deserializeBinary(hexToU8a(valueHex));
+    // Handle CJS interop for peaq-did-proto-js
+    const peaqDid: any = (peaqDidProto as any).default ?? (peaqDidProto as any);
+    const protoDoc = peaqDid.Document.deserializeBinary(hexToU8a(valueHex));
     const didV2Document = this._protoToV2(protoDoc);
     
     // Create the full DIDDocument structure (which is now DIDDocumentBase)
@@ -220,8 +222,10 @@ export class DIDV2Implementation extends Base {
   }
 
   private async _generateDidDocument(idAddress: string, extra: { controller: string; verificationMethods: VerificationMethod[]; services: Service[]; signature?: Signature }): Promise<string> {
+    // Handle CJS interop for peaq-did-proto-js
+    const peaqDid: any = (peaqDidProto as any).default ?? (peaqDidProto as any);
     // Create new Doc and set id & controller
-    const doc = new peaqDidProto.Document();
+    const doc = new peaqDid.Document();
     doc.setId(`did:peaq:${idAddress}`);
     doc.setController(`did:peaq:${extra.controller}`);
 
@@ -229,7 +233,7 @@ export class DIDV2Implementation extends Base {
 
     // TODO update multibase calc logic, and make mulitbase for eth just the address
     for (const [idx, vm] of extra.verificationMethods.entries()) {
-      const method = new peaqDidProto.VerificationMethod();
+      const method = new peaqDid.VerificationMethod();
       method.setId(vm.id || `did:peaq:${idAddress}#keys-${idx + 1}`);
       method.setType(vm.type);
       method.setController(vm.controller || `did:peaq:${extra.controller}`);
@@ -253,7 +257,7 @@ export class DIDV2Implementation extends Base {
 
     // Add services
     extra.services.forEach((srv) => {
-      const s = new peaqDidProto.Service();
+      const s = new peaqDid.Service();
       s.setId(srv.id);
       s.setType(srv.type);
       
@@ -275,7 +279,7 @@ export class DIDV2Implementation extends Base {
 
     // Add signature if provided
     if (extra.signature) {
-      const sig = new peaqDidProto.Signature();
+      const sig = new peaqDid.Signature();
       sig.setType(extra.signature.type);
       sig.setIssuer(extra.signature.issuer);
       sig.setHash(extra.signature.hash);

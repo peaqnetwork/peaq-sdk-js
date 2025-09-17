@@ -15,10 +15,10 @@ import {
     PrecompileAddresses,
     txOptions
 } from '../../types/common';
-import { SubstrateSendResult, EvmSendResult, TransactionStatusCallback } from '../../types/base';
+import { TransactionStatusCallback } from '../../types/base';
 import { Base } from '../base';
 import { AddItemOptions, RemoveItemOptions, UpdateItemOptions, GetItemOptions, GetItemResult, FunctionSignatures, StorageWriteResult } from '../../types/storage';
-import { createStorageKeys, CreateStorageKeysEnum } from '../crypto';
+import { createStorageKeys, CreateStorageKeysEnum } from '../crypto/index';
 
 /**
  * Provides methods to interact with the peaq on-chain storage precompile (EVM)
@@ -150,7 +150,7 @@ export class Storage extends Base {
             const substrateAddress = evmToAddress(accountAddress);
             
             const provider = new HttpProvider(this.metadata.baseUrl);
-            const tempApi = await ApiPromise.create({ provider });
+            const tempApi = await ApiPromise.create({ provider, noInitWarn: true });  
             
             try {
                 return await this._readFromSubstrate(itemType, substrateAddress, tempApi);
