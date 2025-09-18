@@ -362,9 +362,10 @@ export class Main extends Base {
      */
     public async machineSignMachineTransaction(
         options: MachineSignMachineTransactionOptions,
-        machineOwnerSigner?: Signer
+        machineOwnerSigner?: Signer,
+        version: string = "2"
     ): Promise<string | EIP712SignableMessage> {
-        return this.machineStation.machineSignMachineTransaction(options, machineOwnerSigner);
+        return this.machineStation.machineSignMachineTransaction(options, machineOwnerSigner, version);
     }
 
     /**
