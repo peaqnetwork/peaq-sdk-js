@@ -1,0 +1,42 @@
+{
+  "name": "@peaq-network/rwa",
+  "version": "0.0.1",
+  "description": "TypeScript/JavaScript SDK for RWA on the peaq network.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/esm/index.d.ts",
+  "exports": {
+    ".": { "import": "./dist/index.js", "types": "./dist/esm/index.d.ts" }
+},
+  "files": ["dist/**/*", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "npm run clean && tsup && npm run build:types",
+    "build:types": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -b",
+    "clean": "rimraf dist",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "peaq",
+    "blockchain",
+    "rwa",
+    "sdk",
+    "typescript"
+  ],
+  "author": "Peaq Network",
+  "license": "MIT",
+  "dependencies": {
+  },
+  "peerDependencies": {
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
