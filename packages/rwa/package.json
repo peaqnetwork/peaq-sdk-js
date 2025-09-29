@@ -28,6 +28,7 @@
   "dependencies": {
   },
   "peerDependencies": {
+    "ethers": "^6.15.0"
   },
   "devDependencies": {
     "tsup": "^8.5.0",

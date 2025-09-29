@@ -1,0 +1,28 @@
+{
+    "chainId": 9990,
+    "network": "agung",
+    "onchainid": {
+      "identityImplementation": "0x08f17CC173F374A9DE6F3bCd73c97711BcC23C00",
+      "implementationAuthority": "0xe14fFf650Facc1f08118292A24Dc5BD360a3F3ee",
+      "idFactory": "0xE61c673668507464610EEA65578fAf0ED949A969",
+      "kycVerifier": "0x48dC8453Cc73442e28dBaf1C2bB5DBd254ff44Ce",
+      "issuerVerifier": "0xe3af4aC0518d3C4541A38f42e3b5FDDB06307b07",
+      "regulatorVerifier": "0x0b3e9C312A7aF514Ce4283F0Eb933a5b772d5478"
+    },
+    "trex": {
+      "gateway": "0xE21Ad9dF14BF1bf118273Fc0d5ea8B924E6ffA98",
+      "factory": "0xa9a9C2Fa60438CAEF0d9690b4A125ADaF281A37a",
+      "authority": "0x097D5cCc4c0557987C48071c385f2eFE41874a49",
+      "iaFactory": "0xC9531B4CE4925ECACF44A34B2e503578eD322914"
+    },
+    "proxyAdmin": "0x74dc93c6bD56185249c86d0A4a4ed979F3aD2E33",
+    "nfts": {
+      "peaqMachineNFTs": "0x826b086D7981F654eC8D656F1E4a716eef3Eb8D0"
+    },
+    "vaults": {
+      "implementation": "0x316d83A2f7D8a14af16203ef87996B827356524A",
+      "factoryProxy": "0x79Af402270710422a37691113fAf09D34d8FC3Ab",
+      "firstVault": "0x7B94e3474aeB0B821bAb2b5f4F7095927c3Cf419",
+      "firstTrexToken": "0x9a2C27294341D1dEB2d4aDA1Ff71AeCdfdB88c42"
+    }
+  }
