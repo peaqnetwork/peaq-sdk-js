@@ -28,7 +28,7 @@ export enum PrecompileAddresses {
 export interface CreateInstanceOptions {
     baseUrl: string;
     machineStationAddress: string;
-    stationAdmin: Signer;
+    stationAdmin?: Signer;
     stationManager?: Signer;
 }
 
