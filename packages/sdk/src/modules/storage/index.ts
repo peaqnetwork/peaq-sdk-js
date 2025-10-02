@@ -14,11 +14,11 @@ import {
     EvmTransaction,
     PrecompileAddresses,
     txOptions
-} from '../../types/common';
-import { SubstrateSendResult, EvmSendResult, TransactionStatusCallback } from '../../types/base';
-import { Base } from '../base';
-import { AddItemOptions, RemoveItemOptions, UpdateItemOptions, GetItemOptions, GetItemResult, FunctionSignatures, StorageWriteResult } from '../../types/storage';
-import { createStorageKeys, CreateStorageKeysEnum } from '../crypto';
+} from '../../types/common.js';
+import { TransactionStatusCallback } from '../../types/base.js';
+import { Base } from '../base.js';
+import { AddItemOptions, RemoveItemOptions, UpdateItemOptions, GetItemOptions, GetItemResult, StorageFunctionSignatures, StorageWrittenResult } from '../../types/storage.js';
+import { createStorageKeys, CreateStorageKeysEnum } from '../crypto/index.js';
 
 /**
  * Provides methods to interact with the peaq on-chain storage precompile (EVM)
@@ -66,7 +66,7 @@ export class Storage extends Base {
         options: AddItemOptions,
         statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
         txOptions?: txOptions
-    ): Promise<StorageWriteResult> {
+    ): Promise<StorageWrittenResult | BuiltEvmTransactionResult | BuiltCallTransactionResult> {
         this._validateApiInstance();
 
         const { itemType, item } = options;
@@ -96,7 +96,7 @@ export class Storage extends Base {
         options: RemoveItemOptions,
         statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
         txOptions?: txOptions
-    ): Promise<StorageWriteResult> {
+    ): Promise<StorageWrittenResult | BuiltEvmTransactionResult | BuiltCallTransactionResult> {
         this._validateApiInstance();
 
         const { itemType } = options;
@@ -150,7 +150,7 @@ export class Storage extends Base {
             const substrateAddress = evmToAddress(accountAddress);
             
             const provider = new HttpProvider(this.metadata.baseUrl);
-            const tempApi = await ApiPromise.create({ provider });
+            const tempApi = await ApiPromise.create({ provider, noInitWarn: true });  
             
             try {
                 return await this._readFromSubstrate(itemType, substrateAddress, tempApi);
@@ -184,7 +184,7 @@ export class Storage extends Base {
         options: UpdateItemOptions,
         statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
         txOptions?: txOptions
-    ): Promise<StorageWriteResult> {
+    ): Promise<StorageWrittenResult | BuiltEvmTransactionResult | BuiltCallTransactionResult> {
         this._validateApiInstance();
 
         const { itemType, item } = options;
@@ -228,8 +228,8 @@ export class Storage extends Base {
     }
 
     // ---------------  EVM helpers ----------------
-    private async _addItemEvm(itemType: string, item: any, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<StorageWriteResult> {
-        const selector = ethers.keccak256(ethers.toUtf8Bytes(FunctionSignatures.ADD_ITEM)).substring(0, 10);
+    private async _addItemEvm(itemType: string, item: any, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<StorageWrittenResult | BuiltEvmTransactionResult> {
+        const selector = ethers.keccak256(ethers.toUtf8Bytes(StorageFunctionSignatures.ADD_ITEM)).substring(0, 10);
         const itemTypeBytes = ethers.hexlify(ethers.toUtf8Bytes(itemType));
         const itemString = typeof item === 'string' ? item : JSON.stringify(item);
         const itemBytes = ethers.hexlify(ethers.toUtf8Bytes(itemString));
@@ -243,8 +243,8 @@ export class Storage extends Base {
         return this._handleEvmTx(tx, `add storage item ${itemType}`, statusCallback, txOptions);
     }
 
-    private async _removeItemEvm(itemType: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<StorageWriteResult> {
-        const selector = ethers.keccak256(ethers.toUtf8Bytes(FunctionSignatures.REMOVE_ITEM)).substring(0, 10);
+    private async _removeItemEvm(itemType: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<StorageWrittenResult | BuiltEvmTransactionResult> {
+        const selector = ethers.keccak256(ethers.toUtf8Bytes(StorageFunctionSignatures.REMOVE_ITEM)).substring(0, 10);
         const itemTypeBytes = ethers.hexlify(ethers.toUtf8Bytes(itemType));
         
         const params = this.abiCoder.encode(['bytes'], [itemTypeBytes]);
@@ -256,8 +256,8 @@ export class Storage extends Base {
         return this._handleEvmTx(tx, `remove storage item ${itemType}`, statusCallback, txOptions);
     }
 
-    private async _updateItemEvm(itemType: string, newItem: any, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<StorageWriteResult> {
-        const selector = ethers.keccak256(ethers.toUtf8Bytes(FunctionSignatures.UPDATE_ITEM)).substring(0, 10);
+    private async _updateItemEvm(itemType: string, newItem: any, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<StorageWrittenResult | BuiltEvmTransactionResult> {
+        const selector = ethers.keccak256(ethers.toUtf8Bytes(StorageFunctionSignatures.UPDATE_ITEM)).substring(0, 10);
         const itemTypeBytes = ethers.hexlify(ethers.toUtf8Bytes(itemType));
         const itemString = typeof newItem === 'string' ? newItem : JSON.stringify(newItem);
         const itemBytes = ethers.hexlify(ethers.toUtf8Bytes(itemString));
@@ -272,25 +272,25 @@ export class Storage extends Base {
     }
 
     // ---------------  Substrate helpers ----------------
-    private async _addItemSubstrate(itemType: string, item: any, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<StorageWriteResult> {
+    private async _addItemSubstrate(itemType: string, item: any, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<StorageWrittenResult | BuiltCallTransactionResult> {
         const api = this.api as ApiPromise;
         const call = api.tx?.['peaqStorage']?.['addItem'](itemType, item);
         return this._handleSubstrateTx(call, `add storage item ${itemType}`, statusCallback);
     }
 
-    private async _removeItemSubstrate(itemType: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<StorageWriteResult> {
+    private async _removeItemSubstrate(itemType: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<StorageWrittenResult | BuiltCallTransactionResult> {
         const api = this.api as ApiPromise;
         const call = api.tx?.['peaqStorage']?.['removeItem'](itemType);
         return this._handleSubstrateTx(call, `remove storage item ${itemType}`, statusCallback);
     }
 
-    private async _updateItemSubstrate(itemType: string, newItem: any, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<StorageWriteResult> {
+    private async _updateItemSubstrate(itemType: string, newItem: any, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<StorageWrittenResult | BuiltCallTransactionResult> {
         const api = this.api as ApiPromise;
         const call = api.tx?.['peaqStorage']?.['updateItem'](itemType, newItem);
         return this._handleSubstrateTx(call, `update storage item ${itemType}`, statusCallback);
     }
 
-    private async _handleSubstrateTx(call: SubmittableExtrinsic<'promise', ISubmittableResult>, action: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<StorageWriteResult> {
+    private async _handleSubstrateTx(call: SubmittableExtrinsic<'promise', ISubmittableResult>, action: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>): Promise<StorageWrittenResult | BuiltCallTransactionResult> {
         if (!this.metadata.pair) {
             return { message: `Constructed ${action} call (unsigned).`, extrinsic: call } as BuiltCallTransactionResult;
         }
@@ -301,7 +301,7 @@ export class Storage extends Base {
         }
     }
 
-    private async _handleEvmTx(tx: EvmTransaction, action: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<StorageWriteResult> {
+    private async _handleEvmTx(tx: EvmTransaction, action: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<StorageWrittenResult | BuiltEvmTransactionResult> {
         if (!this.metadata.pair) {
             return { message: `Constructed ${action} tx (unsigned).`, tx } as BuiltEvmTransactionResult;
         }

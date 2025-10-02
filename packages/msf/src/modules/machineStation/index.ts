@@ -832,11 +832,12 @@ export class MachineStation extends Base {
      */
     public async machineSignMachineTransaction(
         options: MachineSignMachineTransactionOptions,
-        machineOwnerSigner?: Signer
+        machineOwnerSigner?: Signer,
+        version: string = "2"
     ): Promise<string | EIP712SignableMessage> {
         try {
             const { machineAddress, target, calldata, nonce } = options;
-            const domain = await this._getMachineAccountDomain("MachineSmartAccount", machineAddress);
+            const domain = await this._getMachineAccountDomain("MachineSmartAccount", machineAddress, version);
 
             const types = {
                 Execute: [
@@ -954,11 +955,11 @@ export class MachineStation extends Base {
      * @param verifyingContract - The machine smart account address
      * @returns Promise resolving to the EIP-712 domain object
      */
-    private async _getMachineAccountDomain(name: string, verifyingContract: string): Promise<{ name: string, version: string, chainId: number, verifyingContract: string }> {
+    private async _getMachineAccountDomain(name: string, verifyingContract: string, version: string = "2"): Promise<{ name: string, version: string, chainId: number, verifyingContract: string }> {
         const chainId = await this.getChainId();
         return {
             name,
-            version: "2",
+            version,
             chainId,
             verifyingContract
         };

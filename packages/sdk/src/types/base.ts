@@ -3,7 +3,7 @@ import { Event, Phase } from '@polkadot/types/interfaces';
 import { TransactionResponse } from 'ethers';
 import { ISubmittableResult } from '@polkadot/types/types';
 import { TransactionReceipt } from 'ethers';
-import { ConfirmationMode, TransactionStatus } from './common';
+import { ConfirmationMode, TransactionStatus } from './common.js';
 
 export interface PeaqEventData {
     lookupName: string;
@@ -97,10 +97,3 @@ export interface FormattedReceipt {
 
 // EVM equivalent of FormattedReceipt
 export type EvmFormattedReceipt = TransactionReceipt;
-
-export class EvmExecutionError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'EvmExecutionError';
-    }
-}

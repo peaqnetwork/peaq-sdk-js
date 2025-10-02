@@ -1,9 +1,9 @@
 import { ApiPromise } from '@polkadot/api';
 import { JsonRpcProvider } from 'ethers';
 import { ISubmittableResult } from '@polkadot/types/types';
-import { Base } from '../base';
-import { SDKMetadata, ChainType } from '../../types/common';
-import { CreateDIDOptions, DidWriteResult, DIDV3Document, DIDVersion, ReadDIDOptions, ReadDIDResult, UpdateDIDOptions, RemoveDIDOptions } from '../../types/did';
+import { Base } from '../base.js';
+import { SDKMetadata, ChainType } from '../../types/common.js';
+import { CreateDIDOptions, DidWriteResult, DIDV3Document, DIDVersion, ReadDIDOptions, ReadDIDResult, UpdateDIDOptions, RemoveDIDOptions } from '../../types/did.js';
 
 // TODO: Once V3 implementation proto is completed
 export class DIDV3Implementation extends Base {

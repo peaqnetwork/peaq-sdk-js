@@ -1,9 +1,16 @@
-import { BuiltEvmTransactionResult, BuiltCallTransactionResult } from '../types/common';
-import { SubstrateSendResult, EvmSendResult } from '../types/base';
+import { BuiltEvmTransactionResult, BuiltCallTransactionResult } from '../types/common.js';
+import { SubstrateSendResult, EvmSendResult } from '../types/base.js';
 
 export enum DIDVersion {
     V2_1_0 = '2.1.0',
     V3_0_0 = '3.0.0'
+}
+
+export enum DIDFunctionSignatures {
+    ADD_ATTRIBUTE = 'addAttribute(address,bytes,bytes,uint32)',
+    READ_ATTRIBUTE = 'readAttribute(address,bytes)',
+    UPDATE_ATTRIBUTE = 'updateAttribute(address,bytes,bytes,uint32)',
+    REMOVE_ATTRIBUTE = 'removeAttribute(address,bytes)'
 }
 
 // V2.1.0 specific interfaces
@@ -40,13 +47,6 @@ export interface DIDDocumentBase {
 }
 
 export type DIDDocument = DIDDocumentBase;
-
-export enum FunctionSignatures {
-    ADD_ATTRIBUTE = 'addAttribute(address,bytes,bytes,uint32)',
-    READ_ATTRIBUTE = 'readAttribute(address,bytes)',
-    UPDATE_ATTRIBUTE = 'updateAttribute(address,bytes,bytes,uint32)',
-    REMOVE_ATTRIBUTE = 'removeAttribute(address,bytes)'
-  }
 
 // create a v3 to accept the blockchainAccountId
 export interface VerificationMethod {

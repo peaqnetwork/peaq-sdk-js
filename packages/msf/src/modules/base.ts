@@ -1,6 +1,13 @@
 import { JsonRpcProvider, Signer } from 'ethers';
 import { ChainType, SDKMetadata, EvmTransaction, txOptions, ConfirmationMode, TransactionStatus, PrecompileAddresses } from '../types/common';
-import { EvmExecutionError, EvmSendResult, EvmFormattedReceipt, TransactionStatusCallback } from '../types/base';
+import { EvmSendResult, EvmFormattedReceipt, TransactionStatusCallback } from '../types/base';
+
+export class EvmExecutionError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'EvmExecutionError';
+    }
+}
 
 /**
  * Provides shared functionality for EVM-based Machine Station operations,

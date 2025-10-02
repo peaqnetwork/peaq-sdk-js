@@ -1,23 +1,22 @@
 {
   "name": "peaq-network",
-  "version": "1.0.0",
-  "description": "peaq network SDK Monorepo",
+  "description": "SDK Monorepo for the peaq network.",
   "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
+  "workspaces": ["packages/*"],
   "scripts": {
     "build": "npm run build --workspaces",
-    "test": "npm run test --workspaces",
-    "pack:sdk": "npm run pack --workspace=@peaqnetwork/sdk",
-    "pack:machine-station": "npm run pack --workspace=@peaqnetwork/machine-station",
-    "pack:all": "npm run pack --workspaces"
+    "typecheck": "tsc -b --pretty false",
+    "clean": "rimraf packages/*/dist",
+    "lint": "eslint ."
   },
   "devDependencies": {
-    "@types/node": "^24.0.1",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "eslint": "^9.0.0",
+    "rimraf": "^6.0.0",
+    "tsup": "^8.5.0"
   },
-  "engines": {
-    "node": ">=18.0.0"
-  }
+  "overrides": {
+    "tslib": "^2.6.3"
+  },
+  "engines": { "node": ">=18" }
 }
