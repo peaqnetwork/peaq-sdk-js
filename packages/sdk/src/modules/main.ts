@@ -4,12 +4,12 @@ import { JsonRpcProvider, Signer } from 'ethers';
 
 import { cryptoWaitReady, mnemonicValidate } from '@polkadot/util-crypto';
 
-import { Base } from './base';
-import { ChainType, SDKMetadata, CreateInstanceOptions, KeyType, ConfirmationMode, VerificationMethodType } from '../types/common';
+import { Base } from './base.js';
+import { ChainType, SDKMetadata, CreateInstanceOptions, KeyType, ConfirmationMode, VerificationMethodType } from '../types/common.js';
 
-import { Did } from './did';
-import { DIDVersion } from '../types/did';
-import { Storage } from './storage';
+import { Did } from './did/index.js';
+import { DIDVersion } from '../types/did.js';
+import { Storage } from './storage/index.js';
 
 /**
  * Entry point for the TypeScript SDK.
