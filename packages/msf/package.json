@@ -1,6 +1,6 @@
 {
   "name": "@peaq-network/msf",
-  "version": "1.2.1-0",
+  "version": "1.2.1-1",
   "description": "Machine Station SDK for MSF smart contract interactions on the peaq network.",
   "type": "module",
   "main": "dist/index.js",
