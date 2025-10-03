@@ -10,6 +10,8 @@ import { ChainType, SDKMetadata, CreateInstanceOptions, KeyType, ConfirmationMod
 import { Did } from './did/index.js';
 import { DIDVersion } from '../types/did.js';
 import { Storage } from './storage/index.js';
+import { Streamr } from './stream/index.js';
+
 
 /**
  * Entry point for the TypeScript SDK.
@@ -25,6 +27,7 @@ export class Main extends Base {
 
     public readonly did: Did;
     public readonly storage: Storage;
+    public readonly stream: Streamr;
 
 
     /**
@@ -50,6 +53,8 @@ export class Main extends Base {
 
         this.did = new Did(api, metadata);
         this.storage = new Storage(api, metadata);
+
+        this.stream = new Streamr(api, metadata);
     }
 
     /**
