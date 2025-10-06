@@ -23,10 +23,3 @@ export interface EvmSendResult {
 
 // EVM equivalent of FormattedReceipt
 export type EvmFormattedReceipt = TransactionReceipt;
-
-export class EvmExecutionError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'EvmExecutionError';
-    }
-}

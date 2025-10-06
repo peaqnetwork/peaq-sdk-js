@@ -6,13 +6,13 @@ import { ISubmittableResult } from '@polkadot/types/types';
 import { hexToU8a, u8aToHex } from '@polkadot/util';
 import { evmToAddress } from '@polkadot/util-crypto';
 
-import { Base } from '../base';
-import { ChainType, SDKMetadata, EvmTransaction, PrecompileAddresses, BuiltCallTransactionResult, BuiltEvmTransactionResult, txOptions, VerificationMethodType } from '../../types/common';
-import { TransactionStatusCallback } from '../../types/base';
-import { createStorageKeys, CreateStorageKeysEnum, generateEvmPublicKeyMultibase, generateEd25519PublicKeyMultibase, generateSr25519PublicKeyMultibase } from '../crypto';
+import { Base } from '../base.js';
+import { ChainType, SDKMetadata, EvmTransaction, PrecompileAddresses, BuiltCallTransactionResult, BuiltEvmTransactionResult, txOptions, VerificationMethodType } from '../../types/common.js';
+import { TransactionStatusCallback } from '../../types/base.js';
+import { createStorageKeys, CreateStorageKeysEnum, generateEvmPublicKeyMultibase, generateEd25519PublicKeyMultibase, generateSr25519PublicKeyMultibase } from '../crypto/index.js';
 import {
   DIDV2Document,
-  FunctionSignatures,
+  DIDFunctionSignatures,
   VerificationMethod,
   Service,
   CreateDIDOptions,
@@ -23,7 +23,7 @@ import {
   Signature,
   DIDDocument,
   DidWriteResult
-} from '../../types/did';
+} from '../../types/did.js';
 
 // -----------------------------------------------------------
 // Internal enums mirroring the precompile selectors
@@ -348,7 +348,7 @@ export class DIDV2Implementation extends Base {
 
   // ---------------  EVM helpers ----------------
   private async _createEvm(name: string, address: string, didHex: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<DidWriteResult> {
-    const selector = ethers.keccak256(ethers.toUtf8Bytes(FunctionSignatures.ADD_ATTRIBUTE)).substring(0, 10);
+    const selector = ethers.keccak256(ethers.toUtf8Bytes(DIDFunctionSignatures.ADD_ATTRIBUTE)).substring(0, 10);
     const params = this.abiCoder.encode(
       ['address', 'bytes', 'bytes', 'uint32'],
       [address, ethers.hexlify(ethers.toUtf8Bytes(name)), ethers.hexlify(ethers.toUtf8Bytes(didHex)), 0]
@@ -362,7 +362,7 @@ export class DIDV2Implementation extends Base {
   }
 
   private async _updateEvm(name: string, address: string, didHex: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<DidWriteResult> {
-    const selector = ethers.keccak256(ethers.toUtf8Bytes(FunctionSignatures.UPDATE_ATTRIBUTE)).substring(0, 10);
+    const selector = ethers.keccak256(ethers.toUtf8Bytes(DIDFunctionSignatures.UPDATE_ATTRIBUTE)).substring(0, 10);
     const params = this.abiCoder.encode(
       ['address', 'bytes', 'bytes', 'uint32'],
       [address, ethers.hexlify(ethers.toUtf8Bytes(name)), ethers.hexlify(ethers.toUtf8Bytes(didHex)), 0]
@@ -376,7 +376,7 @@ export class DIDV2Implementation extends Base {
   }
 
   private async _removeEvm(name: string, address: string, statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>, txOptions?: txOptions): Promise<DidWriteResult> {
-    const selector = ethers.keccak256(ethers.toUtf8Bytes(FunctionSignatures.REMOVE_ATTRIBUTE)).substring(0, 10);
+    const selector = ethers.keccak256(ethers.toUtf8Bytes(DIDFunctionSignatures.REMOVE_ATTRIBUTE)).substring(0, 10);
     const params = this.abiCoder.encode(
       ['address', 'bytes'],
       [address, ethers.hexlify(ethers.toUtf8Bytes(name))]

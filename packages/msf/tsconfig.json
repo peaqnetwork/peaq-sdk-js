@@ -6,6 +6,7 @@
     "outDir": "./dist",
     "declaration": true,
     "declarationMap": true,
+    "emitDeclarationOnly": true,
     "sourceMap": true,
     "module": "ESNext",
     "target": "ES2020",

@@ -70,8 +70,8 @@ export class Main extends Base {
             api,
             metadata,
             options.machineStationAddress,
-            options.stationAdmin.connect(api),
-            options.stationManager?.connect(api)
+            options.stationAdmin ? options.stationAdmin.connect(api) : undefined,
+            options.stationManager ? options.stationManager.connect(api) : undefined
         );
     }
 
@@ -87,7 +87,9 @@ export class Main extends Base {
         const sdk = new Main(options);
         
         // Set the station admin as the primary signer for base operations
-        sdk._setSigner(options.stationAdmin);
+        if (options.stationAdmin) {
+            sdk._setSigner(options.stationAdmin);
+        }
 
         return sdk;
     }

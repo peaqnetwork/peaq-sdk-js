@@ -53,8 +53,8 @@ export class MachineStation extends Base {
     private abiCoder = new ethers.AbiCoder();
     private sdk: any;
     private machineStationAddress: string;
-    private stationAdminSigner: Signer;
-    private stationManagerSigner: Signer;
+    private stationAdminSigner?: Signer;
+    private stationManagerSigner?: Signer;
 
     /**
      * Initializes MachineStation with a connected EVM provider and ethers signers.
@@ -69,13 +69,13 @@ export class MachineStation extends Base {
         api: JsonRpcProvider, 
         metadata: SDKMetadata, 
         machineStationAddress: string,
-        stationAdmin: Signer,
+        stationAdmin?: Signer,
         stationManager?: Signer
     ) {
         super(api, metadata);
         this.machineStationAddress = machineStationAddress;
         this.stationAdminSigner = stationAdmin;
-        // Use stationManager if provided, otherwise use stationAdmin for manager operations
+        // Use stationManager if provided, otherwise use stationAdmin for manager operations (may be undefined)
         this.stationManagerSigner = stationManager || this.stationAdminSigner;
         
         // Create ethers Interface from ABI
@@ -122,6 +122,10 @@ export class MachineStation extends Base {
                     configValue: Number(value),
                     requiredRole: "STATION_MANAGER_ROLE"
                 } as UpdateConfigsTransactionData;
+            }
+
+            if (!this.stationManagerSigner) {
+                throw new Error("Station manager signer is required to send this transaction. Provide 'stationManager' during SDK initialization or set sendTransaction=false to get the raw tx data.");
             }
 
             return await this._handleEvmTx(tx, `update config '${key}' to ${value}`, statusCallback, txOptions, this.stationManagerSigner);
@@ -174,6 +178,10 @@ export class MachineStation extends Base {
                     requiredRole: "STATION_MANAGER_ROLE",
                     note: "After transaction is mined, listen for MachineSmartAccountDeployed event to get the deployed address"
                 } as DeployMachineSmartAccountTransactionData;
+            }
+
+            if (!this.stationManagerSigner) {
+                throw new Error("Station manager signer is required to send this transaction. Provide 'stationManager' during SDK initialization or set sendTransaction=false to get the raw tx data.");
             }
 
             const result = await this._handleEvmTx(tx, `deploy machine smart account for ${machineOwnerAddress}`, statusCallback, txOptions, this.stationManagerSigner);
@@ -271,6 +279,10 @@ export class MachineStation extends Base {
                 } as TransferMachineStationBalanceTransactionData;
             }
 
+            if (!this.stationAdminSigner) {
+                throw new Error("Admin signer is required to send this transaction. Provide 'stationAdmin' during SDK initialization or set sendTransaction=false to get the raw tx data.");
+            }
+
             return await this._handleEvmTx(tx, `transfer machine station balance to ${newMachineStationAddress}`, statusCallback, txOptions, this.stationAdminSigner);
         } catch (error: any) {
             throw new Error(`Failed to transfer machine station balance: ${error.message}`);
@@ -322,6 +334,10 @@ export class MachineStation extends Base {
                     target: target,
                     accessControl: MachineStation.ACCESS_CONTROL_ANYONE
                 } as ExecuteTransactionData;
+            }
+
+            if (!this.stationManagerSigner) {
+                throw new Error("Station manager signer is required to send this transaction. Provide 'stationManager' during SDK initialization or set sendTransaction=false to get the raw tx data.");
             }
 
             return await this._handleEvmTx(tx, `execute transaction on target ${target}`, statusCallback, txOptions, this.stationManagerSigner);
@@ -384,6 +400,10 @@ export class MachineStation extends Base {
                     target: target,
                     accessControl: MachineStation.ACCESS_CONTROL_ANYONE
                 } as ExecuteMachineTransactionData;
+            }
+
+            if (!this.stationManagerSigner) {
+                throw new Error("Station manager signer is required to send this transaction. Provide 'stationManager' during SDK initialization or set sendTransaction=false to get the raw tx data.");
             }
 
             return await this._handleEvmTx(tx, `execute machine transaction from ${machineAddress} on target ${target}`, statusCallback, txOptions, this.stationManagerSigner);
@@ -455,6 +475,9 @@ export class MachineStation extends Base {
 
             const accountsStr = machineAddresses.join(", ");
             const targetsStr = targets.join(", ");
+            if (!this.stationManagerSigner) {
+                throw new Error("Station manager signer is required to send this transaction. Provide 'stationManager' during SDK initialization or set sendTransaction=false to get the raw tx data.");
+            }
             return await this._handleEvmTx(tx, `execute batch transactions from accounts [${accountsStr}] on targets [${targetsStr}]`, statusCallback, txOptions, this.stationManagerSigner);
         } catch (error: any) {
             throw new Error(`Failed to execute machine batch transactions: ${error.message}`);
@@ -513,6 +536,9 @@ export class MachineStation extends Base {
                 } as ExecuteTransferMachineBalanceData;
             }
 
+            if (!this.stationManagerSigner) {
+                throw new Error("Station manager signer is required to send this transaction. Provide 'stationManager' during SDK initialization or set sendTransaction=false to get the raw tx data.");
+            }
             return await this._handleEvmTx(tx, `transfer balance from ${machineAddress} to ${recipientAddress}`, statusCallback, txOptions, this.stationManagerSigner);
         } catch (error: any) {
             throw new Error(`Failed to execute machine transfer balance: ${error.message}`);

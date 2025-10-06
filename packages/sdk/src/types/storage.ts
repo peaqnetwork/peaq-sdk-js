@@ -1,5 +1,4 @@
-import { SubstrateSendResult, EvmSendResult } from '../types/base';
-import { BuiltEvmTransactionResult, BuiltCallTransactionResult } from '../types/common';
+import { SubstrateSendResult, EvmSendResult } from '../types/base.js';
 
 export interface AddItemOptions {
     itemType: string;
@@ -24,7 +23,7 @@ export interface GetItemResult {
     [key: string]: string;
 }
 
-export enum FunctionSignatures {
+export enum StorageFunctionSignatures {
     ADD_ITEM = "addItem(bytes,bytes)",
     GET_ITEM = "getItem(address,bytes)",
     UPDATE_ITEM = "updateItem(bytes,bytes)",
@@ -42,4 +41,6 @@ export type StorageOperation = {
     options: AddItemOptions | RemoveItemOptions | UpdateItemOptions;
 };
 
-export type StorageWriteResult = SubstrateSendResult | EvmSendResult | BuiltEvmTransactionResult | BuiltCallTransactionResult;
+export type StorageWrittenResult = SubstrateSendResult | EvmSendResult;
+
+// | BuiltEvmTransactionResult | BuiltCallTransactionResult;

@@ -9,10 +9,17 @@ import { BN } from '@polkadot/util';
 import { GenericExtrinsic } from '@polkadot/types';
 import { AnyTuple } from '@polkadot/types-codec/types';
 
-import { ChainType, SDKMetadata, EvmTransaction, txOptions, KeyType, PrecompileAddresses, ConfirmationMode, TransactionStatus } from '../types/common';
-import { FormattedReceipt, PeaqEvent, PeaqEventData, TErrorData, EvmExecutionError, SubstrateSendResult, EvmSendResult, EvmFormattedReceipt, TransactionStatusCallback, EvmStatusUpdate, EvmEvent } from '../types/base';
+import { ChainType, SDKMetadata, EvmTransaction, txOptions, KeyType, PrecompileAddresses, ConfirmationMode, TransactionStatus } from '../types/common.js';
+import { FormattedReceipt, PeaqEvent, PeaqEventData, TErrorData, SubstrateSendResult, EvmSendResult, EvmFormattedReceipt, TransactionStatusCallback, EvmStatusUpdate, EvmEvent } from '../types/base.js';
 
 type Address = string;
+
+export class EvmExecutionError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'EvmExecutionError';
+    }
+}
 
 /**
  * Provides shared functionality for both EVM and Substrate SDK operations,
@@ -26,7 +33,7 @@ export abstract class Base {
     /**
      * Initializes Base with a connected API instance and shared SDK metadata.
      * 
-     * @param api - The blockchain API connection which may be a Web3 (EVM) or ApiPromise (Substrate)
+     * @param api - The blockchain API connection which may be a JsonRpcProvider (EVM) or ApiPromise (Substrate)
      * @param metadata - Shared metadata, including chain type and optional signer
      */
     constructor(api: ApiPromise | JsonRpcProvider, metadata: SDKMetadata) {
@@ -435,7 +442,7 @@ export abstract class Base {
     }
 
     /**
-     * Enhanced EVM transaction with fire-and-forget and live-status modes
+     * Enhanced EVM transaction with fire-and-wait-inclusion and live-status modes
      */
     protected async _executeEvmTransaction(
         unsignedTx: EvmTransaction,
@@ -466,76 +473,62 @@ export abstract class Base {
     
         return new Promise<EvmSendResult>(async (resolveMain, rejectMain) => {
             let cancelled = false;
-            
-            const receipt = new Promise<EvmFormattedReceipt>(async (resolve, reject) => {
-                try {
-                    // Build and send transaction
-                    const tx = await this._buildEvmTx(unsignedTx, signer, opts);
-                    const txResponse = await signer.sendTransaction(tx);
-                    
-                    // Return immediately with transaction hash
-                    resolveMain({
-                        txHash: txResponse.hash,
-                        unsubscribe: onStatus ? () => { cancelled = true; } : undefined,
-                        receipt,
-                        // confirmationMode: mode
-                    });
-    
-                    // Emit broadcast status
-                    this._emitStatusCallback(onStatus, cancelled, {
-                        status: TransactionStatus.BROADCAST,
-                        confirmationMode: mode,
-                        totalConfirmations: 0,
-                        hash: txResponse.hash,
-                        nonce: txResponse.nonce
-                    });
-    
-                    // Wait for first confirmation
-                    const inclusionReceipt = await txResponse.wait();
-                    if (!inclusionReceipt) {
-                        throw new Error('Transaction receipt not found');
-                    }
-    
-                    if (inclusionReceipt.status === 0) {
-                        throw new EvmExecutionError('Transaction failed');
-                    }
+            try {
+                // Build and send transaction
+                const tx = await this._buildEvmTx(unsignedTx, signer, opts);
+                const txResponse = await signer.sendTransaction(tx);
 
-                    // Emit in-block status
-                    this._emitStatusCallback(onStatus, cancelled, {
-                        status: TransactionStatus.IN_BLOCK,
-                        confirmationMode: mode,
-                        totalConfirmations: 1,
-                        receipt: inclusionReceipt,
-                        hash: txResponse.hash
-                    });
+                // Emit broadcast status (do not resolve yet)
+                this._emitStatusCallback(onStatus, cancelled, {
+                    status: TransactionStatus.BROADCAST,
+                    confirmationMode: mode,
+                    totalConfirmations: 0,
+                    hash: txResponse.hash,
+                    nonce: txResponse.nonce
+                });
 
-                    // Wait for confirmations based on mode
-                    const userReceipt = await this._waitForConfirmations(
-                        txResponse, 
-                        inclusionReceipt, 
-                        mode, 
-                        targetConfirmations, 
-                        provider, 
-                        onStatus, 
-                        cancelled
-                    );
-
-                    resolve(userReceipt);
-                } catch (error: any) {
-                    // Gas estimation errors should be thrown immediately
-                    if (error.code === 'CALL_EXCEPTION') {
-                        const errorMessage = this._parseEvmError(error);
-                        return reject(new EvmExecutionError(errorMessage));
-                    }
-                    
-                    reject(error);
+                // Wait for first confirmation
+                const inclusionReceipt = await txResponse.wait();
+                if (!inclusionReceipt) {
+                    throw new Error('Transaction receipt not found');
                 }
-            });
-    
-            // Handle cases where finalize rejects before we return
-            receipt.catch((error) => {
+                if (inclusionReceipt.status === 0) {
+                    throw new EvmExecutionError('Transaction failed');
+                }
+
+                // Emit in-block status
+                this._emitStatusCallback(onStatus, cancelled, {
+                    status: TransactionStatus.IN_BLOCK,
+                    confirmationMode: mode,
+                    totalConfirmations: 1,
+                    receipt: inclusionReceipt,
+                    hash: txResponse.hash
+                });
+
+                // Wait for confirmations based on mode
+                const userReceipt = await this._waitForConfirmations(
+                    txResponse,
+                    inclusionReceipt,
+                    mode,
+                    targetConfirmations,
+                    provider,
+                    onStatus,
+                    cancelled
+                );
+
+                // Resolve only after receipt is available
+                resolveMain({
+                    txHash: txResponse.hash,
+                    unsubscribe: onStatus ? () => { cancelled = true; } : undefined,
+                    receipt: Promise.resolve(userReceipt),
+                });
+            } catch (error: any) {
+                if (error && error.code === 'CALL_EXCEPTION') {
+                    const errorMessage = this._parseEvmError(error);
+                    return rejectMain(new EvmExecutionError(errorMessage));
+                }
                 rejectMain(error);
-            });
+            }
         });
     }
 
