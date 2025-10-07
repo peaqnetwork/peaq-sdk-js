@@ -18,23 +18,19 @@ export class RWA {
   readonly onchainid: OnchainID;
 
   constructor(opts: SDKInit) {
-    const base = getAddresses(opts.chainId);
-    // allow overrides for power-users / hotfixes
-    const merged = opts.overrides?.addresses
-      ? ({ ...base, ...opts.overrides.addresses } as typeof base)
-      : base;
 
     this.chainId = opts.chainId;
-    this.addresses = merged;
+    this.addresses = getAddresses(opts.chainId);;
 
     // Optional: Attempt a runtime guard if runner can reveal chainId (ethers v6 Provider has .getNetwork)
     // Users can also pass chainId directly, which we trust here.
-    assertChainId(this.chainId, merged.chainId);
+    assertChainId(this.chainId, this.addresses.chainId); // ensure chainId is correct
 
-    this.trex = new TREX(opts.runner, merged);
-    this.vaults = new Vaults(opts.runner, merged);
-    this.nfts = new MachineNFTs(opts.runner, merged);
-    this.onchainid = new OnchainID(opts.runner, merged);
+    // initialize modules with addresses only; signer provided per call
+    this.trex = new TREX(this.addresses);
+    this.vaults = new Vaults(this.addresses);
+    this.nfts = new MachineNFTs(this.addresses);
+    this.onchainid = new OnchainID(this.addresses);
   }
 
   getAddresses() {

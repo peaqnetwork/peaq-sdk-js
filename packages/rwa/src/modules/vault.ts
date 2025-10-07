@@ -1,21 +1,19 @@
 import FactoryABI from '../abis/MachineVaultFactory.json';
 import VaultABI from '../abis/MachineVault.json';
 import { getContract } from '../core/getContract';
-import type { Runner } from '../core/types';
+import type { Signer } from 'ethers';
 import type { NetworkAddresses } from '../addresses/index';
 
 export class Vaults {
-  private runner: Runner;
   private addresses: NetworkAddresses;
-  constructor(runner: Runner, addresses: NetworkAddresses) {
-    this.runner = runner;
+  constructor(addresses: NetworkAddresses) {
     this.addresses = addresses;
   }
-  factory() {
-    return getContract(this.addresses.vaults.factoryProxy, FactoryABI, this.runner);
+  factory(signer: Signer) {
+    return getContract(this.addresses.vaults.factoryProxy, FactoryABI, signer);
   }
-  at(address: string) {
-    return getContract(address, VaultABI, this.runner);
+  at(address: string, signer: Signer) {
+    return getContract(address, VaultABI, signer);
   }
 
   /**
@@ -27,8 +25,9 @@ export class Vaults {
     symbol: string;
     baseURI?: string;
     // ...any other constructor/init params
+    signer: Signer;
   }) {
-    const f = this.factory();
+    const f = this.factory(params.signer);
     const tx = await f.createMachineVault(
       params.name,
       params.symbol,

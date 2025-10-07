@@ -1,7 +1,6 @@
-import type { JsonRpcProvider, JsonRpcSigner, ContractRunner } from 'ethers';
+import type { JsonRpcProvider, JsonRpcSigner, Signer } from 'ethers';
 
-export type Runner = ContractRunner; // signer or provider
-export type Address = `0x${string}`;
+// Maybe ContractRunner instead of Signer?
 
 export enum Chain {
   AGUNG = 9990,
@@ -10,8 +9,10 @@ export enum Chain {
 
 export interface SDKInit {
   chainId: Chain;
-  runner: Runner; // signer preferred for write ops
-  overrides?: {
-    addresses?: Partial<import('../addresses').NetworkAddresses>;
-  };
+}
+
+export interface CreateIdentityParams {
+  walletAddr: string;
+  salt: string;
+  signer: Signer;
 }

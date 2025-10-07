@@ -1,19 +1,17 @@
 import NFTABI from '../abis/PeaqMachineNFTs.json';
 import { getContract } from '../core/getContract';
-import type { Runner } from '../core/types';
+import type { Signer } from 'ethers';
 import type { NetworkAddresses } from '../addresses/index';
 
 export class MachineNFTs {
-  private runner: Runner;
   private addresses: NetworkAddresses;
-  constructor(runner: Runner, addresses: NetworkAddresses) {
-    this.runner = runner;
+  constructor(addresses: NetworkAddresses) {
     this.addresses = addresses;
   }
-  contract() {
-    return getContract(this.addresses.nfts.peaqMachineNFTs, NFTABI, this.runner);
+  contract(signer: Signer) {
+    return getContract(this.addresses.nfts.peaqMachineNFTs, NFTABI, signer);
   }
-  mint(to: string, tokenURI: string) {
-    return this.contract().mint(to, tokenURI);
+  mint(to: string, tokenURI: string, signer: Signer) {
+    return this.contract(signer).mint(to, tokenURI);
   }
 }
