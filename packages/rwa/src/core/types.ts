@@ -11,8 +11,12 @@ export interface SDKInit {
   chainId: Chain;
 }
 
-export interface CreateIdentityParams {
-  walletAddr: string;
-  salt: string;
+export interface DeployClaimIssuerParams {
+  ownerAddress: string;
+  signer: Signer;
+  artifact: { abi: any; bytecode: string };
+}
+
+export interface AddClaimParams {
   signer: Signer;
 }

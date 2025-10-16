@@ -3,27 +3,42 @@
     "chainId": 3338,
     "network": "peaq",
     "onchainid": {
-      "identityImplementation": "",
+      "identity": "",
       "implementationAuthority": "",
       "idFactory": "",
       "kycVerifier": "",
-      "issuerVerifier": "",
-      "regulatorVerifier": ""
+      "mnftIssuerVerifier": "",
+      "mnftRegulatorVerifier": ""
     },
     "trex": {
-      "gateway": "",
-      "factory": "",
-      "authority": "",
-      "iaFactory": ""
+      "trexImplementationAuthority": "",
+      "identityRegistryStorage": "",
+      "identityRegistry": "",
+      "claimTopicsRegistry": "",
+      "trustedIssuersRegistry": "",
+      "modularCompliance": "",
+      "token": "",
+      "trexFactory": "",
+      "iaFactory": "",
+      "identityRegistryStorageProxy": "",
+      "claimTopicsRegistryProxy": "",
+      "trustedIssuersRegistryProxy": "",
+      "identityRegistryProxy": "",
+      "modularComplianceProxy": "",
+      "txrexGateway": ""
     },
     "proxyAdmin": "",
     "nfts": {
-      "peaqMachineNFTs": ""
+      "machineNftsUpgradeable": "",
+      "peaqMachineNftsUpgradeable": "",
+      "peaqMachineNftsProxy": "",
+      "ipeaqMachineNfts": "",
+      "proxyAdmin": ""
     },
     "vaults": {
-      "implementation": "",
-      "factoryProxy": "",
-      "firstVault": "",
-      "firstTrexToken": ""
+      "machineVaultUpgradeable": "",
+      "machineVaultFactoryUpgradeable": "",
+      "machineVaultFactoryProxy": "",
+      "proxyAdmin": ""
     }
   }

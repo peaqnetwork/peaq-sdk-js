@@ -1,28 +1,37 @@
 {
-    "chainId": 9990,
-    "network": "agung",
-    "onchainid": {
-      "identityImplementation": "0x08f17CC173F374A9DE6F3bCd73c97711BcC23C00",
-      "implementationAuthority": "0xe14fFf650Facc1f08118292A24Dc5BD360a3F3ee",
-      "idFactory": "0xE61c673668507464610EEA65578fAf0ED949A969",
-      "kycVerifier": "0x48dC8453Cc73442e28dBaf1C2bB5DBd254ff44Ce",
-      "issuerVerifier": "0xe3af4aC0518d3C4541A38f42e3b5FDDB06307b07",
-      "regulatorVerifier": "0x0b3e9C312A7aF514Ce4283F0Eb933a5b772d5478"
-    },
-    "trex": {
-      "gateway": "0xE21Ad9dF14BF1bf118273Fc0d5ea8B924E6ffA98",
-      "factory": "0xa9a9C2Fa60438CAEF0d9690b4A125ADaF281A37a",
-      "authority": "0x097D5cCc4c0557987C48071c385f2eFE41874a49",
-      "iaFactory": "0xC9531B4CE4925ECACF44A34B2e503578eD322914"
-    },
-    "proxyAdmin": "0x74dc93c6bD56185249c86d0A4a4ed979F3aD2E33",
-    "nfts": {
-      "peaqMachineNFTs": "0x826b086D7981F654eC8D656F1E4a716eef3Eb8D0"
-    },
-    "vaults": {
-      "implementation": "0x316d83A2f7D8a14af16203ef87996B827356524A",
-      "factoryProxy": "0x79Af402270710422a37691113fAf09D34d8FC3Ab",
-      "firstVault": "0x7B94e3474aeB0B821bAb2b5f4F7095927c3Cf419",
-      "firstTrexToken": "0x9a2C27294341D1dEB2d4aDA1Ff71AeCdfdB88c42"
-    }
+  "chainId": 9990,
+  "network": "agung",
+  "onchainid": {
+      "identity": "0x8EEc53C739313698A8D86B8b06315da114140541",
+      "implementationAuthority": "0x382476b7D0C7D6214517A6b4752A76B16980E0Bf",
+      "idFactory": "0x125120E71c8a19210993865668B9B8F7840AD858",
+      "kycVerifier": "0xf319d436505B1f59a93d7b60804076841dc82Df9",
+      "mnftIssuerVerifier": "0xc7238BD80AB4974b6668cDE47ad4ca2e33b7fFE9",
+      "mnftRegulatorVerifier": "0x7413503cF31890D83907fd49a8f634df7f669dB4"
+  },
+  "trex": {
+      "trexImplementationAuthority": "0xE148E32197D0DF32a3fb1e51441Aa3F618A3b4db",
+      "trexFactory": "0xd78A2FeE7D16cc1DC1C600dFC38A2201B4b56255",
+      "iaFactory": "0x79cEB11eafd05B87aCC92F6034311c6ED4729B33",
+      "identityRegistryStorageProxy": "0x3878E8C2444fEBb8a4076D50AE93Eb932976a650",
+      "claimTopicsRegistryProxy": "0x1065D8fE50d0f9f9d9f68D5db8a5002082Fd2809",
+      "trustedIssuersRegistryProxy": "0x4F9e003D7d11BF92F1128723B702346206533063",
+      "identityRegistryProxy": "0x3Fb2Dc58C9D1229C47aa7D87E8dcC7A445F98362",
+      "modularComplianceProxy": "0x896be71399DE0bB8A9baA58AbAF68Aa42aE2d064",
+      "trexGateway": "0xF6B554fa143d9F4F04463317FEF4cC6364A72349"
+  },
+  "proxyAdmin": "",
+  "nfts": {
+      "machineNftsUpgradeable": "",
+      "peaqMachineNftsUpgradeable": "",
+      "peaqMachineNftsProxy": "",
+      "ipeaqMachineNfts": "",
+      "proxyAdmin": ""
+  },
+  "vaults": {
+      "machineVaultUpgradeable": "",
+      "machineVaultFactoryUpgradeable": "",
+      "machineVaultFactoryProxy": "",
+      "proxyAdmin": ""
   }
+}
