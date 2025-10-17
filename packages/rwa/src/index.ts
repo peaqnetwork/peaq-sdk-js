@@ -6,7 +6,8 @@ import { MachineNFTs } from './modules/mnfts';
 import { OnchainID } from './modules/onchainid';
 
 // expose types for users don't set incorrectly
-export { Chain, SDKInit } from './types/core';
+export { SDKInit } from './types/core';
+export { Chain } from './enums/core';
 
 export class RWA {
   readonly chainId: number;

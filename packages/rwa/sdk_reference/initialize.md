@@ -5,7 +5,7 @@ Initialize the peaq RWA SDK for a specific chain. The instance wires module addr
 ### Parameters
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| **chainId** | `Chain` | Required | Target network. `Chain.AGUNG` (9990) or `Chain.PEAQ` (3338). |
+| **chainId** | `Chain` | Required | The Implementation Target network. `Chain.AGUNG` (9990) or `Chain.PEAQ` (3338). |
 
 
 ### Usage

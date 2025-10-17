@@ -12,9 +12,9 @@ Create (or fetch if already exists) an ONCHAINID identity for a given EOA. This 
 ### Returns
 | Field | Type | Description |
 |-------|------|-------------|
-| **status** | `'created' | 'exists'` | `'created'` when a new identity was deployed, `'exists'` if already present. |
+| **status** | `created` or `exists` | `'created'` when a new identity was deployed, `'exists'` if already present. |
 | **identityAddress** | `string` | ONCHAINID contract address bound to `walletAddr`. |
-| **receipt** | `TransactionReceipt | null` | Transaction receipt when created; `null` if it already existed. |
+| **receipt** | `TransactionReceipt` or `null` | Transaction receipt when created; `null` if it already existed. |
 
 
 ### Usage

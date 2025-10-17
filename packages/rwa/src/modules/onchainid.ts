@@ -8,6 +8,7 @@ import type { CreateIdentity, CreateIdentityResult } from '../types/onchainid';
 
 // get utils
 import { getContract } from '../utils/index';
+import { waitForTx } from '../utils/index';
 
 // get 3rd part tools
 import {  type Signer, ZeroAddress } from 'ethers';
@@ -42,14 +43,15 @@ export class OnchainID {
       return { status: 'exists', identityAddress: existing, receipt: null };
     }
 
-    const tx = await idFactory.createIdentity(walletAddr, salt);
-    const receipt = await tx.wait();
+    const tx = await idFactory.createIdentity.populateTransaction(walletAddr, salt);
+    // const receipt = await tx.wait();
+    const receipt = await waitForTx(admin, tx);
     const identityAddress = await idFactory.getIdentity(walletAddr);
 
     const identity = this._identity(admin);
     identity.attach(identityAddress);
 
-    return { status: 'created', identityAddress, receipt };
+    return { status: 'created', identityAddress, receipt: receipt };
   }
 
 }
