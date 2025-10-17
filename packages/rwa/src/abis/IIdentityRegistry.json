@@ -5,11 +5,11 @@
         {
           "indexed": true,
           "internalType": "address",
-          "name": "_agent",
+          "name": "claimTopicsRegistry",
           "type": "address"
         }
       ],
-      "name": "AgentAdded",
+      "name": "ClaimTopicsRegistrySet",
       "type": "event"
     },
     {
@@ -18,87 +18,36 @@
         {
           "indexed": true,
           "internalType": "address",
-          "name": "_agent",
-          "type": "address"
-        }
-      ],
-      "name": "AgentRemoved",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "from",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "Burned",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "from",
+          "name": "investorAddress",
           "type": "address"
         },
         {
           "indexed": true,
+          "internalType": "uint16",
+          "name": "country",
+          "type": "uint16"
+        }
+      ],
+      "name": "CountryUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
           "internalType": "address",
-          "name": "machineNFTs",
+          "name": "investorAddress",
           "type": "address"
         },
         {
           "indexed": true,
-          "internalType": "uint256",
-          "name": "tokenId",
-          "type": "uint256"
-        }
-      ],
-      "name": "Deposited",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "uint8",
-          "name": "version",
-          "type": "uint8"
-        }
-      ],
-      "name": "Initialized",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "to",
+          "internalType": "contract IIdentity",
+          "name": "identity",
           "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
         }
       ],
-      "name": "Minted",
+      "name": "IdentityRegistered",
       "type": "event"
     },
     {
@@ -107,17 +56,17 @@
         {
           "indexed": true,
           "internalType": "address",
-          "name": "previousOwner",
+          "name": "investorAddress",
           "type": "address"
         },
         {
           "indexed": true,
-          "internalType": "address",
-          "name": "newOwner",
+          "internalType": "contract IIdentity",
+          "name": "identity",
           "type": "address"
         }
       ],
-      "name": "OwnershipTransferred",
+      "name": "IdentityRemoved",
       "type": "event"
     },
     {
@@ -126,66 +75,64 @@
         {
           "indexed": true,
           "internalType": "address",
-          "name": "token",
+          "name": "identityStorage",
           "type": "address"
         }
       ],
-      "name": "TokenSet",
+      "name": "IdentityStorageSet",
       "type": "event"
     },
     {
+      "anonymous": false,
       "inputs": [
         {
-          "internalType": "address",
-          "name": "_agent",
+          "indexed": true,
+          "internalType": "contract IIdentity",
+          "name": "oldIdentity",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "contract IIdentity",
+          "name": "newIdentity",
           "type": "address"
         }
       ],
-      "name": "addAgent",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
+      "name": "IdentityUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "trustedIssuersRegistry",
+          "type": "address"
+        }
+      ],
+      "name": "TrustedIssuersRegistrySet",
+      "type": "event"
     },
     {
       "inputs": [
         {
           "internalType": "address[]",
-          "name": "machineNFTs",
+          "name": "_userAddresses",
           "type": "address[]"
         },
         {
-          "internalType": "uint256[]",
-          "name": "tokenIds",
-          "type": "uint256[]"
-        }
-      ],
-      "name": "depositAndMint",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "depositor",
-      "outputs": [
+          "internalType": "contract IIdentity[]",
+          "name": "_identities",
+          "type": "address[]"
+        },
         {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
+          "internalType": "uint16[]",
+          "name": "_countries",
+          "type": "uint16[]"
         }
       ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "owner_",
-          "type": "address"
-        }
-      ],
-      "name": "initialize",
+      "name": "batchRegisterIdentity",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -194,109 +141,11 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_agent",
+          "name": "_userAddress",
           "type": "address"
         }
       ],
-      "name": "isAgent",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "minted",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "nfts",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "address",
-              "name": "machineNFTs",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "tokenId",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct IMachineVault.NFT[]",
-          "name": "",
-          "type": "tuple[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        },
-        {
-          "internalType": "bytes",
-          "name": "",
-          "type": "bytes"
-        }
-      ],
-      "name": "onERC721Received",
-      "outputs": [
-        {
-          "internalType": "bytes4",
-          "name": "",
-          "type": "bytes4"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "owner",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "redeemed",
+      "name": "contains",
       "outputs": [
         {
           "internalType": "bool",
@@ -311,18 +160,11 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_agent",
+          "name": "_userAddress",
           "type": "address"
         }
       ],
-      "name": "removeAgent",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "renounceOwnership",
+      "name": "deleteIdentity",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -331,21 +173,27 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_token",
+          "name": "_userAddress",
           "type": "address"
         }
       ],
-      "name": "setToken",
-      "outputs": [],
-      "stateMutability": "nonpayable",
+      "name": "identity",
+      "outputs": [
+        {
+          "internalType": "contract IIdentity",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
       "inputs": [],
-      "name": "token",
+      "name": "identityStorage",
       "outputs": [
         {
-          "internalType": "contract IToken",
+          "internalType": "contract IIdentityRegistryStorage",
           "name": "",
           "type": "address"
         }
@@ -357,11 +205,160 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "newOwner",
+          "name": "_userAddress",
           "type": "address"
         }
       ],
-      "name": "transferOwnership",
+      "name": "investorCountry",
+      "outputs": [
+        {
+          "internalType": "uint16",
+          "name": "",
+          "type": "uint16"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_userAddress",
+          "type": "address"
+        }
+      ],
+      "name": "isVerified",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "issuersRegistry",
+      "outputs": [
+        {
+          "internalType": "contract ITrustedIssuersRegistry",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_userAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IIdentity",
+          "name": "_identity",
+          "type": "address"
+        },
+        {
+          "internalType": "uint16",
+          "name": "_country",
+          "type": "uint16"
+        }
+      ],
+      "name": "registerIdentity",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_claimTopicsRegistry",
+          "type": "address"
+        }
+      ],
+      "name": "setClaimTopicsRegistry",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_identityRegistryStorage",
+          "type": "address"
+        }
+      ],
+      "name": "setIdentityRegistryStorage",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_trustedIssuersRegistry",
+          "type": "address"
+        }
+      ],
+      "name": "setTrustedIssuersRegistry",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "topicsRegistry",
+      "outputs": [
+        {
+          "internalType": "contract IClaimTopicsRegistry",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_userAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "uint16",
+          "name": "_country",
+          "type": "uint16"
+        }
+      ],
+      "name": "updateCountry",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_userAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IIdentity",
+          "name": "_identity",
+          "type": "address"
+        }
+      ],
+      "name": "updateIdentity",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

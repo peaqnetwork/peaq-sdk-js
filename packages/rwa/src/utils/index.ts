@@ -8,3 +8,4 @@ export function getContract(addr: string, abi: any, runner: Signer | Provider | 
   const iface = new Interface(abi);
   return new Contract(addr, iface, (runner) ? runner : undefined);
 }
+

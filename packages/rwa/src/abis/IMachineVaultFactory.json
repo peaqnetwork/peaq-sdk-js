@@ -3,13 +3,37 @@
       "anonymous": false,
       "inputs": [
         {
+          "indexed": true,
+          "internalType": "address",
+          "name": "vault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
           "indexed": false,
-          "internalType": "uint8",
-          "name": "version",
-          "type": "uint8"
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "symbol",
+          "type": "string"
         }
       ],
-      "name": "Initialized",
+      "name": "VaultCreated",
       "type": "event"
     },
     {
@@ -18,17 +42,17 @@
         {
           "indexed": true,
           "internalType": "address",
-          "name": "regulator",
+          "name": "previousImpl",
           "type": "address"
         },
         {
           "indexed": true,
           "internalType": "address",
-          "name": "issuer",
+          "name": "newImpl",
           "type": "address"
         }
       ],
-      "name": "MachineIssuerAdded",
+      "name": "VaultImplementationUpdated",
       "type": "event"
     },
     {
@@ -37,74 +61,92 @@
         {
           "indexed": true,
           "internalType": "address",
-          "name": "regulator",
+          "name": "previousAdmin",
           "type": "address"
         },
         {
           "indexed": true,
           "internalType": "address",
-          "name": "issuer",
+          "name": "newAdmin",
           "type": "address"
         }
       ],
-      "name": "MachineIssuerRemoved",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "regulator",
-          "type": "address"
-        }
-      ],
-      "name": "MachineRegulatorAdded",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "regulator",
-          "type": "address"
-        }
-      ],
-      "name": "MachineRegulatorRemoved",
+      "name": "VaultProxyAdminUpdated",
       "type": "event"
     },
     {
       "inputs": [
         {
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "symbol",
+          "type": "string"
+        },
+        {
           "internalType": "address",
-          "name": "factory",
+          "name": "irs",
           "type": "address"
         },
         {
           "internalType": "address",
-          "name": "vrfrIssuer",
+          "name": "tokenIdentity",
+          "type": "address"
+        },
+        {
+          "internalType": "address[]",
+          "name": "claimIssuers",
+          "type": "address[]"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "claimTopics",
+          "type": "uint256[]"
+        }
+      ],
+      "name": "createVaultAndToken",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "vaultAddr",
           "type": "address"
         },
         {
           "internalType": "address",
-          "name": "vrfrRegulator",
+          "name": "tokenAddr",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "gateway",
           "type": "address"
         },
         {
           "internalType": "address",
-          "name": "mNftImplementation",
+          "name": "implementation",
           "type": "address"
         },
         {
           "internalType": "address",
           "name": "proxyAdmin",
           "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
         }
       ],
-      "name": "PeaqMachineNFTs_init",
+      "name": "initialize",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -113,11 +155,11 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "issuer",
+          "name": "implementation",
           "type": "address"
         }
       ],
-      "name": "addMachineIssuer",
+      "name": "setVaultImplementation",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -126,63 +168,11 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "regulator",
+          "name": "proxyAdmin",
           "type": "address"
         }
       ],
-      "name": "addMachineRegulator",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getMachineIssuers",
-      "outputs": [
-        {
-          "internalType": "address[]",
-          "name": "",
-          "type": "address[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getMachineRegulators",
-      "outputs": [
-        {
-          "internalType": "address[]",
-          "name": "",
-          "type": "address[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "issuer",
-          "type": "address"
-        }
-      ],
-      "name": "removeMachineIssuer",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "regulator",
-          "type": "address"
-        }
-      ],
-      "name": "removeMachineRegulator",
+      "name": "setVaultProxyAdmin",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

@@ -1,16 +1,5 @@
 [
     {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "trexFactory",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "constructor"
-    },
-    {
       "anonymous": false,
       "inputs": [
         {

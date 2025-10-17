@@ -1,7 +1,6 @@
 import agung from './agung.json';
 import peaq from './peaq.json';
-
-export type NetworkAddresses = typeof agung | typeof peaq;
+import type { NetworkAddresses } from '../types/core';
 
 const byChainId: Record<number, NetworkAddresses> = {
   9990: agung,

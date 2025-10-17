@@ -3,13 +3,13 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
-          "internalType": "uint8",
-          "name": "version",
-          "type": "uint8"
+          "indexed": true,
+          "internalType": "address",
+          "name": "_addr",
+          "type": "address"
         }
       ],
-      "name": "Initialized",
+      "name": "Deployed",
       "type": "event"
     },
     {
@@ -18,17 +18,11 @@
         {
           "indexed": true,
           "internalType": "address",
-          "name": "previousOwner",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "newOwner",
+          "name": "factory",
           "type": "address"
         }
       ],
-      "name": "OwnershipTransferred",
+      "name": "TokenFactoryAdded",
       "type": "event"
     },
     {
@@ -37,9 +31,16 @@
         {
           "indexed": true,
           "internalType": "address",
-          "name": "vault",
+          "name": "factory",
           "type": "address"
-        },
+        }
+      ],
+      "name": "TokenFactoryRemoved",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
         {
           "indexed": true,
           "internalType": "address",
@@ -49,23 +50,11 @@
         {
           "indexed": true,
           "internalType": "address",
-          "name": "owner",
+          "name": "identity",
           "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "name",
-          "type": "string"
-        },
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "symbol",
-          "type": "string"
         }
       ],
-      "name": "VaultCreated",
+      "name": "TokenLinked",
       "type": "event"
     },
     {
@@ -74,17 +63,17 @@
         {
           "indexed": true,
           "internalType": "address",
-          "name": "previousImpl",
+          "name": "wallet",
           "type": "address"
         },
         {
           "indexed": true,
           "internalType": "address",
-          "name": "newImpl",
+          "name": "identity",
           "type": "address"
         }
       ],
-      "name": "VaultImplementationUpdated",
+      "name": "WalletLinked",
       "type": "event"
     },
     {
@@ -93,52 +82,108 @@
         {
           "indexed": true,
           "internalType": "address",
-          "name": "previousAdmin",
+          "name": "wallet",
           "type": "address"
         },
         {
           "indexed": true,
           "internalType": "address",
-          "name": "newAdmin",
+          "name": "identity",
           "type": "address"
         }
       ],
-      "name": "VaultProxyAdminUpdated",
+      "name": "WalletUnlinked",
       "type": "event"
     },
     {
       "inputs": [
         {
+          "internalType": "address",
+          "name": "_factory",
+          "type": "address"
+        }
+      ],
+      "name": "addTokenFactory",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_wallet",
+          "type": "address"
+        },
+        {
           "internalType": "string",
-          "name": "name",
+          "name": "_salt",
+          "type": "string"
+        }
+      ],
+      "name": "createIdentity",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_wallet",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "_salt",
           "type": "string"
         },
         {
+          "internalType": "bytes32[]",
+          "name": "_managementKeys",
+          "type": "bytes32[]"
+        }
+      ],
+      "name": "createIdentityWithManagementKeys",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_token",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_tokenOwner",
+          "type": "address"
+        },
+        {
           "internalType": "string",
-          "name": "symbol",
+          "name": "_salt",
           "type": "string"
-        },
-        {
-          "internalType": "address",
-          "name": "irs",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "onchainId",
-          "type": "address"
         }
       ],
-      "name": "createVaultAndToken",
+      "name": "createTokenIdentity",
       "outputs": [
         {
           "internalType": "address",
-          "name": "vaultAddr",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "tokenAddr",
+          "name": "",
           "type": "address"
         }
       ],
@@ -146,21 +191,14 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "gateway",
-      "outputs": [
+      "inputs": [
         {
-          "internalType": "contract ITREXGateway",
-          "name": "",
+          "internalType": "address",
+          "name": "_wallet",
           "type": "address"
         }
       ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "implementation",
+      "name": "getIdentity",
       "outputs": [
         {
           "internalType": "address",
@@ -175,33 +213,11 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_gateway",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_implementation",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_proxyAdmin",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_owner",
+          "name": "_identity",
           "type": "address"
         }
       ],
-      "name": "initialize",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "owner",
+      "name": "getToken",
       "outputs": [
         {
           "internalType": "address",
@@ -213,8 +229,27 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_identity",
+          "type": "address"
+        }
+      ],
+      "name": "getWallets",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [],
-      "name": "proxyAdmin",
+      "name": "implementationAuthority",
       "outputs": [
         {
           "internalType": "address",
@@ -226,8 +261,52 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "renounceOwnership",
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_salt",
+          "type": "string"
+        }
+      ],
+      "name": "isSaltTaken",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_factory",
+          "type": "address"
+        }
+      ],
+      "name": "isTokenFactory",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_newWallet",
+          "type": "address"
+        }
+      ],
+      "name": "linkWallet",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -236,11 +315,11 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_implementation",
+          "name": "_factory",
           "type": "address"
         }
       ],
-      "name": "setVaultImplementation",
+      "name": "removeTokenFactory",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -249,24 +328,11 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_proxyAdmin",
+          "name": "_oldWallet",
           "type": "address"
         }
       ],
-      "name": "setVaultProxyAdmin",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "newOwner",
-          "type": "address"
-        }
-      ],
-      "name": "transferOwnership",
+      "name": "unlinkWallet",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

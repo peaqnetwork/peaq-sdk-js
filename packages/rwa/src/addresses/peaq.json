@@ -1,44 +1,41 @@
 {
-    "_comment": "Add peaq addresses when they are available",
-    "chainId": 3338,
-    "network": "peaq",
-    "onchainid": {
-      "identity": "",
-      "implementationAuthority": "",
-      "idFactory": "",
-      "kycVerifier": "",
-      "mnftIssuerVerifier": "",
-      "mnftRegulatorVerifier": ""
-    },
-    "trex": {
-      "trexImplementationAuthority": "",
-      "identityRegistryStorage": "",
-      "identityRegistry": "",
-      "claimTopicsRegistry": "",
-      "trustedIssuersRegistry": "",
-      "modularCompliance": "",
-      "token": "",
-      "trexFactory": "",
-      "iaFactory": "",
-      "identityRegistryStorageProxy": "",
-      "claimTopicsRegistryProxy": "",
-      "trustedIssuersRegistryProxy": "",
-      "identityRegistryProxy": "",
-      "modularComplianceProxy": "",
-      "txrexGateway": ""
-    },
+  "chainId": 3338,
+  "network": "peaq",
+  "onchainid": {
+    "identity": "",
+    "implementationAuthority": "",
+    "idFactory": "",
+    "kycVerifier": "",
+    "mnftIssuerVerifier": "",
+    "mnftRegulatorVerifier": "",
+    "claimIssuer": "",
+    "ownerIdentity": ""
+  },
+  "trex": {
+    "trexImplementationAuthority": "",
+    "iaFactory": "",
+    "trexFactory": "",
+    "trexGateway": "",
+    "modularComplianceProxy": "",
+    "identityRegistryProxy": "",
+    "identityRegistryStorageProxy": "",
+    "trustedIssuersRegistryProxy": "",
+    "claimTopicsRegistryProxy": ""
+  },
+  "mnfts": {
     "proxyAdmin": "",
-    "nfts": {
-      "machineNftsUpgradeable": "",
-      "peaqMachineNftsUpgradeable": "",
-      "peaqMachineNftsProxy": "",
-      "ipeaqMachineNfts": "",
-      "proxyAdmin": ""
-    },
-    "vaults": {
-      "machineVaultUpgradeable": "",
-      "machineVaultFactoryUpgradeable": "",
-      "machineVaultFactoryProxy": "",
-      "proxyAdmin": ""
-    }
+    "peaqMachineNfts": "",
+    "machineNft": ""
+  },
+  "machineVaults": {
+    "factory": "",
+    "proxyAdmin": ""
+  },
+  "claimIssuers": {
+    "peaq": ""
+  },
+  "rwa": {
+    "vault": "",
+    "securityToken": ""
   }
+}

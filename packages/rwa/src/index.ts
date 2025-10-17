@@ -1,12 +1,12 @@
 import { getAddresses } from './addresses/index';
-import type { SDKInit } from './core/types';
+import type { SDKInit } from './types/core';
 import { TREX } from './modules/trex';
 import { Vaults } from './modules/vault';
 import { MachineNFTs } from './modules/mnfts';
 import { OnchainID } from './modules/onchainid';
 
 // expose types for users don't set incorrectly
-export { Chain } from './core/types';
+export { Chain, SDKInit } from './types/core';
 
 export class RWA {
   readonly chainId: number;
