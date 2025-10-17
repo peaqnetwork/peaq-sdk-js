@@ -17,10 +17,8 @@ export class RWA {
   readonly onchainid: OnchainID;
 
   constructor(opts: SDKInit) {
-
     this.chainId = opts.chainId;
     this.addresses = getAddresses(opts.chainId);;
-
 
     // initialize modules with addresses only; signer provided per call
     this.trex = new TREX(this.addresses);
