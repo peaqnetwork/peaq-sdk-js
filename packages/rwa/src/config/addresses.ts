@@ -1,5 +1,5 @@
-import agung from './agung.json';
-import peaq from './peaq.json';
+import agung from '../addresses/agung.json';
+import peaq from '../addresses/peaq.json';
 import type { NetworkAddresses } from '../types/core';
 
 const byChainId: Record<number, NetworkAddresses> = {

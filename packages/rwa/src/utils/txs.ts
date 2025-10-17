@@ -1,4 +1,4 @@
-import { Contract, Interface } from 'ethers';
+import { Contract, Interface, getAddress } from 'ethers';
 import type { Provider, Signer, TransactionRequest, JsonRpcProvider, TransactionReceipt, TransactionResponse } from 'ethers';
 import type { TransactionStatusCallback, txOptions, EvmSendResult } from '../types/utils';
 import { ConfirmationMode, TransactionStatus } from '../enums/utils';
@@ -28,6 +28,8 @@ export async function waitForTx(
 }
 
 // EVM transaction execution helper
+//
+// WIP
 export async function executeEvmTransaction(
   signer: Signer,
   unsignedTx: TransactionRequest,
@@ -105,7 +107,7 @@ export async function executeEvmTransaction(
           } catch (error: any) {
               // TODO possible add error parsing
               // const errorMessage = _parseEvmError(error, iface);
-              return reject(new Error(error));
+              return reject(error);
           }
       });
 
@@ -163,6 +165,7 @@ function _emitStatusCallback(
   }
 }
 
+// Runtime option validation helpers
 
 async function _waitForConfirmations(
   txResponse: TransactionResponse,
