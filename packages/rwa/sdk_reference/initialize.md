@@ -1,79 +1,101 @@
-## Set up TS ENV (todo)
-SOMETHING LIKE:
-
-1. Make Fresh Project
+## Set up TS ENV
+### 1. New Project
 ```bash
 npm init -y
 npm pkg set type=module
 ```
 
-2. Install packages
-TODO
-
-
+### 2. Install packages
+```
+npm install peaq-network-rwa-0.0.1.tgz
 npm i -D typescript tsx @types/node
 npm i dotenv
+```
 
-3. Add a TypeScript config
-tsconfig.json:
+### 3. Add a TypeScript config
+```
+touch tsconfig.json
+```
+Add the following into the file:
 ```js
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "outDir": "dist",
-    "rootDir": ".",
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+    "sourceMap": true,
+    "noEmit": true
   },
-  "include": ["stream.ts", "listener.ts", "src/**/*"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }
 ```
 
-4. Add scripts to run TS or built JS
-package.json (add these under "scripts")
+### 4. Update scripts in `package.json`.
+The `src/index.ts` is the executable file.
 ```js
-{
-  "scripts": {
-    "build": "tsc",
-    "start-stream": "node dist/stream.js",
-    "start-listener": "node dist/listener.js"
-  }
-}
+    "scripts": {
+        "dev": "tsx watch src/index.ts",
+        "start": "tsx src/index.ts",
+        "typecheck": "tsc -p tsconfig.json --noEmit"
+    },
 ```
-
-5. Build and compile
-Build:
+### 5. Create source file
 ```
-npm run build
-```
-Execute:
-```
-npm run
+mkdir src
+touch src/index.ts
 ```
 
 ## Set up JS ENV
-1. Initialize node env
+### 1. Initialize node env
 ```
-npm init
-```
-2. Set to module, install and create .env
-```
+npm init -y
 npm pkg set type=module
-npm install dotenv
+```
+### 2. Install packages
+```
+npm install peaq-network-rwa-0.0.1.tgz
+npm i dotenv
+```
+### 3. Create source file
+```
+mkdir src
+touch src/index.js
+```
+
+## Execute
+For both TS/JS environments your next steps are
+### Create .env file
+Next we will create the `.env` file where we store `VARIABLES_LIKE_THIS`. Make sure you add the corresponding variables named in the sdk code into this same file.
+We also add a gitignore to make sure you don't accidently post secrets.
+```
 touch .env
+touch .gitignore
 ```
-3. Install rwa sdk and create file
+Add to `.env`:
 ```
-npm install @peaq-network/rwa
-touch index.js
+ADMIN_PRIVATE_KEY=""
+ALICE_PRIVATE_KEY=""
 ```
-4. Execute code
+Add to `.gitignore`:
 ```
-node index.js
+.env
+```
+
+### TS Execution
+Copy one of the examples with the proper authority into `src/index.ts` for execution and run with:
+```
+npm start
+```
+
+### JS Execution
+Copy one of the examples with the proper authority into `src/index.js` for execution and run with:
+```
+node src/index.js
 ```
 
 ## `new RWA(opts)`
@@ -93,7 +115,7 @@ import { RWA, Chain } from "@peaq-network/rwa";
 
 // Initialize SDK on Agung
 const rwa_sdk = new RWA({ chainId: Chain.AGUNG });
-
+console.log(rwa_sdk);
 ```
 
 
@@ -103,4 +125,5 @@ import { RWA, Chain } from "@peaq-network/rwa";
 
 // Initialize SDK on Agung
 const rwa_sdk = new RWA({ chainId: Chain.AGUNG });
-
+console.log(rwa_sdk);
+```
