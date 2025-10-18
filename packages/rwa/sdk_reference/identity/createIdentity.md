@@ -25,8 +25,8 @@ import { JsonRpcProvider, Wallet } from "ethers";
 
 async function main() {
     // 0. Create rwa_sdk instance and get provider
-    const rwa_sdk = new RWA({ chainId: Chain.AGUNG });
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
+    const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider: provider });
   
     // 1. Get Admin wallet
  	  const admin = new Wallet(process.env.ADMIN_PRIVATE_KEY, provider);

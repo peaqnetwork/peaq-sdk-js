@@ -19,10 +19,9 @@ export async function generateKycClaim(opts: GenerateKycClaim): Promise<IClaim> 
     const { issuerContract, kyc, uri } = opts;
     const abiCoder = AbiCoder.defaultAbiCoder();
     const data = keccak256(abiCoder.encode(
-        ['string', 'string', 'string', 'string'],
-        [kyc.data.name, kyc.data.lastName, kyc.data.dateOfBirth, kyc.data.placeOfBirth]
-      )
-    );
+      ['string', 'string', 'string', 'string'],
+      [kyc.data.name, kyc.data.lastName, kyc.data.dateOfBirth, kyc.data.placeOfBirth]
+    ));
     return {
       identity: kyc.identity,
       issuer: issuerContract,
@@ -42,11 +41,14 @@ export async function signClaim(opts: SignClaim): Promise<string> {
   const { claim, claimIssuer } = opts;
   const abiCoder = AbiCoder.defaultAbiCoder();
 
-  const data = keccak256(abiCoder.encode(
+  const kycData = abiCoder.encode(
     ['address', 'uint256', 'bytes'],
     [claim.identity, claim.topic, claim.data]
-    )
   );
-  const signature = await claimIssuer.signMessage(getBytes(data));
+  const kycDataHash = keccak256(kycData);
+  const signature = await claimIssuer.signMessage(
+    getBytes(kycDataHash)
+  );
+
   return signature;
 }

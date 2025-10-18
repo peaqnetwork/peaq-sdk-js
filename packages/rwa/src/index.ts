@@ -10,6 +10,9 @@ import { Vaults } from './modules/vault';
 import { MachineNFTs } from './modules/mnfts';
 import { OnchainID } from './modules/onchainid';
 
+// 3rd party tools
+import { type Provider } from 'ethers';
+
 /**
  * Entry point for the RWA SDK.
  * 
@@ -22,10 +25,13 @@ import { OnchainID } from './modules/onchainid';
 export class RWA {
   readonly chainId: number;
   readonly addresses: ReturnType<typeof getAddresses>;
+  readonly provider: Provider;
   readonly trex: TREX;
   readonly vaults: Vaults;
   readonly mnfts: MachineNFTs;
   readonly onchainid: OnchainID;
+
+// TODO think about requiring a proivder in the constructor for reads
 
   /**
    * Initialize the RWA SDK for a specific chain
@@ -34,13 +40,14 @@ export class RWA {
    */
   constructor(opts: SDKInit) {
     this.chainId = opts.chainId;
+    this.provider = opts.provider;
     this.addresses = getAddresses(opts.chainId);;
 
     // initialize modules with addresses only; signer provided per call
     this.trex = new TREX(this.addresses);
     this.vaults = new Vaults(this.addresses);
     this.mnfts = new MachineNFTs(this.addresses);
-    this.onchainid = new OnchainID(this.addresses);
+    this.onchainid = new OnchainID(this.addresses, this.provider);
   }
   /**
    * Get RWA implementation addresses for the given chain

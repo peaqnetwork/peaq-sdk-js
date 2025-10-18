@@ -100,21 +100,24 @@ node src/index.js
 
 ## `new RWA(opts)`
 
-Initialize the peaq RWA SDK for a specific chain. The instance wires module addresses for that chain and exposes module entry points. Signers/providers are supplied per call when executing write/read operations.
+Initialize the peaq RWA SDK for a specific chain. The instance wires module addresses for that chain and exposes module entry points. A Provider is required at initialization and is used for read operations; write operations require an explicit Signer.
 
 ### Parameters
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | **chainId** | `Chain` | Required | The Implementation Target network. `Chain.AGUNG` (9990) or `Chain.PEAQ` (3338). |
+| **provider** | `Provider` | Required | An ethers Provider used for read-only calls across modules. |
 
 
 ### Usage
 #### TypeScript
 ```js
 import { RWA, Chain } from "@peaq-network/rwa";
+import { JsonRpcProvider } from "ethers";
 
 // Initialize SDK on Agung
-const rwa_sdk = new RWA({ chainId: Chain.AGUNG });
+const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
+const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider: provider });
 console.log(rwa_sdk);
 ```
 
@@ -122,8 +125,10 @@ console.log(rwa_sdk);
 #### JavaScript
 ```js
 import { RWA, Chain } from "@peaq-network/rwa";
+import { JsonRpcProvider } from "ethers";
 
 // Initialize SDK on Agung
-const rwa_sdk = new RWA({ chainId: Chain.AGUNG });
+const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
+const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider: provider });
 console.log(rwa_sdk);
 ```
