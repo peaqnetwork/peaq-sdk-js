@@ -51,7 +51,7 @@ main().catch((err) => {
 
 ### Example outputs
 Created:
-```json
+```
 Result {
   status: 'created',
   identityAddress: '0x1e747251c5F1A4cDC4CD667536db2949A93aB110',
@@ -62,7 +62,7 @@ Result {
 ```
 
 Already exists:
-```json
+```
 Result {
   status: 'exists',
   identityAddress: '0x1e747251c5F1A4cDC4CD667536db2949A93aB110'

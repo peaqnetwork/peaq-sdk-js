@@ -67,7 +67,7 @@ main().catch((err) => {
 ```
 
 ### Example outputs
-```json
+```
 Alice Identity {
  status: 'found',
  identity: '0x1d0FDE95e971c5c78B6f9c745a8e2791Fe0c962C'

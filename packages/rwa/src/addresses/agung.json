@@ -37,5 +37,8 @@
   "rwa": {
     "vault": "0xf6bcee8115807aEffB7ab9c516833bdA2f175aBD",
     "securityToken": "0xC96274D61E95bB9692658b1F126052346C90Cf94"
+  },
+  "erc20": {
+    "peaq": "0x0000000000000000000000000000000000000809"
   }
 }

@@ -1,7 +1,6 @@
 // abis
 import IIdentityABI from '../abis/IIdentity.json';
 import IIdFactoryABI from '../abis/IIdFactory.json';
-import ERC20ABI from '../abis/ERC20.json';
 
 // types
 import type { NetworkAddresses } from '../types/core';
@@ -37,12 +36,6 @@ export class OnchainID {
     const addr = address ?? this.addresses.onchainid.idFactory;
     return getContract(addr, IIdFactoryABI, runner);
   }
-
-  private _erc20(runner: Signer | Provider, address?: string) {
-    const addr = address ?? this.addresses.rwa.securityToken;
-    return getContract(addr, ERC20ABI, runner);
-  }
-  
 
 
   /**
