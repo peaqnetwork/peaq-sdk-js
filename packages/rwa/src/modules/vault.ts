@@ -5,7 +5,7 @@ import ITokenABI from '../abis/IToken.json';
 import IMachineNFTsABI from '../abis/IMachineNFTs.json';
 
 import type { NetworkAddresses } from '../types/core';
-import type { CreateVaultAndToken, CreateVaultAndTokenResult, MintSecurityTokens, MintSecurityTokensResult } from '../types/vault';
+import type { CreateVaultAndToken, CreateVaultAndTokenResult, MintSecurityTokens, MintSecurityTokensResult, Transfer, TransferResult } from '../types/vault';
 
 import type { Provider, Signer } from 'ethers';
 
@@ -78,6 +78,7 @@ export class Vaults {
 
     const tokenOwnerAddress = await tokenOwner.getAddress();
     const identityRegistry = this._identityRegistry(admin, tokenRegistry);
+    // TODO remove '0' for actualy country code
     const tx = await identityRegistry.registerIdentity.populateTransaction(tokenOwnerAddress, tokenOwnerIdentity, 0);
     const receipt = await waitForTx(admin, tx);
 
@@ -94,5 +95,24 @@ export class Vaults {
     return {result: "Minted " + amount + " security tokens for vault: " + vault};
   }
 
+  public async transfer(opts: Transfer): Promise<TransferResult> {
+    const { admin, vault, token, sender, recipientAddr, recipientIdentity, amount } = opts;
 
+    const machineVault = this._machineVault(admin, vault);
+    const tokenContract = this._token(sender, token);
+
+    await (await machineVault.unpauseToken()).wait();
+
+    // register recipient as a new identity (TODO put into helper function)
+    const tokenRegistry = await tokenContract.identityRegistry();
+    const identityRegistry = this._identityRegistry(admin, tokenRegistry);
+    const tx = await identityRegistry.registerIdentity.populateTransaction(recipientAddr, recipientIdentity, 0);
+    const receipt = await waitForTx(admin, tx);
+
+
+    const tx2 = await tokenContract.transfer.populateTransaction(recipientAddr, amount);
+    const receipt2 = await waitForTx(sender, tx2);
+
+    return {result: "Transfered " + amount + " native tokens from one address to another"};
+  }
 }

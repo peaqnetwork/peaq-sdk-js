@@ -29,3 +29,17 @@ export type MintSecurityTokens = {
 export type MintSecurityTokensResult = {
     result: string;
 }
+
+export type Transfer = {
+    admin: Signer;
+    vault: string;
+    token: string;
+    sender: Signer;
+    recipientAddr: string;
+    recipientIdentity: string;
+    amount: number;
+}
+
+export type TransferResult = {
+    result: string;
+}
