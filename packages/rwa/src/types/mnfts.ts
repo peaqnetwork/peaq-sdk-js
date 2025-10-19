@@ -2,7 +2,7 @@ import type { Signer, TransactionReceipt } from 'ethers';
 
 export type IssueMachineNFT = {
     machineIssuer: Signer;
-    alice: Signer;
+    machineOwner: Signer;
     metadata: IMachineMetadata;
 }
 

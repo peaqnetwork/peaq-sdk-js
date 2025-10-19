@@ -1,4 +1,8 @@
 import IMachineVaultFactoryABI from '../abis/IMachineVaultFactory.json';
+import IMachineVaultABI from '../abis/IMachineVault.json';
+import IIdentityRegistryABI from '../abis/IIdentityRegistry.json';
+import ITokenABI from '../abis/IToken.json';
+import IMachineNFTsABI from '../abis/IMachineNFTs.json';
 
 import type { NetworkAddresses } from '../types/core';
 import type { CreateVaultAndToken, CreateVaultAndTokenResult, MintSecurityTokens, MintSecurityTokensResult } from '../types/vault';
@@ -21,6 +25,26 @@ export class Vaults {
     return getContract(addr, IMachineVaultFactoryABI, runner);
   }
 
+  private _machineVault(runner: Signer | Provider, address: string) {
+    const addr = address;
+    return getContract(addr, IMachineVaultABI, runner);
+  }
+
+  private _identityRegistry(runner: Signer | Provider, address: string) {
+    const addr = address;
+    return getContract(addr, IIdentityRegistryABI, runner);
+  }
+
+  private _token(runner: Signer | Provider, address: string) {
+    const addr = address;
+    return getContract(addr, ITokenABI, runner);
+  }
+
+  private _machineNFTs(runner: Signer | Provider, address?: string) {
+    const addr = address ?? this.addresses.mnfts.machineNft;
+    return getContract(addr, IMachineNFTsABI, runner);
+  }
+
 /**
  * Creates a new MachineVault and its associated token, allowing the caller to specify
  * existing Identity Registry Storage (IRS) and ONCHAINID addresses. Passing zero addresses
@@ -41,6 +65,34 @@ export class Vaults {
     const vault = args[0];
     const token = args[1];
 
+    // TODO maybe log token ids?
+
     return {vault: vault, token: token}
   }
+
+  public async mintSecurityTokens(opts: MintSecurityTokens): Promise<MintSecurityTokensResult> {
+    const { admin, tokenOwner, tokenOwnerIdentity, vault, token, tokenIds, amount } = opts;
+    const tokenContract = this._token(this.provider, token);
+    const tokenRegistry = await tokenContract.identityRegistry();
+    // console.log("tokenRegistry", tokenRegistry);
+
+    const tokenOwnerAddress = await tokenOwner.getAddress();
+    const identityRegistry = this._identityRegistry(admin, tokenRegistry);
+    const tx = await identityRegistry.registerIdentity.populateTransaction(tokenOwnerAddress, tokenOwnerIdentity, 0);
+    const receipt = await waitForTx(admin, tx);
+
+    const mnfts = this._machineNFTs(tokenOwner)
+    const tx2 = await mnfts.setApprovalForAll.populateTransaction(vault, true);
+    const receipt2 = await waitForTx(tokenOwner, tx2);
+
+    const mnftAddr = this.addresses.mnfts.machineNft;
+    const machineVaultContract = this._machineVault(tokenOwner, vault);
+    // TODO change from hardcoded values to dynamic values (aka mnftAddr values arg 1 here)
+    const tx3 = await machineVaultContract.depositAndMint.populateTransaction([mnftAddr,mnftAddr,mnftAddr], tokenIds, amount);
+    const receipt3 = await waitForTx(tokenOwner, tx3);
+
+    return {result: "Minted " + amount + " security tokens for vault: " + vault};
+  }
+
+
 }

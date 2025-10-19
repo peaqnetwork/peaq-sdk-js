@@ -44,7 +44,7 @@ export class RWA {
     this.addresses = getAddresses(opts.chainId);;
 
     // initialize modules with addresses only; signer provided per call
-    this.trex = new TREX(this.addresses);
+    this.trex = new TREX(this.addresses, this.provider);
     this.vaults = new Vaults(this.addresses, this.provider);
     this.mnfts = new MachineNFTs(this.addresses, this.provider);
     this.onchainid = new OnchainID(this.addresses, this.provider);

@@ -33,22 +33,16 @@ async function main() {
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider: provider });
   
     // 1. Get Admin wallet
- 	  const admin = new Wallet(process.env.JANE_PRIVATE_KEY, provider);
+ 	  const admin = new Wallet(process.env.ADMIN_PRIVATE_KEY, provider);
 
-    // 2. Get Claim Issuer wallet
-    const claimIssuer = new Wallet(process.env.CLAIM_ISSUER_PRIVATE_KEY, provider);
-
-    // 3. Get Alice Signer
-    const alice = new Wallet(process.env.ALICE_PRIVATE_KEY, provider);
-
-    // 4. Create ONCHAINID Identity
+    // 2. Create Vault and Token
     const result = await rwa_sdk.vaults.createVaultAndToken({
         admin: admin,
         name: "Alice Vault",
         symbol: "ALICE",
         irs: ZeroAddress,
         tokenIdentity: ZeroAddress,
-        claimIssuers: [claimIssuer.address],
+        claimIssuers: [process.env.CLAIM_ISSUER_CONTRACT_ADDRESS],
         claimTopics: [CT_KYC_APPROVED]
     });
     console.log("Result", result);

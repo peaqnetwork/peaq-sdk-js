@@ -22,7 +22,7 @@ export async function waitForTx(
     signer,
     tx,
     status => console.log('Status update:', status),
-    { mode: ConfirmationMode.FAST }
+    { mode: ConfirmationMode.FINAL }
   );
   return result.receipt;
 }

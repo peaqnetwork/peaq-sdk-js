@@ -15,3 +15,17 @@ export type CreateVaultAndTokenResult = {
     vault: string;
     token: string;
 }
+
+export type MintSecurityTokens = {
+    admin: Signer;
+    tokenOwner: Signer;
+    tokenOwnerIdentity: string
+    vault: string;
+    token: string;
+    tokenIds: number[];
+    amount: number;
+}
+
+export type MintSecurityTokensResult = {
+    result: string;
+}

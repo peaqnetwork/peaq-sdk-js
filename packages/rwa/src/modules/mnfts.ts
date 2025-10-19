@@ -32,26 +32,26 @@ export class MachineNFTs {
 
 
   public async issueMachineNFT(opts: IssueMachineNFT): Promise<IssueMachineNFTResult> {
-    const { machineIssuer, alice, metadata } = opts;
-    const aliceAddress = await alice.getAddress();
+    const { machineIssuer, machineOwner, metadata } = opts;
+    const machineOwnerAddress = await machineOwner.getAddress();
 
-    const erc20 = this._erc20(alice, this.addresses.erc20.peaq); // not sure what erc to connect to, I use our native erc20 for now
+    const erc20 = this._erc20(machineOwner, this.addresses.erc20.peaq); // not sure what erc to connect to, I use our native erc20 for now
     const tx = await erc20.approve.populateTransaction(this.addresses.mnfts.machineNft, Fees.FeePerMint);
-    const receipt = await waitForTx(alice, tx);
+    const receipt = await waitForTx(machineOwner, tx);
 
     const mnfts = this._machineNFTs(machineIssuer);
     
 
     // issue 3 machine NFTs (make sure machune NFT is funded!!)
-    const tx2 = await mnfts.registerMachine.populateTransaction(aliceAddress, Fees.MachineValue, metadata,
+    const tx2 = await mnfts.registerMachine.populateTransaction(machineOwnerAddress, Fees.MachineValue, metadata,
       { value: Fees.NativeDepositPerMint }
     );
     await waitForTx(machineIssuer, tx2);
-    const tx3 = await mnfts.registerMachine.populateTransaction(aliceAddress, Fees.MachineValue, metadata,
+    const tx3 = await mnfts.registerMachine.populateTransaction(machineOwnerAddress, Fees.MachineValue, metadata,
       { value: Fees.NativeDepositPerMint }
     );
     await waitForTx(machineIssuer, tx3);
-    const tx4 = await mnfts.registerMachine.populateTransaction(aliceAddress, Fees.MachineValue, metadata,
+    const tx4 = await mnfts.registerMachine.populateTransaction(machineOwnerAddress, Fees.MachineValue, metadata,
       { value: Fees.NativeDepositPerMint }
     );
     await waitForTx(machineIssuer, tx4);
@@ -67,6 +67,6 @@ export class MachineNFTs {
       const tx5 = await mnfts.withdrawRefund.populateTransaction();
       const receipt2 = await waitForTx(machineIssuer, tx5);
     }
-    return { result: "Created 3 Machine NFTs for user: " + aliceAddress};
+    return { result: "Created 3 Machine NFTs for user: " + machineOwnerAddress};
   }
 }

@@ -16,17 +16,18 @@ async function main() {
     // 2. Get Alice Signer
     const alice = new Wallet(process.env.ALICE_PRIVATE_KEY, provider);
 
-    // 3. Create MachineNFT for Alice
-    const result = await rwa_sdk.mnfts.issueMachineNFT({
-        machineIssuer: admin,
-        machineOwner: alice,
-        metadata: {
-          brand: 'Bosch1',
-          model: 'X2001',
-          serialNumber: 'SN1234567891',
-          uri: 'ipfs://Qm...xyz1',
-          timestamp: "1231231231"
-        }
+    // 3. Get Alice Identity
+    const aliceIdentity = await rwa_sdk.onchainid.getIdentity({ eoa: alice.address });
+
+    // 4. Mint Security Tokens
+    const result = await rwa_sdk.vaults.mintSecurityTokens({
+        admin: admin,
+        tokenOwner: alice,
+        tokenOwnerIdentity: aliceIdentity.identity,
+        vault: "0x228547b933d75Ca6109052Ce9be571C0dF8b8890",
+        token: "0x3B2db6E4d351e5f7B26f611e61edf2E31bFAe256",
+        tokenIds: [36,37,38],
+        amount: 1000
     });
     console.log("Result", result);
 }
