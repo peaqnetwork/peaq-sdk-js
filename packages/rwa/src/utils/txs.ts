@@ -57,13 +57,6 @@ export async function executeEvmTransaction(
               const tx = await _buildEvmTx(unsignedTx, signer, opts);
               const txResponse = await signer.sendTransaction(tx);
               
-              // Return immediately with transaction hash
-              resolveMain({
-                  txHash: txResponse.hash,
-                  unsubscribe: onStatus ? () => { cancelled = true; } : undefined,
-                  receipt,
-              });
-
               // Emit broadcast status
               _emitStatusCallback(onStatus, cancelled, {
                   status: TransactionStatus.BROADCAST,
@@ -82,6 +75,13 @@ export async function executeEvmTransaction(
               if (inclusionReceipt.status === 0) {
                   throw new Error('Transaction failed');
               }
+
+            // Return immediately with transaction hash
+            resolveMain({
+                txHash: txResponse.hash,
+                unsubscribe: onStatus ? () => { cancelled = true; } : undefined,
+                receipt,
+            });
 
               // Emit in-block status
               _emitStatusCallback(onStatus, cancelled, {

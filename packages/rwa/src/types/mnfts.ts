@@ -6,9 +6,9 @@ export type IssueMachineNFT = {
     metadata: IMachineMetadata;
 }
 
-// TODO improve type
+// TODO improve return type
 export type IssueMachineNFTResult = {
-    test1: string;
+    result: string;
 }
 
 

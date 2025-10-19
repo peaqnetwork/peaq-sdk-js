@@ -1,5 +1,5 @@
 // helps validate argument options for functions with clean error messages; chat generated.
-import { getAddress } from 'ethers';
+import { getAddress, Result, TransactionReceipt, TransactionResponse, EventLog } from 'ethers';
 
 export type OptionRule<T = any> = {
     required?: boolean;
@@ -64,3 +64,27 @@ export type OptionRule<T = any> = {
     hexString: (v: any) => typeof v === 'string' && /^0x[0-9a-fA-F]*$/.test(v),
     regex: (re: RegExp) => (v: any) => typeof v === 'string' && re.test(v),
   };
+
+/**
+ * @dev Extracts the arguments of a specific event from a transaction receipt.
+ * @param tx The transaction response object.
+ * @param eventName The name of the event to extract arguments from.
+ * @return A promise that resolves to the event arguments if found, otherwise throws an error.
+ */
+export async function getArgsFromTxEvent(
+  tx: TransactionResponse,
+  eventName: string
+): Promise<Result> {
+  const receipt: TransactionReceipt | null = await tx.wait();
+  if (!receipt) {
+    throw new Error('Transaction receipt is null');
+  }
+  for (const log of receipt.logs) {
+    if (log instanceof EventLog) {
+      if (log.eventName === eventName) {
+        return log.args;
+      }
+    }
+  }
+  throw new Error(`Event ${eventName} not found in transaction logs`);
+}

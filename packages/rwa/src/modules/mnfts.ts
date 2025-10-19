@@ -18,17 +18,17 @@ export class MachineNFTs {
     this.provider = provider;
   }
 
-  // returns back Identity contract stored in config or at a given address
+
   private _machineNFTs(runner: Signer | Provider, address?: string) {
     const addr = address ?? this.addresses.mnfts.machineNft;
     return getContract(addr, IMachineNFTsABI, runner);
   }
 
-    // returns back Identity contract stored in config or at a given address
-    private _erc20(runner: Signer | Provider, address: string) {
-      const addr = address;
-      return getContract(addr, IERC20ABI, runner);
-    }
+
+  private _erc20(runner: Signer | Provider, address: string) {
+    const addr = address;
+    return getContract(addr, IERC20ABI, runner);
+  }
 
 
   public async issueMachineNFT(opts: IssueMachineNFT): Promise<IssueMachineNFTResult> {
@@ -43,7 +43,7 @@ export class MachineNFTs {
     
 
     // issue 3 machine NFTs (make sure machune NFT is funded!!)
-    const tx2= await mnfts.registerMachine.populateTransaction(aliceAddress, Fees.MachineValue, metadata,
+    const tx2 = await mnfts.registerMachine.populateTransaction(aliceAddress, Fees.MachineValue, metadata,
       { value: Fees.NativeDepositPerMint }
     );
     await waitForTx(machineIssuer, tx2);
@@ -56,14 +56,17 @@ export class MachineNFTs {
     );
     await waitForTx(machineIssuer, tx4);
 
+    // TODO: What do we want with the accrued? Refund right away?
+    // 
     // Verify refundable accrual and perform withdrawals
     const issuerAddr = await machineIssuer.getAddress();
     const accrued = await mnfts.refundableNative(issuerAddr);
+
     // send a refund if there is any
     if (accrued > 0) {
       const tx5 = await mnfts.withdrawRefund.populateTransaction();
       const receipt2 = await waitForTx(machineIssuer, tx5);
     }
-    return { test1: "test1"};
+    return { result: "Created 3 Machine NFTs for user: " + aliceAddress};
   }
 }

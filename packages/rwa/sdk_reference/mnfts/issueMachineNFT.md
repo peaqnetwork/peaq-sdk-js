@@ -16,8 +16,7 @@ async function main() {
     // 2. Get Alice Signer
     const alice = new Wallet(process.env.ALICE_PRIVATE_KEY, provider);
 
-
-    // 3. Create ONCHAINID Identity
+    // 3. Create MachineNFT for Alice
     const result = await rwa_sdk.mnfts.issueMachineNFT({
         machineIssuer: admin,
         alice: alice,
