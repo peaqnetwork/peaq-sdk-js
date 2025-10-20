@@ -29,16 +29,16 @@ async function main() {
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider: provider });
   
     // 1. Get Admin wallet
- 	  const admin = new Wallet(process.env.ADMIN_PRIVATE_KEY, provider);
+    const admin = new Wallet(process.env.ADMIN_PRIVATE_KEY, provider);
 
     // 2. Get Alice public address
     const alice = process.env.ALICE_PUBLIC_KEY
 
     // 3. Create ONCHAINID Identity
     const result = await rwa_sdk.onchainid.createIdentity({
-          admin: admin,
-          eoa: alice,
-          salt: "identity-" + Date.now().toString()
+        admin: admin,
+        eoa: alice,
+        salt: "identity-" + Date.now().toString()
     });
     console.log("Result", result);
 }

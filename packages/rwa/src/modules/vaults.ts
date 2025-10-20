@@ -8,6 +8,7 @@ import type { NetworkAddresses } from '../types/core';
 import type { CreateVaultAndToken, CreateVaultAndTokenResult, MintSecurityTokens, MintSecurityTokensResult, Transfer, TransferResult } from '../types/vault';
 
 import type { Provider, Signer } from 'ethers';
+import { parseUnits } from 'ethers';
 
 import { getContract, waitForTx } from '../utils/txs';
 import { getArgsFromTxEvent } from '../utils/helpers';
@@ -101,6 +102,10 @@ export class Vaults {
     const machineVault = this._machineVault(admin, vault);
     const tokenContract = this._token(sender, token);
 
+    // TODO split up the next two steps into a helper function
+
+    // First time setup; unpause token and register recipient as a new identity else just transfer tokens
+
     await (await machineVault.unpauseToken()).wait();
 
     // register recipient as a new identity (TODO put into helper function)
@@ -110,9 +115,12 @@ export class Vaults {
     const receipt = await waitForTx(admin, tx);
 
 
-    const tx2 = await tokenContract.transfer.populateTransaction(recipientAddr, amount);
+    // Scale amount according to token decimals. If decimals not provided, fetch from token.
+    const tokenDecimals = Number(await tokenContract.decimals());
+    const scaledAmount = parseUnits(amount.toString(), tokenDecimals);
+    const tx2 = await tokenContract.transfer.populateTransaction(recipientAddr, scaledAmount);
     const receipt2 = await waitForTx(sender, tx2);
 
-    return {result: "Transfered " + amount + " native tokens from one address to another"};
+    return {result: "Transfered " + amount + " tokens (scaled by " + tokenDecimals + " decimals) from one address to another"};
   }
 }

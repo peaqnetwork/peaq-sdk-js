@@ -5,7 +5,6 @@ import type { NetworkAddresses } from '../types/core';
 import type { IssueMachineNFT, IssueMachineNFTResult } from '../types/mnfts';
 
 import { Fees } from "../config/fees";
-
 import { getContract, waitForTx } from '../utils/txs';
 
 import type { Signer, Provider } from 'ethers';
@@ -40,9 +39,7 @@ export class MachineNFTs {
     const receipt = await waitForTx(machineOwner, tx);
 
     const mnfts = this._machineNFTs(machineIssuer);
-    
-
-    // issue 3 machine NFTs (make sure machune NFT is funded!!)
+    // issue 3 machine NFTs (make sure machine NFT is funded!!)
     const tx2 = await mnfts.registerMachine.populateTransaction(machineOwnerAddress, Fees.MachineValue, metadata,
       { value: Fees.NativeDepositPerMint }
     );

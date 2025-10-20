@@ -6,7 +6,7 @@ import { getAddresses } from './config/addresses';
 
 // user facing modules
 import { TREX } from './modules/trex';
-import { Vaults } from './modules/vault';
+import { Vaults } from './modules/vaults';
 import { MachineNFTs } from './modules/mnfts';
 import { OnchainID } from './modules/onchainid';
 

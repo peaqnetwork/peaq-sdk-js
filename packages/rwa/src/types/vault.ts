@@ -37,7 +37,7 @@ export type Transfer = {
     sender: Signer;
     recipientAddr: string;
     recipientIdentity: string;
-    amount: number;
+    amount: string | number;
 }
 
 export type TransferResult = {
