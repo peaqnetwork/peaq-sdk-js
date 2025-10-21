@@ -143,11 +143,14 @@ async function _buildEvmTx(
   const maxFeePerGas = opts.maxFeePerGas ?? feeData.maxFeePerGas;
   const maxPriorityFeePerGas = opts.maxPriorityFeePerGas ?? feeData.maxPriorityFeePerGas;
   const gasLimit = opts.gasLimit ?? estimatedGasLimit;
+
+//   const nonce = await signer.getNonce(address);
   
   // Build EIP-1559 transaction
   return {
       to: unsignedTx.to,
       data: unsignedTx.data ?? '0x',
+    //   nonce: nonce,
       gasLimit,
       type: 2, // EIP-1559 transaction type
       maxFeePerGas,

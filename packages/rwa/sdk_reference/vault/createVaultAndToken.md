@@ -24,7 +24,7 @@ import 'dotenv/config';
 import { RWA, Chain } from "@peaq-network/rwa";
 import { JsonRpcProvider, Wallet, ZeroAddress } from "ethers";
 
-const CT_KYC_APPROVED = 666;
+const CT_KYC_APPROVED = 777;
 
 
 async function main() {

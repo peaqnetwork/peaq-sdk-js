@@ -12,10 +12,10 @@ async function main() {
     const rwa = new RWA({ chainId: Chain.AGUNG, provider: provider });
 
     // 1. Get Claim Issuer Admin wallet
-    const claimIssuer = new Wallet(process.env.ADMIN_PRIVATE_KEY, provider);     // issuer of the KYC claim
+    const claimIssuer = new Wallet(process.env.CLAIM_ISSUER_PRIVATE_KEY, provider);
 
     // 2. Get User to KYC
-    const alice = await rwa.onchainid.getIdentity({ eoa: process.env.ALICE_PUBLIC_KEY });
+    const alice = await rwa.onchainid.getIdentity({ eoa: process.env.ALICE_PUBLIC_ADDRESS });
 
     // 3. Create claim + signature
     const { claim, signature } = await rwa.onchainid.issueKycClaim({
@@ -32,7 +32,7 @@ async function main() {
     console.log('Signature:', signature);
 
     // 4. Add the signed claim to the identity on-chain
-    const aliceSigner = new Wallet(process.env.ALICE_PRIVATE_KEY, provider);     // controller of the ONCHAINID
+    const aliceSigner = new Wallet(process.env.ALICE_PRIVATE_KEY, provider);
     const { receipt } = await rwa.onchainid.addClaimToIdentity({
         identity: alice.identity,
         claim: claim,

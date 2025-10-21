@@ -8,8 +8,7 @@
     "kycVerifier": "",
     "mnftIssuerVerifier": "",
     "mnftRegulatorVerifier": "",
-    "claimIssuer": "",
-    "ownerIdentity": ""
+    "claimIssuer": ""
   },
   "trex": {
     "trexImplementationAuthority": "",
@@ -27,16 +26,9 @@
     "peaqMachineNfts": "",
     "machineNft": ""
   },
-  "machineVaults": {
+  "vaults": {
     "factory": "",
     "proxyAdmin": ""
-  },
-  "claimIssuers": {
-    "peaq": ""
-  },
-  "rwa": {
-    "vault": "",
-    "securityToken": ""
   },
   "erc20": {
     "peaq": "0x0000000000000000000000000000000000000809"

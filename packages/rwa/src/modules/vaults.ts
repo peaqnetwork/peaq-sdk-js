@@ -5,13 +5,14 @@ import ITokenABI from '../abis/IToken.json';
 import IMachineNFTsABI from '../abis/IMachineNFTs.json';
 
 import type { NetworkAddresses } from '../types/core';
-import type { CreateVaultAndToken, CreateVaultAndTokenResult, MintSecurityTokens, MintSecurityTokensResult, Transfer, TransferResult } from '../types/vault';
+import type { CreateVaultAndToken, CreateVaultAndTokenResult, MintSecurityTokens, MintSecurityTokensResult, UnpauseToken, UnpauseTokenResult, Transfer, TransferResult, RegisterIdentity, RegisterIdentityResult } from '../types/vault';
 
 import type { Provider, Signer } from 'ethers';
 import { parseUnits } from 'ethers';
 
 import { getContract, waitForTx } from '../utils/txs';
 import { getArgsFromTxEvent } from '../utils/helpers';
+// import { RegisterIdentity } from '../types/trex';
 
 export class Vaults {
   private addresses: NetworkAddresses;
@@ -22,7 +23,7 @@ export class Vaults {
   }
 
   private _vaultFactory(runner: Signer | Provider, address?: string) {
-    const addr = address ?? this.addresses.machineVaults.factory;
+    const addr = address ?? this.addresses.vaults.factory;
     return getContract(addr, IMachineVaultFactoryABI, runner);
   }
 
@@ -71,18 +72,20 @@ export class Vaults {
     return {vault: vault, token: token}
   }
 
+  // TODO maybe spilt up into different functions for each step?
+  // 
+  // allow user to pass an array of machine nft addresses to be minted
   public async mintSecurityTokens(opts: MintSecurityTokens): Promise<MintSecurityTokensResult> {
-    const { admin, tokenOwner, tokenOwnerIdentity, vault, token, tokenIds, amount } = opts;
+    const { admin, tokenOwner, tokenOwnerIdentity, country, vault, token, tokenIds, amount } = opts;
     const tokenContract = this._token(this.provider, token);
     const tokenRegistry = await tokenContract.identityRegistry();
-    // console.log("tokenRegistry", tokenRegistry);
 
     const tokenOwnerAddress = await tokenOwner.getAddress();
     const identityRegistry = this._identityRegistry(admin, tokenRegistry);
-    // TODO remove '0' for actualy country code
-    const tx = await identityRegistry.registerIdentity.populateTransaction(tokenOwnerAddress, tokenOwnerIdentity, 0);
+    const tx = await identityRegistry.registerIdentity.populateTransaction(tokenOwnerAddress, tokenOwnerIdentity, country);
     const receipt = await waitForTx(admin, tx);
 
+    // TODO request mnftAddresses, find them at this location from token owner. and iterate over to populate the vault
     const mnfts = this._machineNFTs(tokenOwner)
     const tx2 = await mnfts.setApprovalForAll.populateTransaction(vault, true);
     const receipt2 = await waitForTx(tokenOwner, tx2);
@@ -95,25 +98,35 @@ export class Vaults {
 
     return {result: "Minted " + amount + " security tokens for vault: " + vault};
   }
+  
 
-  public async transfer(opts: Transfer): Promise<TransferResult> {
-    const { admin, vault, token, sender, recipientAddr, recipientIdentity, amount } = opts;
+  public async unpauseToken(opts: UnpauseToken): Promise<UnpauseTokenResult> {
+    const { admin, vault } = opts;
 
     const machineVault = this._machineVault(admin, vault);
-    const tokenContract = this._token(sender, token);
+    const tx = await machineVault.unpauseToken.populateTransaction();
+    const receipt = await waitForTx(admin, tx);
 
-    // TODO split up the next two steps into a helper function
+    return {result: "Unpaused token for vault: " + vault, receipt: receipt};
+  }
 
-    // First time setup; unpause token and register recipient as a new identity else just transfer tokens
+  public async registerIdentity(opts: RegisterIdentity): Promise<RegisterIdentityResult> {
+    const { admin, token, recipientAddr, recipientIdentity } = opts;
 
-    await (await machineVault.unpauseToken()).wait();
+    const tokenContract = this._token(this.provider, token);
 
-    // register recipient as a new identity (TODO put into helper function)
     const tokenRegistry = await tokenContract.identityRegistry();
     const identityRegistry = this._identityRegistry(admin, tokenRegistry);
     const tx = await identityRegistry.registerIdentity.populateTransaction(recipientAddr, recipientIdentity, 0);
     const receipt = await waitForTx(admin, tx);
+    
+    return {result: "Registered identity for recipient: " + recipientIdentity, receipt: receipt};
+  }
 
+  public async transfer(opts: Transfer): Promise<TransferResult> {
+    // TODO token owner better name than sender
+    const { token, sender, recipientAddr, amount } = opts;
+    const tokenContract = this._token(sender, token);
 
     // Scale amount according to token decimals. If decimals not provided, fetch from token.
     const tokenDecimals = Number(await tokenContract.decimals());

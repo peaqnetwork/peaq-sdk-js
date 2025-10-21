@@ -30,6 +30,9 @@ export class MachineNFTs {
   }
 
 
+  // TODO accept one for now, in the future accept an array of machine nft addresses to be minted
+  // 
+  // allow machine nft addresses to be passed in
   public async issueMachineNFT(opts: IssueMachineNFT): Promise<IssueMachineNFTResult> {
     const { machineIssuer, machineOwner, metadata } = opts;
     const machineOwnerAddress = await machineOwner.getAddress();
@@ -56,14 +59,15 @@ export class MachineNFTs {
     // TODO: What do we want with the accrued? Refund right away?
     // 
     // Verify refundable accrual and perform withdrawals
-    const issuerAddr = await machineIssuer.getAddress();
-    const accrued = await mnfts.refundableNative(issuerAddr);
+    // const issuerAddr = await machineIssuer.getAddress();
+    // const accrued = await mnfts.refundableNative(issuerAddr);
 
     // send a refund if there is any
-    if (accrued > 0) {
-      const tx5 = await mnfts.withdrawRefund.populateTransaction();
-      const receipt2 = await waitForTx(machineIssuer, tx5);
-    }
+    // add another function for the user to call
+    // if (accrued > 0) {
+    //   const tx5 = await mnfts.withdrawRefund.populateTransaction();
+    //   const receipt2 = await waitForTx(machineIssuer, tx5);
+    // }
     return { result: "Created 3 Machine NFTs for user: " + machineOwnerAddress};
   }
 }

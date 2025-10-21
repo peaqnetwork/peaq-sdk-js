@@ -1,4 +1,4 @@
-import type { Signer } from "ethers";
+import type { Signer, TransactionReceipt } from "ethers";
 
 
 export type CreateVaultAndToken = {
@@ -20,6 +20,7 @@ export type MintSecurityTokens = {
     admin: Signer;
     tokenOwner: Signer;
     tokenOwnerIdentity: string
+    country: string;
     vault: string;
     token: string;
     tokenIds: number[];
@@ -30,13 +31,34 @@ export type MintSecurityTokensResult = {
     result: string;
 }
 
-export type Transfer = {
+export type UnpauseToken = {
     admin: Signer;
     vault: string;
+}
+
+export type UnpauseTokenResult = {
+    result: string;
+    receipt: TransactionReceipt;
+}
+
+
+export type RegisterIdentity = {
+    admin: Signer;
+    token: string;
+    recipientAddr: string;
+    recipientIdentity: string;
+}
+
+export type RegisterIdentityResult = {
+    result: string;
+    receipt: TransactionReceipt;
+}
+
+
+export type Transfer = {
     token: string;
     sender: Signer;
     recipientAddr: string;
-    recipientIdentity: string;
     amount: string | number;
 }
 

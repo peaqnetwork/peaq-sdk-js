@@ -26,7 +26,7 @@ async function main() {
             serialNumber: 'SN1234567891',
             uri: 'ipfs://Qm...xyz1',
             timestamp: "1231231231"
-    }
+      }
     });
     console.log("Result", result);
 }

@@ -32,7 +32,7 @@ async function main() {
     const admin = new Wallet(process.env.ADMIN_PRIVATE_KEY, provider);
 
     // 2. Get Alice public address
-    const alice = process.env.ALICE_PUBLIC_KEY
+    const alice = process.env.ALICE_PUBLIC_ADDRESS
 
     // 3. Create ONCHAINID Identity
     const result = await rwa_sdk.onchainid.createIdentity({

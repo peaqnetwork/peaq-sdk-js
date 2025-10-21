@@ -1,7 +1,7 @@
 // abis
 import IIdentityABI from '../abis/IIdentity.json';
 import IIdFactoryABI from '../abis/IIdFactory.json';
-
+import IERC20ABI from '../abis/IERC20.json';
 // types
 import type { NetworkAddresses } from '../types/core';
 import type { CreateIdentity, CreateIdentityResult, GetIdentity, GetIdentityResult, IssueKycClaim, KycClaimResult, AddClaimToIdentity, AddClaimToIdentityResult } from '../types/onchainid';
@@ -11,6 +11,7 @@ import { getContract, waitForTx } from '../utils/txs';
 import { parseOptions, validators } from '../utils/helpers';
 import { CreateIdentityArgumentError } from '../errors/onchainid';
 import { generateKycClaim, signClaim } from '../utils/claims';
+import { Fees } from '../config/fees';
 
 // 3rd party tools
 import { type Signer, type Provider, ZeroAddress } from 'ethers';
@@ -35,6 +36,11 @@ export class OnchainID {
   private _idFactory(runner: Signer | Provider, address?: string) {
     const addr = address ?? this.addresses.onchainid.idFactory;
     return getContract(addr, IIdFactoryABI, runner);
+  }
+
+  private _erc20(runner: Signer | Provider, address: string) {
+    const addr = address;
+    return getContract(addr, IERC20ABI, runner);
   }
 
 
@@ -63,8 +69,12 @@ export class OnchainID {
       const receipt = await waitForTx(admin, tx);
       const identity = await idFactory.getIdentity(eoa);
 
-      const identityContract = this._identity(admin);
-      identityContract.attach(identity);
+      /// TODO - try to increase??
+      // 
+      // give tiny amount of native token as existential deposit to get rid of cannot coalase error
+      const erc20 = this._erc20(admin, this.addresses.erc20.peaq); // not sure what erc to connect to, I use our native erc20 for now
+      const tx2 = await erc20.transfer.populateTransaction(eoa, Fees.ExistentialDeposit);
+      const receipt2 = await waitForTx(admin, tx2);
 
       return { status: 'created', identity: identity, receipt: receipt };
     } catch (err: any) {

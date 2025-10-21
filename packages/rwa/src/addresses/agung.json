@@ -2,41 +2,32 @@
   "chainId": 9990,
   "network": "agung",
   "onchainid": {
-    "identity": "0x8215fa801520e00736f06fe554e10209AB67a3b7",
-    "implementationAuthority": "0x91694FF0126774f564cc75E92e1FfFFe52BA18fD",
-    "idFactory": "0xDA3108BaD2AA586241B887C9320eBfc621FE879C",
-    "kycVerifier": "0xDd056ba1bD330027e56E5b82385C0327Ef063e3C",
-    "mnftIssuerVerifier": "0x9E2b41d60ed3C284B6B59B2874FdF82dB7CAcA19",
-    "mnftRegulatorVerifier": "0x4b3f9f76ffbA7f43dE48Bf40aE143AAC9D7e94D8",
-    "claimIssuer": "0x842d57632954943304441258E94f3f089235022c",
-    "ownerIdentity": "0x8E72B54c2A9199011BdDB4beA29bDC0Cd9cDF15e"
+    "identity": "0x17E69b6c3e33Fd780bc83B7Bf3D025948e5cC69c",
+    "implementationAuthority": "0xeE538D3fa9A950F8DD023AC1F3416F05d6b5327B",
+    "idFactory": "0x4F7EfcCcc3F6700F2aFB01C259e83EDbe1D98305",
+    "kycVerifier": "0xaa555e91D235585CbbE1270022BF4D11C4a0a6d4",
+    "mnftIssuerVerifier": "0xb78735E630Eaf77A8A00453fe040e0BE6Dd3ec28",
+    "mnftRegulatorVerifier": "0x9CA16BdD4068Dd9EA0e6BCdf7E9d893E657d2994"
   },
   "trex": {
-    "trexImplementationAuthority": "0xbF9fbAb2cFe218E188435a2393B72B92eEfFB8D0",
-    "iaFactory": "0x9aED58DC159f4826D6e22b346e6795BE313Fef9a",
-    "trexFactory": "0x99F9A423C42a60359310E7D88f2e7226a67186cd",
-    "trexGateway": "0x1aeB23049f21d2667c24C3639268B1613cD2A203",
-    "modularComplianceProxy": "0x2a713E936ec11Cf99f4A57379a03038D7ED977A0",
-    "identityRegistryProxy": "0x5dC85BC2d0D0bF4f39F207AC5a0a46aE494D18D4",
-    "identityRegistryStorageProxy": "0xDbbC23e675f5Def59401B5c46ea836D984d5deEA",
-    "trustedIssuersRegistryProxy": "0xB05210a7256dDa6beEbE4FF1986a835D6c516f92",
-    "claimTopicsRegistryProxy": "0x9Dfde45D9f877586f69a5668f027ab952482f8a9"
+    "trexImplementationAuthority": "0x3867e89f1487D10079dA3629EB7818dBf1f419E2",
+    "iaFactory": "0xf3f1dD6e3044A4817EB3e5966BEe33954d665bd5",
+    "trexFactory": "0x86942fd691201653eEB2CaB8dB2252a09c970870",
+    "trexGateway": "0x8298099D6742753b9c1aB3B40C888eb5dA97B6f7",
+    "modularComplianceProxy": "0x89e409a4c470c51Bfb7d06Fa69994E41BCd4D163",
+    "identityRegistryProxy": "0x3b3BDBeDe67d352897861b2dc45de2480d53cf78",
+    "identityRegistryStorageProxy": "0xA1CC216b7A7F6B1872628FE7343c4f045CD29548",
+    "trustedIssuersRegistryProxy": "0xFf14252262a4d189D31C544508522ea8C0B4190f",
+    "claimTopicsRegistryProxy": "0x7c41A11117E1B2528401d298875635b371A9E735"
   },
   "mnfts": {
-    "proxyAdmin": "0x04e03752B31C51df6651D68187ad9a876396F20D",
-    "peaqMachineNfts": "0x8e74A8B9EA7ef5A15a390A8004BB4cb27b4EBF4F",
-    "machineNft": "0xe9D28D3A13852ff1968a15e9a25961dEF27892C6"
+    "peaqMachineNfts": "0x8795A2Cf045a23DC2F2b3a09A1861a8678Fa8bA5",
+    "machineNft": "0x1008234A9dc43A747bBe4a3100d8Ff46a7Fb6E97",
+    "proxyAdmin": "0x26Ea8fed8bBa20c37C05e09E89070e148A523aC9"
   },
-  "machineVaults": {
-    "factory": "0xf45963BA2682528140E577881A7D6E7C505996A9",
-    "proxyAdmin": "0x04e03752B31C51df6651D68187ad9a876396F20D"
-  },
-  "claimIssuers": {
-    "peaq": "0x842d57632954943304441258E94f3f089235022c"
-  },
-  "rwa": {
-    "vault": "0xf6bcee8115807aEffB7ab9c516833bdA2f175aBD",
-    "securityToken": "0xC96274D61E95bB9692658b1F126052346C90Cf94"
+  "vaults": {
+    "factory": "0x9E228341e1C921696071BA188A0499482e3D7519",
+    "proxyAdmin": "0x26Ea8fed8bBa20c37C05e09E89070e148A523aC9"
   },
   "erc20": {
     "peaq": "0x0000000000000000000000000000000000000809"

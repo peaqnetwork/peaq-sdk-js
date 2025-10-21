@@ -33,14 +33,14 @@ async function main() {
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider: provider });
 
     // 1. Get Alice EOA
-    const aliceEoa = process.env.ALICE_PUBLIC_KEY
+    const aliceEoa = process.env.ALICE_PUBLIC_ADDRESS
 
     // 2. Get Alice identity
     const alice = await rwa_sdk.onchainid.getIdentity({ eoa: aliceEoa });
     console.log("Alice Identity", alice);
 
     // 3. Get Claim Issuer Admin
-    const admin = new Wallet(process.env.ADMIN_PRIVATE_KEY, provider);
+    const claimIssuer = new Wallet(process.env.CLAIM_ISSUER_PRIVATE_KEY, provider);
 
     // 4. Get Issuer Contract
     const issuerContract = process.env.CLAIM_ISSUER_CONTRACT_ADDRESS;
@@ -48,7 +48,7 @@ async function main() {
 
     // 5. Issue signed KYC claim
     const result = await rwa_sdk.onchainid.issueKycClaim({
-        claimIssuer: admin,
+        claimIssuer: claimIssuer,
         issuerContract: issuerContract,
         identity: alice.identity,
         name: "Alice",
@@ -76,7 +76,7 @@ Result {
  claim: {
    identity: '0x1d0FDE95e971c5c78B6f9c745a8e2791Fe0c962C',
    issuer: '0x842d57632954943304441258E94f3f089235022c',
-   topic: 666,
+   topic: 777,
    scheme: 1,
    data: '0x252ec8044814d556905cc1587f4a375a2acfe3f84a17d7d104accd32ee25b3b6',
    uri: 'https://example.com/kyc'
