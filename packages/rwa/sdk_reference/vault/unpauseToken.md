@@ -1,24 +1,40 @@
-working code:
+## `vaults.unpauseToken(UnpauseToken)`
 
+Owner-only helper to unpause the T-REX token so transfers are enabled.
+
+### UnpauseToken Type Parameters
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| **admin** | `Signer` | Required | Owner/admin authorized to unpause. |
+| **vault** | `string` | Required | MachineVault address controlling the token. |
+
+### Returns
+| Field | Type | Description |
+|-------|------|-------------|
+| **result** | `string` | Human-readable summary. |
+| **receipt** | `TransactionReceipt` | Transaction receipt of the unpause call. |
+
+
+### Usage
 ```js
 import 'dotenv/config';
 import { RWA, Chain } from "@peaq-network/rwa";
 import { JsonRpcProvider, Wallet } from "ethers";
 
 async function main() {
-    // 0. Create rwa_sdk instance and get provider
-    const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
-    const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider: provider });
+  // 0. Create RWA instance and get provider
+  const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
+  const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
 
-    // 1. Get Admin wallet
-    const admin = new Wallet(process.env.ADMIN_PRIVATE_KEY, provider);
+  // 1. Admin wallet
+  const admin = new Wallet(process.env.ADMIN_PRIVATE_KEY, provider);
 
-    // 2. Unpause Security Tokens
-    const result = await rwa_sdk.vaults.unpauseToken({
-        admin: admin,
-        vault: "0x5E951aE23a19E63c0B1b68D0e0d4cC9deB4DBfa9",
-    });
-    console.log("Result", result);
+  // 2. Unpause Security Tokens
+  const result = await rwa_sdk.vaults.unpauseToken({
+    admin: admin,
+    vault: "0x5fa42Bb51c6770034a90FB5200e37e2Ce31Ba56a",
+  });
+  console.log("Result", result);
 }
 
 main().catch((err) => {
@@ -26,3 +42,18 @@ main().catch((err) => {
   process.exit(1);
 });
 ```
+
+### Example outputs
+```
+Result {
+  result: 'Unpaused token for vault: 0x5fa42Bb51c6770034a90FB5200e37e2Ce31Ba56a',
+  receipt: TransactionReceipt {
+    hash: '0xb09a1185bc35dc7e874cabe7375aad58318e081b0e0f4c71e8597c2f09d357df',
+    status: 1,
+    ...
+  }
+}
+```
+
+Notes:
+- Only callable by the owner in the implementing contract.
