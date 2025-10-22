@@ -13,14 +13,11 @@ async function main() {
     // 1. Get Token Owner Signer
     const alice = new Wallet(process.env.ALICE_PRIVATE_KEY, provider);
 
-    // 2. Mint Security Tokens
-    const result = await rwa_sdk.vaults.mintSecurityTokens({
+    const result = await rwa_sdk.vaults.approveVaultAsOperator({
+        machineNFT: "0x1008234A9dc43A747bBe4a3100d8Ff46a7Fb6E97",
         tokenOwner: alice,
-        vault: "0x5fa42Bb51c6770034a90FB5200e37e2Ce31Ba56a",
-        machineNFTs: ["0x1008234A9dc43A747bBe4a3100d8Ff46a7Fb6E97", "0x1008234A9dc43A747bBe4a3100d8Ff46a7Fb6E97", "0x1008234A9dc43A747bBe4a3100d8Ff46a7Fb6E97"],
-        tokenIds: [5,6,7],
-        amount: 1000
-    });
+        vault: "0x5fa42Bb51c6770034a90FB5200e37e2Ce31Ba56a"
+    })
     console.log("Result", result);
 }
 

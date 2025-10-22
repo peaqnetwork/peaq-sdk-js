@@ -16,13 +16,35 @@ export type CreateVaultAndTokenResult = {
     token: string;
 }
 
-export type MintSecurityTokens = {
+export type RegisterIdentity = {
     admin: Signer;
-    tokenOwner: Signer;
-    tokenOwnerIdentity: string
-    country: string;
-    vault: string;
     token: string;
+    eoa: string;
+    identity: string;
+    country: string;
+}
+
+export type RegisterIdentityResult = {
+    result: string;
+    receipt: TransactionReceipt;
+}
+
+export type ApproveVaultAsOperator = {
+    machineNFT: string;
+    tokenOwner: Signer;
+    token: string;
+    vault: string;
+}
+
+export type ApproveVaultAsOperatorResult = {
+    result: string;
+    receipt: TransactionReceipt;
+}
+
+export type MintSecurityTokens = {
+    tokenOwner: Signer;
+    vault: string;
+    machineNFTs: string[];
     tokenIds: number[];
     amount: number;
 }
@@ -37,19 +59,6 @@ export type UnpauseToken = {
 }
 
 export type UnpauseTokenResult = {
-    result: string;
-    receipt: TransactionReceipt;
-}
-
-
-export type RegisterIdentity = {
-    admin: Signer;
-    token: string;
-    recipientAddr: string;
-    recipientIdentity: string;
-}
-
-export type RegisterIdentityResult = {
     result: string;
     receipt: TransactionReceipt;
 }

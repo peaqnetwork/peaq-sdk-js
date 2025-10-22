@@ -20,8 +20,8 @@ async function main() {
     const result = await rwa_sdk.vaults.registerIdentity({
         admin: admin,
         token: "0xa26A27df75b1074a54d1BaB2f6e49059954E796E",
-        recipientAddr: process.env.BOB_PUBLIC_ADDRESS,
-        recipientIdentity: bob.identity
+        eoa: process.env.BOB_PUBLIC_ADDRESS,
+        identity: bob.identity
     });
     console.log("Result", result);
 }
