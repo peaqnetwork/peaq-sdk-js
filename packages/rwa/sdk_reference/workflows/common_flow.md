@@ -49,10 +49,10 @@ Replace the `ALICE_PUBLIC_ADDRESS` with `BOB_PUBLIC_ADDRESS` and `ALICE_PRIVATE_
 7. Mint Security Token
  a. [Register Token Owner Identity](../vault/registerIdentity.md)
  b. [Token Owner Approves Vault as Operator](../vault/approveVaultAsOperator.md)
- c. [Mint Security Token](../vault/mintSecurityToken.md)
+ c. [Mint Security Token](../vault/mintSecurityTokens.md)
 
 8. [Unpause Token](../vault/unpauseToken.md)
 
 9. [Register Bob Token Identity](../vault/registerIdentity.md)
 
-10. [Transfer Token from Alice to Bob](../vault/transferTokens.md)
+10. [Transfer Token from Alice to Bob](../vault/transfer.md)
