@@ -8,7 +8,7 @@ import { Fees } from "../config/fees";
 import { getContract, waitForTx } from '../utils/txs';
 
 import type { Signer, Provider } from 'ethers';
-
+import { parseEther } from 'ethers';
 export class MachineNFTs {
   private addresses: NetworkAddresses;
   private provider: Provider;
@@ -30,44 +30,41 @@ export class MachineNFTs {
   }
 
 
-  // TODO accept one for now, in the future accept an array of machine nft addresses to be minted
-  // 
-  // allow machine nft addresses to be passed in
+  // make sure machine NFT is funded!!
   public async issueMachineNFT(opts: IssueMachineNFT): Promise<IssueMachineNFTResult> {
-    const { machineIssuer, machineOwner, metadata } = opts;
-    const machineOwnerAddress = await machineOwner.getAddress();
+    const { machineIssuer, machineOwner, machineNFT, metadata } = opts;
+    const count = opts.count ?? 1;
+    
+    const mnfts = this._machineNFTs(machineIssuer, machineNFT);
 
-    const erc20 = this._erc20(machineOwner, this.addresses.erc20.peaq); // not sure what erc to connect to, I use our native erc20 for now
-    const tx = await erc20.approve.populateTransaction(this.addresses.mnfts.machineNft, Fees.FeePerMint);
-    const receipt = await waitForTx(machineOwner, tx);
+    // 1) Merge fee overrides (if provided)
+    const fees = {
+      feePerMint: parseEther(String(opts.fees?.feePerMint)) ?? Fees.FeePerMint,
+      machineValue: parseEther(String(opts.fees?.machineValue)) ?? Fees.MachineValue,
+      nativeDepositPerMint: parseEther(String(opts.fees?.nativeDepositPerMint)) ?? Fees.NativeDepositPerMint,
+    };
 
-    const mnfts = this._machineNFTs(machineIssuer);
-    // issue 3 machine NFTs (make sure machine NFT is funded!!)
-    const tx2 = await mnfts.registerMachine.populateTransaction(machineOwnerAddress, Fees.MachineValue, metadata,
-      { value: Fees.NativeDepositPerMint }
-    );
-    await waitForTx(machineIssuer, tx2);
-    const tx3 = await mnfts.registerMachine.populateTransaction(machineOwnerAddress, Fees.MachineValue, metadata,
-      { value: Fees.NativeDepositPerMint }
-    );
-    await waitForTx(machineIssuer, tx3);
-    const tx4 = await mnfts.registerMachine.populateTransaction(machineOwnerAddress, Fees.MachineValue, metadata,
-      { value: Fees.NativeDepositPerMint }
-    );
-    await waitForTx(machineIssuer, tx4);
-
-    // TODO: What do we want with the accrued? Refund right away?
-    // 
-    // Verify refundable accrual and perform withdrawals
-    // const issuerAddr = await machineIssuer.getAddress();
-    // const accrued = await mnfts.refundableNative(issuerAddr);
-
-    // send a refund if there is any
-    // add another function for the user to call
-    // if (accrued > 0) {
-    //   const tx5 = await mnfts.withdrawRefund.populateTransaction();
-    //   const receipt2 = await waitForTx(machineIssuer, tx5);
-    // }
-    return { result: "Created 3 Machine NFTs for user: " + machineOwnerAddress};
+    // 2) Approve ERC20
+    const ownerAddr = await machineOwner.getAddress();
+    const erc20 = this._erc20(machineOwner, this.addresses.erc20.peaq);
+    const totalFeeErc20 = fees.feePerMint * BigInt(count);
+    const allowance = await erc20.allowance(ownerAddr, machineNFT);
+    if (allowance < totalFeeErc20) {
+      const approveTx = await erc20.approve.populateTransaction(machineNFT, totalFeeErc20);
+      await waitForTx(machineOwner, approveTx);
+    }
+  
+    // 3) Mint loop (TODO batch in smart contract??)
+    for (let i = 0; i < count; i++) {
+      const mintTx = await mnfts.registerMachine.populateTransaction(
+        ownerAddr,
+        fees.machineValue,
+        metadata,
+        { value: fees.nativeDepositPerMint }
+      );
+      await waitForTx(machineIssuer, mintTx);
+    }
+  
+    return { result: `Created ${count} Machine NFT${count > 1 ? 's' : ''} for user: ${ownerAddr}` };
   }
 }

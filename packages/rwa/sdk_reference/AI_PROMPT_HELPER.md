@@ -1,4 +1,4 @@
-Please help me write documentation similar to createIdentity
+Please help me write documentation similar to './sdk_reference/identity/createIdentity' for './sdk_reference/mnfts/issueMachineNFT'
 
 with entry/return types <paste entry/return types used in sdk>:
 ```bash
