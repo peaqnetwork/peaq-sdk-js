@@ -123,7 +123,7 @@ console.log(rwa);
 
 
 #### ESM JavaScript
-Default setup in JS guide above since module type was added directly with cmd: `npm pkg set type=module`
+Default setup in JS guide with `"type": "module",` set via cmd: `npm pkg set type=module`
 ```js
 import { RWA, Chain } from "@peaq-network/rwa";
 import { JsonRpcProvider } from "ethers";
