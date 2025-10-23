@@ -18,6 +18,41 @@ Create (or fetch if already exists) an ONCHAINID identity for a given EOA (Exter
 
 
 ### Usage
+#### TypeScript
+```Typescript
+import 'dotenv/config';
+import { RWA, Chain, type SDKInit, type CreateIdentity } from '@peaq-network/rwa';
+import { JsonRpcProvider, Wallet } from "ethers";
+
+async function main() {
+    // 0. Create rwa_sdk instance and get provider
+    const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
+    const init: SDKInit = { chainId: Chain.AGUNG, provider: provider };
+    const rwa_sdk = new RWA(init);
+  
+    // 1. Get Admin wallet
+    const admin = new Wallet(process.env.ADMIN_PRIVATE_KEY!, provider);
+
+    // 2. Get Alice public address
+    const alice = process.env.ALICE_PUBLIC_ADDRESS!
+
+    // 3. Create ONCHAINID Identity params
+    const createIdentity: CreateIdentity = {
+        admin: admin,
+        eoa: alice,
+        salt: "identity-" + Date.now().toString()
+    }
+    const result = await rwa_sdk.onchainid.createIdentity(createIdentity);
+    console.log("Result", result);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
+```
+
+#### JavaScript
 ```js
 import 'dotenv/config';
 import { RWA, Chain } from "@peaq-network/rwa";

@@ -22,6 +22,54 @@ Generate and sign a KYC claim for an ONCHAINID identity. This does not broadcast
 
 
 ### Usage
+#### TypeScript
+```TypeScript
+import 'dotenv/config';
+import { RWA, Chain, type SDKInit, type GetIdentity, type IssueKycClaim } from "@peaq-network/rwa";
+import { JsonRpcProvider, Wallet } from "ethers";
+
+async function main() {
+    // 0. Create rwa_sdk instance and get provider
+    const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
+    const init: SDKInit = { chainId: Chain.AGUNG, provider: provider };
+    const rwa_sdk = new RWA(init);
+
+    // 1. Get Alice EOA
+    const aliceEoa = process.env.ALICE_PUBLIC_ADDRESS
+
+    // 2. Get Alice identity
+    const getIdentity: GetIdentity = { eoa: aliceEoa! };
+    const alice = await rwa_sdk.onchainid.getIdentity(getIdentity);
+    console.log("Alice Identity", alice);
+
+    // 3. Get Claim Issuer Admin
+    const claimIssuer = new Wallet(process.env.CLAIM_ISSUER_PRIVATE_KEY!, provider);
+
+    // 4. Get Issuer Contract
+    const issuerContract = process.env.CLAIM_ISSUER_CONTRACT_ADDRESS;
+
+    // 5. Issue signed KYC claim
+    const issueKycClaim: IssueKycClaim = {
+        claimIssuer: claimIssuer,
+        issuerContract: issuerContract!,
+        identity: alice.identity,
+        name: "Alice",
+        lastName: "Doe",
+        dateOfBirth: "1990-01-01",
+        placeOfBirth: "New York",
+        uri: "https://example.com/kyc"
+    }
+    const { claim, signature } = await rwa_sdk.onchainid.issueKycClaim(issueKycClaim);
+    console.log("Result", { claim, signature });
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
+```
+
+#### JavaScript
 ```js
 import 'dotenv/config';
 import { RWA, Chain } from "@peaq-network/rwa";

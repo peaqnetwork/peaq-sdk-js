@@ -58,9 +58,9 @@ export class MachineNFTs {
       }), expected: 'object' },
       count: { required: false, validator: validators.number, expected: 'number' },
       fees: { required: false, validator: validators.partialObject({
-        feePerMint: validators.number,
-        machineValue: validators.number,
-        nativeDepositPerMint: validators.number,
+        feePerMint: validators.numberOrBigint,
+        machineValue: validators.numberOrBigint,
+        nativeDepositPerMint: validators.numberOrBigint,
       }), expected: 'object' },
     }, 'issueMachineNFT');
 

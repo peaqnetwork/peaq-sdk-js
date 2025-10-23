@@ -117,8 +117,8 @@ import { JsonRpcProvider } from 'ethers';
 
 const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL!);
 const init: SDKInit = { chainId: Chain.AGUNG, provider: provider };
-const rwa = new RWA(init);
-console.log(rwa);
+const rwa_sdk = new RWA(init);
+console.log(rwa_sdk);
 ```
 
 
@@ -129,8 +129,8 @@ import { RWA, Chain } from "@peaq-network/rwa";
 import { JsonRpcProvider } from "ethers";
 
 const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
-const rwa = new RWA({ chainId: Chain.AGUNG, provider: provider });
-console.log(rwa);
+const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider: provider });
+console.log(rwa_sdk);
 ```
 
 #### Common JavaScript
@@ -140,6 +140,6 @@ const { RWA, Chain } = require('@peaq-network/rwa');
 const { JsonRpcProvider } = require('ethers');
 
 const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
-const rwa = new RWA({ chainId: Chain.AGUNG, provider: provider });
-console.log(rwa);
+const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider: provider });
+console.log(rwa_sdk);
 ```

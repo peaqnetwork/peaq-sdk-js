@@ -79,6 +79,7 @@ export type OptionRule<T = any> = {
     nonEmptyString: (v: any) => typeof v === 'string' && v.length > 0,
     string: (v: any) => typeof v === 'string',
     number: (v: any) => typeof v === 'number' && Number.isFinite(v),
+    numberOrBigint: (v: any) => (typeof v === 'number' && Number.isFinite(v)) || typeof v === 'bigint',
     boolean: (v: any) => typeof v === 'boolean',
     bigint: (v: any) => typeof v === 'bigint',
     address: (v: any): string => {

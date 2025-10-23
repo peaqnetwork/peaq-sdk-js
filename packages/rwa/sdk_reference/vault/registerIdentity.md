@@ -19,6 +19,43 @@ Register an ONCHAINID for a user in a token's Identity Registry. Must be called 
 
 
 ### Usage
+#### TypeScript
+```TypeScript
+import 'dotenv/config';
+import { RWA, Chain, type SDKInit, type RegisterIdentity } from "@peaq-network/rwa";
+import { JsonRpcProvider, Wallet } from "ethers";
+
+async function main() {
+  // 0. Create RWA instance and provider
+  const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
+  const init: SDKInit = { chainId: Chain.AGUNG, provider: provider };
+  const rwa_sdk = new RWA(init);
+
+  // 1. Admin wallet (must be an authorized agent)
+  const admin = new Wallet(process.env.ADMIN_PRIVATE_KEY!, provider);
+
+  // 2. Get EOA and identity
+  const alice = await rwa_sdk.onchainid.getIdentity({ eoa: process.env.ALICE_PUBLIC_ADDRESS! });
+
+  // 3. Register Bob's identity in the token's Identity Registry
+  const registerIdentity: RegisterIdentity = {
+    admin: admin,
+    token: "0x5493Ba57D7A52583A43791183775e7EDa9c7373C",
+    eoa: process.env.ALICE_PUBLIC_ADDRESS!,
+    identity: alice.identity,
+    country: '0'
+  }
+  const result = await rwa_sdk.vaults.registerIdentity(registerIdentity);
+  console.log("Result", result);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
+```
+
+#### JavaScript
 ```js
 import 'dotenv/config';
 import { RWA, Chain } from "@peaq-network/rwa";
@@ -37,7 +74,7 @@ async function main() {
 
   // 3. Register Bob's identity in the token's Identity Registry
   const result = await rwa_sdk.vaults.registerIdentity({
-    admin,
+    admin: admin,
     token: "0xa26A27df75b1074a54d1BaB2f6e49059954E796E",
     eoa: process.env.ALICE_PUBLIC_ADDRESS,
     identity: alice.identity,

@@ -17,6 +17,42 @@ Transfer T-REX tokens between addresses, scaling the human-readable amount using
 
 
 ### Usage
+#### TypeScript
+```TypeScript
+import 'dotenv/config';
+import { RWA, Chain, type SDKInit, type Transfer } from "@peaq-network/rwa";
+import { JsonRpcProvider, Wallet } from "ethers";
+
+async function main() {
+  // 0. Create RWA instance and provider
+  const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
+  const init: SDKInit = { chainId: Chain.AGUNG, provider: provider };
+  const rwa_sdk = new RWA(init);
+
+  // 1. Sender
+  const alice = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
+
+  // 2. Recipient
+  const bob = process.env.BOB_PUBLIC_ADDRESS!;
+
+  // 3. Transfer
+  const transfer: Transfer = {
+    token: "0x5493Ba57D7A52583A43791183775e7EDa9c7373C",
+    sender: alice,
+    recipientAddr: bob,
+    amount: 10
+  }
+  const result = await rwa_sdk.vaults.transfer(transfer);
+  console.log("Result", result);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
+```
+
+#### JavaScript
 ```js
 import 'dotenv/config';
 import { RWA, Chain } from "@peaq-network/rwa";

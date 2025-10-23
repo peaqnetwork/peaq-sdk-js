@@ -17,6 +17,62 @@ Add a signed claim to an ONCHAINID identity (calls the identity contract's `addC
 
 
 ### Usage
+#### TypeScript
+```TypeScript
+import 'dotenv/config';
+import { RWA, Chain, 
+    type SDKInit, 
+    type GetIdentity, 
+    type IssueKycClaim, 
+    type AddClaimToIdentity } from '@peaq-network/rwa';
+import { JsonRpcProvider, Wallet } from 'ethers';
+
+async function main() {
+  // 0. Create RWA instance and provider
+  const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
+  const init: SDKInit = { chainId: Chain.AGUNG, provider: provider };
+  const rwa_sdk = new RWA(init);
+
+  // 1. Claim Issuer admin wallet
+  const claimIssuer = new Wallet(process.env.CLAIM_ISSUER_PRIVATE_KEY!, provider);
+
+  // 2. Get User to KYC
+  const getIdentity: GetIdentity = { eoa: process.env.ALICE_PUBLIC_ADDRESS! };
+  const alice = await rwa_sdk.onchainid.getIdentity(getIdentity);
+
+  // 3. Create claim + signature
+  const issueKycClaim: IssueKycClaim = {
+    claimIssuer: claimIssuer,
+    issuerContract: process.env.CLAIM_ISSUER_CONTRACT_ADDRESS!,
+    identity: alice.identity,
+    name: 'Alice',
+    lastName: 'Doe',
+    dateOfBirth: '1990-01-01',
+    placeOfBirth: 'New York',
+    uri: 'https://example.com/kyc'
+  }
+  const { claim, signature } = await rwa_sdk.onchainid.issueKycClaim(issueKycClaim);
+
+  // 4. Identity owner signs and submits addClaim
+  const aliceSigner = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
+  const addClaimToIdentity: AddClaimToIdentity = {
+    identity: alice.identity,
+    identityOwner: aliceSigner,
+    claim: claim,
+    kycSignature: signature,
+  }
+  const { receipt } = await rwa_sdk.onchainid.addClaimToIdentity(addClaimToIdentity);
+
+  console.log('Added claim. txHash:', receipt.hash);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
+```
+
+### JavaScript
 ```js
 import 'dotenv/config';
 import { RWA, Chain } from '@peaq-network/rwa';
@@ -25,16 +81,16 @@ import { JsonRpcProvider, Wallet } from 'ethers';
 async function main() {
   // 0. Create RWA instance and provider
   const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
-  const rwa = new RWA({ chainId: Chain.AGUNG, provider });
+  const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
 
   // 1. Claim Issuer admin wallet
   const claimIssuer = new Wallet(process.env.CLAIM_ISSUER_PRIVATE_KEY, provider);
 
   // 2. Get User to KYC
-  const alice = await rwa.onchainid.getIdentity({ eoa: process.env.ALICE_PUBLIC_ADDRESS });
+  const alice = await rwa_sdk.onchainid.getIdentity({ eoa: process.env.ALICE_PUBLIC_ADDRESS });
 
   // 3. Create claim + signature
-  const { claim, signature } = await rwa.onchainid.issueKycClaim({
+  const { claim, signature } = await rwa_sdk.onchainid.issueKycClaim({
     claimIssuer: claimIssuer,
     issuerContract: process.env.CLAIM_ISSUER_CONTRACT_ADDRESS,
     identity: alice.identity,
@@ -47,7 +103,7 @@ async function main() {
 
   // 4. Identity owner signs and submits addClaim
   const aliceSigner = new Wallet(process.env.ALICE_PRIVATE_KEY, provider);
-  const { receipt } = await rwa.onchainid.addClaimToIdentity({
+  const { receipt } = await rwa_sdk.onchainid.addClaimToIdentity({
     identity: alice.identity,
     identityOwner: aliceSigner,
     claim: claim,

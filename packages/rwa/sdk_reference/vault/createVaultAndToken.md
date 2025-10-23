@@ -21,6 +21,45 @@ Create a new MachineVault and its associated security token. You may pass existi
 
 
 ### Usage
+#### TypeScript
+```TypeScript
+import 'dotenv/config';
+import { RWA, Chain, type SDKInit, type CreateVaultAndToken } from "@peaq-network/rwa";
+import { JsonRpcProvider, Wallet, ZeroAddress } from "ethers";
+
+const CT_KYC_APPROVED = 777;
+
+async function main() {
+  // 0. Create RWA instance and get provider
+  const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
+  const init: SDKInit = { chainId: Chain.AGUNG, provider: provider };
+  const rwa_sdk = new RWA(init);
+
+  // 1. Admin wallet (must be factory owner)
+  const admin = new Wallet(process.env.ADMIN_PRIVATE_KEY!, provider);
+
+  // 2. Create Vault and Token
+  const createVaultAndToken: CreateVaultAndToken = {
+    admin: admin,
+    name: "Alice Vault",
+    symbol: "ALICE",
+    irs: ZeroAddress,              // auto-deploy IRS
+    tokenIdentity: ZeroAddress,    // auto-deploy ONCHAINID
+    claimIssuers: [process.env.CLAIM_ISSUER_CONTRACT_ADDRESS!],
+    claimTopics: [CT_KYC_APPROVED]
+  }
+  const result = await rwa_sdk.vaults.createVaultAndToken(createVaultAndToken);
+  console.log("Result", result);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
+```
+
+
+#### JavaScript
 ```js
 import 'dotenv/config';
 import { RWA, Chain } from "@peaq-network/rwa";
