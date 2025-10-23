@@ -1,4 +1,4 @@
-import { type Signer, Wallet, Provider } from 'ethers';
+// import { type Signer, Wallet, Provider } from 'ethers';
 
 // TODO make types (or see what is preferred; types or interfaces)
 // export interface AddClaimTopics {

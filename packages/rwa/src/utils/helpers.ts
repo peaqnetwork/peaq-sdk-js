@@ -1,5 +1,15 @@
 // helps validate argument options for functions with clean error messages; chat generated.
-import { getAddress, Result, TransactionReceipt, TransactionResponse, EventLog } from 'ethers';
+import { getAddress, Result, TransactionReceipt, TransactionResponse, EventLog, parseEther, parseUnits, type Contract } from 'ethers';
+
+
+export async function toTokenUnits(human: string, token: Contract) {
+  const d = await token.decimals?.();
+  return BigInt(parseUnits(human, d));
+}
+export function toWei(human: string) {
+  return BigInt(parseEther(human));
+}
+
 
 export type OptionRule<T = any> = {
     required?: boolean;

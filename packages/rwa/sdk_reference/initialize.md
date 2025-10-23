@@ -111,24 +111,35 @@ Initialize the peaq RWA SDK for a specific chain. The instance wires module addr
 
 ### Usage
 #### TypeScript
-```js
-import { RWA, Chain } from "@peaq-network/rwa";
-import { JsonRpcProvider } from "ethers";
+```Typescript
+import { RWA, Chain, type SDKInit } from '@peaq-network/rwa';
+import { JsonRpcProvider } from 'ethers';
 
-// Initialize SDK on Agung
-const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
-const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider: provider });
-console.log(rwa_sdk);
+const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL!);
+const init: SDKInit = { chainId: Chain.AGUNG, provider: provider };
+const rwa = new RWA(init);
+console.log(rwa);
 ```
 
 
-#### JavaScript
+#### ESM JavaScript
+Default setup in JS guide above since module type was added directly with cmd: `npm pkg set type=module`
 ```js
 import { RWA, Chain } from "@peaq-network/rwa";
 import { JsonRpcProvider } from "ethers";
 
-// Initialize SDK on Agung
 const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
-const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider: provider });
-console.log(rwa_sdk);
+const rwa = new RWA({ chainId: Chain.AGUNG, provider: provider });
+console.log(rwa);
+```
+
+#### Common JavaScript
+Optional setup to use **cjs**. Remove `"type": "module",` from your `package.json`.
+```js
+const { RWA, Chain } = require('@peaq-network/rwa');
+const { JsonRpcProvider } = require('ethers');
+
+const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
+const rwa = new RWA({ chainId: Chain.AGUNG, provider: provider });
+console.log(rwa);
 ```

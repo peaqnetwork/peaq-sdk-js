@@ -1,50 +1,52 @@
-import IMachineVaultFactoryABI from '../abis/IMachineVaultFactory.json';
-import IMachineVaultABI from '../abis/IMachineVault.json';
-import IIdentityRegistryABI from '../abis/IIdentityRegistry.json';
-import ITokenABI from '../abis/IToken.json';
-import IMachineNFTsABI from '../abis/IMachineNFTs.json';
+// import IMachineVaultFactoryABI from '../abis/IMachineVaultFactory.json';
+// import IMachineVaultABI from '../abis/IMachineVault.json';
+// import IIdentityRegistryABI from '../abis/IIdentityRegistry.json';
+// import ITokenABI from '../abis/IToken.json';
+// import IMachineNFTsABI from '../abis/IMachineNFTs.json';
 
 import type { NetworkAddresses } from '../types/core';
 import type { CreateVaultAndToken, CreateVaultAndTokenResult, MintSecurityTokens, MintSecurityTokensResult, UnpauseToken, UnpauseTokenResult, Transfer, TransferResult, RegisterIdentity, RegisterIdentityResult, ApproveVaultAsOperator, ApproveVaultAsOperatorResult } from '../types/vault';
 
 import type { Provider, Signer } from 'ethers';
-import { parseUnits } from 'ethers';
+import { getAddress, parseUnits } from 'ethers';
 
 import { getContract, waitForTx } from '../utils/txs';
 import { getArgsFromTxEvent } from '../utils/helpers';
-// import { RegisterIdentity } from '../types/trex';
+
+import {
+  IMachineVaultFactory__factory,
+  IMachineVault__factory,
+  IIdentityRegistry__factory,
+  IToken__factory,
+  IMachineNFTs__factory,
+} from '../typechain';
 
 export class Vaults {
-  private addresses: NetworkAddresses;
-  private provider: Provider;
-  constructor(addresses: NetworkAddresses, provider: Provider) {
-    this.addresses = addresses;
-    this.provider = provider;
-  }
+  constructor(
+    private readonly addresses: NetworkAddresses,
+    private readonly provider: Provider,
+  ) {}
 
   private _vaultFactory(runner: Signer | Provider, address?: string) {
-    const addr = address ?? this.addresses.vaults.factory;
-    return getContract(addr, IMachineVaultFactoryABI, runner);
+    const addr = getAddress(address ?? this.addresses.vaults.factory);
+    return IMachineVaultFactory__factory.connect(addr, runner);
   }
 
   private _machineVault(runner: Signer | Provider, address: string) {
-    const addr = address;
-    return getContract(addr, IMachineVaultABI, runner);
+    return IMachineVault__factory.connect(getAddress(address), runner);
   }
 
   private _identityRegistry(runner: Signer | Provider, address: string) {
-    const addr = address;
-    return getContract(addr, IIdentityRegistryABI, runner);
+    return IIdentityRegistry__factory.connect(getAddress(address), runner);
   }
 
   private _token(runner: Signer | Provider, address: string) {
-    const addr = address;
-    return getContract(addr, ITokenABI, runner);
+    return IToken__factory.connect(getAddress(address), runner);
   }
 
-  private _machineNFTs(runner: Signer | Provider, address?: string) {
-    const addr = address ?? this.addresses.mnfts.machineNft;
-    return getContract(addr, IMachineNFTsABI, runner);
+  private _mnfts(runner: Signer | Provider, address?: string) {
+    const addr = getAddress(address ?? this.addresses.mnfts.machineNft);
+    return IMachineNFTs__factory.connect(addr, runner);
   }
 
 /**
@@ -87,7 +89,7 @@ export class Vaults {
 
   public async approveVaultAsOperator(opts: ApproveVaultAsOperator): Promise<ApproveVaultAsOperatorResult> {
     const { machineNFT, tokenOwner, vault } = opts;
-    const mnfts = this._machineNFTs(tokenOwner, machineNFT)
+    const mnfts = this._mnfts(tokenOwner, machineNFT)
     const tx2 = await mnfts.setApprovalForAll.populateTransaction(vault, true);
     const receipt = await waitForTx(tokenOwner, tx2);
 

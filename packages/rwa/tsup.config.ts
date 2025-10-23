@@ -2,13 +2,17 @@ import { defineConfig } from 'tsup';
 
 export default defineConfig({
   entry: ['src/index.ts'],
-  format: ['esm'],
-  target: 'es2020',
-  // Keep bundle for default import; types served from dist/esm
-  dts: false,
-  tsconfig: './tsconfig.json',
-  sourcemap: false,
-  minify: true,
+  format: ['esm', 'cjs'],
+  dts: true,
+  sourcemap: true,
   clean: true,
+  bundle: true,
+  splitting: false,
   treeshake: true,
+  target: 'es2022',
+  platform: 'node',
+  minify: false,
+  external: [
+    'ethers'
+  ]
 });

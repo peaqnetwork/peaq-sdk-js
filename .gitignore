@@ -7,5 +7,4 @@ dist/
 # TypeScript build info
 *.tsbuildinfo
 
-# rwa ignore
-typechain-types/
+typechain/

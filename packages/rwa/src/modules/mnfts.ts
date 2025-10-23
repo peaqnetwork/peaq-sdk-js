@@ -1,6 +1,3 @@
-import IMachineNFTsABI from '../abis/IMachineNFTs.json';
-import IERC20ABI from '../abis/IERC20.json';
-
 import type { NetworkAddresses } from '../types/core';
 import type { IssueMachineNFT, IssueMachineNFTResult } from '../types/mnfts';
 
@@ -8,25 +5,23 @@ import { Fees } from "../config/fees";
 import { getContract, waitForTx } from '../utils/txs';
 
 import type { Signer, Provider } from 'ethers';
-import { parseEther } from 'ethers';
+import { parseEther, getAddress } from 'ethers';
+
+import { IMachineNFTs__factory, IERC20__factory } from '../typechain';
 export class MachineNFTs {
-  private addresses: NetworkAddresses;
-  private provider: Provider;
-  constructor(addresses: NetworkAddresses, provider: Provider) {
-    this.addresses = addresses;
-    this.provider = provider;
+  constructor(
+    private readonly addresses: NetworkAddresses,
+    private readonly provider: Provider
+  ) {}
+
+  private _mnfts(runner: Signer | Provider, address?: string) {
+    const addr = getAddress(address ?? this.addresses.mnfts.machineNft);
+    return IMachineNFTs__factory.connect(addr, runner);
   }
-
-
-  private _machineNFTs(runner: Signer | Provider, address?: string) {
-    const addr = address ?? this.addresses.mnfts.machineNft;
-    return getContract(addr, IMachineNFTsABI, runner);
-  }
-
 
   private _erc20(runner: Signer | Provider, address: string) {
-    const addr = address;
-    return getContract(addr, IERC20ABI, runner);
+    const addr = getAddress(address);
+    return IERC20__factory.connect(addr, runner);
   }
 
 
@@ -35,7 +30,7 @@ export class MachineNFTs {
     const { machineIssuer, machineOwner, machineNFT, metadata } = opts;
     const count = opts.count ?? 1;
     
-    const mnfts = this._machineNFTs(machineIssuer, machineNFT);
+    const mnfts = this._mnfts(machineIssuer, machineNFT);
 
     // 1) Merge fee overrides (if provided)
     const fees = {

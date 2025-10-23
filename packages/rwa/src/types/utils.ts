@@ -1,4 +1,4 @@
-import { Signer, TransactionRequest, TransactionReceipt } from 'ethers';
+import { TransactionReceipt } from 'ethers';
 import { ConfirmationMode, TransactionStatus } from '../enums/utils';
 
 // TODO make types
