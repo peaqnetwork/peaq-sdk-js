@@ -33,11 +33,13 @@ BOB_PRIVATE_KEY=""
 1. [Create Identity Alice](../identity/createIdentity.md)
 
 2. [Create Identity Bob](../identity/createIdentity.md)
+
 Replace the `ALICE_PUBLIC_ADDRESS` with `BOB_PUBLIC_ADDRESS`
 
 3. [Add KYC Claim to Identity Alice](../identity/addClaimToIdentity.md)
 
 4. [Add KYC Claim to Identity Bob](../identity/addClaimToIdentity.md)
+
 Replace the `ALICE_PUBLIC_ADDRESS` with `BOB_PUBLIC_ADDRESS` and `ALICE_PRIVATE_KEY` with `BOB_PRIVATE_KEY`
 
 5. [Issue Machine NFTs](../mnfts/issueMachineNFT.md)
@@ -45,14 +47,9 @@ Replace the `ALICE_PUBLIC_ADDRESS` with `BOB_PUBLIC_ADDRESS` and `ALICE_PRIVATE_
 6. [Create Vault and Token](../vault/createVaultAndToken.md)
 
 7. Mint Security Token
- a. [Register Token Owner Identity](../vault/registerIdentity.md)
- <br/>
-
- b. [Token Owner Approves Vault as Operator](../vault/approveVaultAsOperator.md)
- <br/>
- 
- c. [Mint Security Token](../vault/mintSecurityTokens.md)
-<br/>
+    - [Register Token Owner Identity](../vault/registerIdentity.md)
+    - [Token Owner Approves Vault as Operator](../vault/approveVaultAsOperator.md)
+    - [Mint Security Token](../vault/mintSecurityTokens.md)
 
 8. [Unpause Token](../vault/unpauseToken.md)
 
