@@ -7,12 +7,14 @@ import type {
   AddClaimToIdentity, AddClaimToIdentityResult
 } from '../types/onchainid';
 
+
 // utils
 import { waitForTx } from '../utils/txs';
 import { parseOptions, validators } from '../utils/helpers';
-import { CreateIdentityArgumentError } from '../errors/onchainid';
 import { generateKycClaim, signClaim } from '../utils/claims';
-import { Fees } from '../config/fees';
+
+// errors
+import { SDKError } from '../errors/onchainid';
 
 // ethers & typechain
 import { getAddress, ZeroAddress, type Provider, type Signer } from 'ethers';
@@ -52,42 +54,38 @@ export class OnchainID {
    * @returns {CreateIdentityResult} The result of creating an ONCHAINID identity
    */
   public async createIdentity(opts: CreateIdentity): Promise<CreateIdentityResult> {
+    // validate and parse parameter type options for improved error messages for user
+    const { admin, eoa, salt } = parseOptions<CreateIdentity>(opts, {
+      admin: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      eoa: { required: true, validator: validators.address, expected: 'EVM address string' },
+      salt: { required: true, validator: validators.nonEmptyString, expected: 'non-empty string' },
+    }, 'createIdentity');
+
+    const eoaChecksum = getAddress(eoa);
+    const idFactory = this._idFactory(admin);
+
+    // check if the identity already exists
+    const existing = await idFactory.getIdentity(eoaChecksum);
+    if (existing && existing !== ZeroAddress) {
+      return { status: 'exists', identity: existing };
+    }
+
+    // preflight check
     try {
-      const { admin, eoa, salt } = opts;
-      // // validate and parse parameter type options for improved error messages for user
-      // const { admin, eoa, salt } = parseOptions<CreateIdentity>(opts, {
-      //   admin: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
-      //   eoa: { required: true, validator: validators.address, expected: 'EVM address string' },
-      //   salt: { required: true, validator: validators.nonEmptyString, expected: 'non-empty string' },
-      // }, 'createIdentity');
+      await idFactory.createIdentity.staticCall(eoaChecksum, salt);
+    } catch (cause: any) {
+      throw new SDKError('SIMULATE/CREATE_IDENTITY', 'Factory callStatic failed; creation would revert', { cause });
+    }
 
-      const eoaChecksum = getAddress(eoa);
-      const idFactory = this._idFactory(admin);
+    // if it doesn't revert, send the transaction
+    const tx = await idFactory.createIdentity.populateTransaction(eoaChecksum, salt);
+    const receipt = await waitForTx(admin, tx);
+    const identity = await idFactory.getIdentity(eoaChecksum);
 
-      const existing = await idFactory.getIdentity(eoa);
-      if (existing && existing !== ZeroAddress) {
-        return { status: 'exists', identity: existing };
-      }
-
-      const tx = await idFactory.createIdentity.populateTransaction(eoaChecksum, salt);
-      const receipt = await waitForTx(admin, tx);
-      const identity = await idFactory.getIdentity(eoaChecksum);
-
-      // /// TODO - try to increase??
-      // // 
-      // // give tiny amount of native token as existential deposit to get rid of cannot coalase error
-      // const erc20 = this._erc20(admin, this.addresses.erc20.peaq); // not sure what erc to connect to, I use our native erc20 for now
-      // const tx2 = await erc20.transfer.populateTransaction(eoa, Fees.ExistentialDeposit);
-      // const receipt2 = await waitForTx(admin, tx2);
 
       return { status: 'created', identity: identity, receipt: receipt };
-    } catch (err: any) {
-      if (err && typeof err.message === 'string' && (err.message.startsWith('createIdentity:') || err.message.includes('missing required field'))) {
-        throw new CreateIdentityArgumentError(err.message.replace('createIdentity: ', ''));
-      }
-      throw err;
     }
-  }
+
 
   /**
   * Returns the ONCHAINID identity for a given EOA.
@@ -96,14 +94,15 @@ export class OnchainID {
   * @returns {GetIdentityResult} The result of getting an ONCHAINID identity
   */
   public async getIdentity(opts: GetIdentity): Promise<GetIdentityResult> {
-    const { eoa } = opts;
-    //   // validate and parse parameter type options for improved error messages
-    // const { eoa } = parseOptions<GetIdentity>(opts, {
-    //   eoa: { required: true, validator: validators.address, expected: 'EVM address string' }
-    // }, 'getIdentity');
+    // validate and parse parameter type options for improved error messages
+    const { eoa } = parseOptions<GetIdentity>(opts, {
+      eoa: { required: true, validator: validators.address, expected: 'EVM address string' }
+    }, 'getIdentity');
 
+    const eoaChecksum = getAddress(eoa);
     const idFactory = this._idFactory(this.provider);
-    const existing = await idFactory.getIdentity(eoa);
+
+    const existing = await idFactory.getIdentity(eoaChecksum);
     if (existing && existing !== ZeroAddress) {  
       return { status: 'found', identity: existing };
     }
@@ -120,7 +119,17 @@ export class OnchainID {
   */
   public async issueKycClaim(opts: IssueKycClaim): Promise<KycClaimResult> {
     // validate and parse parameter type options for improved error messages
-    const { claimIssuer, issuerContract, identity, name, lastName, dateOfBirth, placeOfBirth, uri } = opts;
+    const { claimIssuer, issuerContract, identity, name, lastName, dateOfBirth, placeOfBirth, uri } = parseOptions<IssueKycClaim>(opts, {
+      claimIssuer: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      issuerContract: { required: true, validator: validators.address, expected: 'EVM address string' },
+      identity: { required: true, validator: validators.address, expected: 'EVM address string' },
+      name: { required: true, validator: validators.string, expected: 'string' },
+      lastName: { required: true, validator: validators.string, expected: 'string' },
+      dateOfBirth: { required: true, validator: validators.string, expected: 'string' },
+      placeOfBirth: { required: true, validator: validators.string, expected: 'string' },
+      uri: { required: false, validator: validators.string, expected: 'string' },
+    }, 'issueKycClaim');
+    // const { claimIssuer, issuerContract, identity, name, lastName, dateOfBirth, placeOfBirth, uri } = opts;
     const kyc = { identity, data: { name, lastName, dateOfBirth, placeOfBirth } };
 
     const claim = await generateKycClaim({issuerContract, kyc, uri });
@@ -136,15 +145,22 @@ export class OnchainID {
   * @returns {AddClaimToIdentityResult} The result of adding a claim to an ONCHAINID identity
   */
   public async addClaimToIdentity(opts: AddClaimToIdentity): Promise<AddClaimToIdentityResult> {
-    const { identity, claim, kycSignature, identityOwner } = opts;
-    // const { identity, claim, kycSignature, identityOwner } = parseOptions<AddClaimToIdentity>(opts, {
-    //   identity: { required: true, validator: validators.address, expected: 'EVM address string' },
-    //   claim: { required: true },
-    //   kycSignature: { required: true, validator: validators.hexString, expected: '0x-prefixed hex string' },
-    //   identityOwner: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
-    // }, 'addClaimToIdentity');
+    // TODO how to validate the claim?
+    const { identity, identityOwner, claim, kycSignature } = parseOptions<AddClaimToIdentity>(opts, {
+      identity: { required: true, validator: validators.address, expected: 'EVM address string' },
+      claim: { required: true },
+      kycSignature: { required: true, validator: validators.hexString, expected: '0x-prefixed hex string' },
+      identityOwner: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+    }, 'addClaimToIdentity');
 
     const identityContract = this._identity(identityOwner, identity);
+
+    // preflight check
+    try {
+      await identityContract.addClaim.staticCall(claim.topic, claim.scheme, claim.issuer, kycSignature, claim.data, claim.uri); 
+    } catch (cause: any) {
+      throw new SDKError('SIMULATE/ADD_CLAIM', 'Identity callStatic failed; addition would revert', { cause });
+    }
 
     const tx = await identityContract.addClaim.populateTransaction(
       claim.topic,

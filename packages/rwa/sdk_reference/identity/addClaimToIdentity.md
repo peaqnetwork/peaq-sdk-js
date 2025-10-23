@@ -6,9 +6,9 @@ Add a signed claim to an ONCHAINID identity (calls the identity contract's `addC
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | **identity** | `string` | Required | ONCHAINID identity contract address that will receive the claim. |
+| **identityOwner** | `Signer` | Required | Signer/wallet of the identity owner connected to a provider. |
 | **claim** | `IClaim` | Required | Encoded claim payload: `{ identity, issuer, topic, scheme, data, uri }`. |
 | **kycSignature** | `string` | Required | `0x`-prefixed hex signature over the claim by the claim issuer. |
-| **identityOwner** | `Signer` | Required | Signer/wallet of the identity owner connected to a provider. |
 
 ### Returns
 | Field | Type | Description |
@@ -35,7 +35,7 @@ async function main() {
 
   // 3. Create claim + signature
   const { claim, signature } = await rwa.onchainid.issueKycClaim({
-    claimIssuer,
+    claimIssuer: claimIssuer,
     issuerContract: process.env.CLAIM_ISSUER_CONTRACT_ADDRESS,
     identity: alice.identity,
     name: 'Alice',
@@ -49,9 +49,9 @@ async function main() {
   const aliceSigner = new Wallet(process.env.ALICE_PRIVATE_KEY, provider);
   const { receipt } = await rwa.onchainid.addClaimToIdentity({
     identity: alice.identity,
-    claim,
+    identityOwner: aliceSigner,
+    claim: claim,
     kycSignature: signature,
-    identityOwner: aliceSigner
   });
 
   console.log('Added claim. txHash:', receipt.hash);

@@ -29,6 +29,20 @@ BOB_PUBLIC_ADDRESS=""
 BOB_PRIVATE_KEY=""
 ```
 
+### ADMIN
+The Implementation Authority of the TREX system. This will be governed by PEAQ. They are deployers of ONCHAINID, TREX, First Claim Issuer, First Machine Regulator and First Machine Issuer. They have authoritative control and establish relationships between other verifiers and claim issuers.
+
+### Claim Issuer
+Entity that is added to the Trusted Issuers Registry who is able to add & validate claim topics. These are 3rd party verifiers that peaq approves and a deployment onboarding process is necessary.
+
+### Alice
+A Machine NFT owner in this particular instance. They will need to be KYC'd (approved by the KYC Claim Issuer), and the Machine Issuer (ADMIN in our case) needs to approve the MachineNFT issuance to Alice.
+
+### Bob
+Investor who would like to participate. Must KYC and their identity must get added to the Token Identity Registry to be able to accept security token transfers.
+
+
+## Flow
 
 1. [Create Identity Alice](../identity/createIdentity.md)
 

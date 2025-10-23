@@ -52,9 +52,9 @@ export type KycClaimResult = {
 
 export type AddClaimToIdentity = {
     identity: string;
+    identityOwner: Signer;
     claim: IClaim;
     kycSignature: string;
-    identityOwner: Signer;
 }
 
 export type AddClaimToIdentityResult = {

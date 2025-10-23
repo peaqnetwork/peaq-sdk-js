@@ -53,9 +53,20 @@ export async function executeEvmTransaction(
       
       const receipt = new Promise<TransactionReceipt>(async (resolve, reject) => {
           try {
-              // Build and send transaction
-              const tx = await _buildEvmTx(unsignedTx, signer, opts);
-              const txResponse = await signer.sendTransaction(tx);
+              // Build and send transaction (with one optional bumped-fee retry)
+              let txResponse: TransactionResponse;
+              try {
+                  const tx = await _buildEvmTx(unsignedTx, signer, opts);
+                  txResponse = await signer.sendTransaction(tx);
+              } catch (sendErr: any) {
+                  const message = _extractEvmErrorMessage(sendErr);
+                  if (_shouldBumpFees(message)) {
+                      const txBumped = await _buildEvmTx(unsignedTx, signer, opts, 1.25); // bump by 25%
+                      txResponse = await signer.sendTransaction(txBumped);
+                  } else {
+                      throw sendErr;
+                  }
+              }
               
               // Emit broadcast status
               _emitStatusCallback(onStatus, cancelled, {
@@ -124,7 +135,8 @@ export async function executeEvmTransaction(
 async function _buildEvmTx(
   unsignedTx: TransactionRequest, 
   signer: Signer, 
-  opts: txOptions
+  opts: txOptions,
+  bumpMultiplier?: number
 ): Promise<any> {
   // const provider = this.api as JsonRpcProvider;
   const address = await signer.getAddress();
@@ -140,9 +152,22 @@ async function _buildEvmTx(
   const feeData = await signer.provider!.getFeeData();
   
   // Use custom values if provided, otherwise use network defaults
-  const maxFeePerGas = opts.maxFeePerGas ?? feeData.maxFeePerGas;
-  const maxPriorityFeePerGas = opts.maxPriorityFeePerGas ?? feeData.maxPriorityFeePerGas;
+  let maxFeePerGas = opts.maxFeePerGas ?? feeData.maxFeePerGas ?? undefined;
+  let maxPriorityFeePerGas = opts.maxPriorityFeePerGas ?? feeData.maxPriorityFeePerGas ?? undefined;
   const gasLimit = opts.gasLimit ?? estimatedGasLimit;
+
+  // Optionally bump fees by multiplier (e.g., 1.25 for +25%)
+  if (bumpMultiplier && bumpMultiplier > 1) {
+      const scale = BigInt(Math.floor(bumpMultiplier * 100));
+      if (typeof maxFeePerGas === 'bigint') {
+          const bumped = (maxFeePerGas * scale) / 100n;
+          maxFeePerGas = bumped > maxFeePerGas ? bumped : (maxFeePerGas + 1n);
+      }
+      if (typeof maxPriorityFeePerGas === 'bigint') {
+          const bumpedPrio = (maxPriorityFeePerGas * scale) / 100n;
+          maxPriorityFeePerGas = bumpedPrio > maxPriorityFeePerGas ? bumpedPrio : (maxPriorityFeePerGas + 1n);
+      }
+  }
 
 //   const nonce = await signer.getNonce(address);
   
@@ -169,6 +194,27 @@ function _emitStatusCallback(
 }
 
 // Runtime option validation helpers
+
+function _extractEvmErrorMessage(err: any): string {
+  if (!err) return '';
+  if (typeof err.message === 'string') return err.message;
+  if (typeof err.shortMessage === 'string') return err.shortMessage;
+  if (err?.info?.error?.message) return String(err.info.error.message);
+  if (err?.error?.message) return String(err.error.message);
+  return '';
+}
+
+function _shouldBumpFees(message: string): boolean {
+  if (!message) return false;
+  const m = message.toLowerCase();
+  return (
+    m.includes('already known') ||
+    m.includes('could not coalesce') ||
+    m.includes('replacement') ||
+    m.includes('underpriced') ||
+    m.includes('fee too low')
+  );
+}
 
 async function _waitForConfirmations(
   txResponse: TransactionResponse,
