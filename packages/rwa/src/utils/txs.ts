@@ -13,18 +13,36 @@ export function getContract(addr: string, abi: any, runner: Signer | Provider | 
 }
 
 
+async function pollFinalizedHead(
+    provider: { getBlock: (tag: string) => Promise<{ number: number } | null> },
+    targetBlock: number,
+    {
+      intervalMs = 1000,
+      maxTries = 300, // ~5 minutes default
+    }: { intervalMs?: number; maxTries?: number } = {}
+): Promise<{ number: number }> {
+    let tries = 0;
+    while (tries < maxTries) {
+      const head = await provider.getBlock('finalized');
+      if (!head) throw new Error('Could not fetch finalized head');
+      if (head.number >= targetBlock) return head;
+      await new Promise((r) => setTimeout(r, intervalMs));
+      tries++;
+    }
+    throw new Error('Finality polling exceeded max tries');
+  }
+  
 export async function waitForTx(
-  signer: Signer,
-  tx: TransactionRequest
+    signer: Signer,
+    tx: TransactionRequest
 ): Promise<TransactionReceipt> {
-  // default to use status updates and final confirmation mode
-  const result = await executeEvmTransaction(
-    signer,
-    tx,
-    status => console.log('Status update:', status),
-    { mode: ConfirmationMode.FINAL }
-  );
-  return result.receipt;
+    const result = await executeEvmTransaction(
+        signer,
+        tx,
+        (status) => console.log('Status update:', status),
+        { mode: ConfirmationMode.FINAL }
+    );
+    return result.receipt;
 }
 
 // EVM transaction execution helper
@@ -37,97 +55,76 @@ export async function executeEvmTransaction(
   opts: txOptions = {},
 ): Promise<EvmSendResult> {
 
-  // Handle confirmation modes
-  const mode = opts.mode ?? ConfirmationMode.FAST;
-  let targetConfirmations = 1;  // Default to 1 for FAST mode
+    const mode = opts.mode ?? ConfirmationMode.FAST;
+    const targetConfirmations =
+      mode === ConfirmationMode.CUSTOM
+        ? (() => {
+            if (!opts.confirmations) {
+              throw new Error('confirmations must be set when using ConfirmationMode.CUSTOM');
+            }
+            return opts.confirmations;
+          })()
+        : 1;
   
-  if (mode === ConfirmationMode.CUSTOM) {
-      if (!opts.confirmations) {
-          throw new Error('confirmations must be set when using ConfirmationMode.CUSTOM');
-      }
-      targetConfirmations = opts.confirmations;
-  }
+    // cancellation flag (simple, no AbortController needed)
+    let cancelled = false;
+    const unsubscribe = onStatus ? () => { cancelled = true; } : undefined;
 
-  return new Promise<EvmSendResult>(async (resolveMain, rejectMain) => {
-      let cancelled = false;
-      
-      const receipt = new Promise<TransactionReceipt>(async (resolve, reject) => {
-          try {
-              // Build and send transaction (with one optional bumped-fee retry)
-              let txResponse: TransactionResponse;
-              try {
-                  const tx = await _buildEvmTx(unsignedTx, signer, opts);
-                  txResponse = await signer.sendTransaction(tx);
-              } catch (sendErr: any) {
-                  const message = _extractEvmErrorMessage(sendErr);
-                  if (_shouldBumpFees(message)) {
-                      const txBumped = await _buildEvmTx(unsignedTx, signer, opts, 1.25); // bump by 25%
-                      txResponse = await signer.sendTransaction(txBumped);
-                  } else {
-                      throw sendErr;
-                  }
-              }
-              
-              // Emit broadcast status
-              _emitStatusCallback(onStatus, cancelled, {
-                  status: TransactionStatus.BROADCAST,
-                  confirmationMode: mode,
-                  totalConfirmations: 0,
-                  hash: txResponse.hash,
-                  nonce: txResponse.nonce
-              });
+    // 1) Build & send (with one optional fee-bump retry)
+    let txResponse: TransactionResponse;
+    try {
+        const tx = await _buildEvmTx(unsignedTx, signer, opts);
+        txResponse = await signer.sendTransaction(tx);
+    } catch (sendErr: any) {
+        const message = _extractEvmErrorMessage(sendErr);
+        if (_shouldBumpFees(message)) {
+            const txBumped = await _buildEvmTx(unsignedTx, signer, opts, 1.25);
+            txResponse = await signer.sendTransaction(txBumped);
+        } else {
+        throw sendErr;
+        }
+    }
 
-              // Wait for first confirmation
-              const inclusionReceipt = await txResponse.wait();
-              if (!inclusionReceipt) {
-                  throw new Error('Transaction receipt not found');
-              }
+    _emitStatusCallback(onStatus, cancelled, {
+        status: TransactionStatus.BROADCAST,
+        confirmationMode: mode,
+        totalConfirmations: 0,
+        hash: txResponse.hash,
+        nonce: txResponse.nonce
+    });
 
-              if (inclusionReceipt.status === 0) {
-                  throw new Error('Transaction failed');
-              }
+    // 2) Wait for first inclusion
+    const inclusionReceipt = await txResponse.wait();
+    if (!inclusionReceipt) throw new Error('Transaction receipt not found');
+    if (inclusionReceipt.status === 0) throw new Error('Transaction failed');
 
-            // Return immediately with transaction hash
-            resolveMain({
-                txHash: txResponse.hash,
-                unsubscribe: onStatus ? () => { cancelled = true; } : undefined,
-                receipt,
-            });
+    _emitStatusCallback(onStatus, cancelled, {
+        status: TransactionStatus.IN_BLOCK,
+        confirmationMode: mode,
+        totalConfirmations: 1,
+        receipt: inclusionReceipt,
+        hash: txResponse.hash
+    });
 
-              // Emit in-block status
-              _emitStatusCallback(onStatus, cancelled, {
-                  status: TransactionStatus.IN_BLOCK,
-                  confirmationMode: mode,
-                  totalConfirmations: 1,
-                  receipt: inclusionReceipt,
-                  hash: txResponse.hash
-              });
+    // 3) Handle confirmation mode
+    const finalReceipt = await _waitForConfirmations(
+        txResponse,
+        inclusionReceipt,
+        mode,
+        targetConfirmations,
+        signer,
+        onStatus,
+        cancelled
+    );
 
-              // Wait for confirmations based on mode
-              const userReceipt = await _waitForConfirmations(
-                  txResponse, 
-                  inclusionReceipt, 
-                  mode, 
-                  targetConfirmations, 
-                  signer,
-                  onStatus, 
-                  cancelled
-              );
-
-              resolve(userReceipt);
-          } catch (error: any) {
-              // TODO possible add error parsing
-              // const errorMessage = _parseEvmError(error, iface);
-              return reject(error);
-          }
-      });
-
-      // Handle cases where finalize rejects before we return
-      receipt.catch((error) => {
-          rejectMain(error);
-      });
-  });
+    // 4) Done
+    return {
+        txHash: txResponse.hash,
+        unsubscribe,
+        receipt: finalReceipt
+    };
 }
+
 
 /**
 * Builds an EVM transaction with gas estimation and fee calculation
@@ -168,14 +165,11 @@ async function _buildEvmTx(
           maxPriorityFeePerGas = bumpedPrio > maxPriorityFeePerGas ? bumpedPrio : (maxPriorityFeePerGas + 1n);
       }
   }
-
-//   const nonce = await signer.getNonce(address);
   
   // Build EIP-1559 transaction
   return {
       to: unsignedTx.to,
       data: unsignedTx.data ?? '0x',
-    //   nonce: nonce,
       gasLimit,
       type: 2, // EIP-1559 transaction type
       maxFeePerGas,
@@ -217,101 +211,77 @@ function _shouldBumpFees(message: string): boolean {
 }
 
 async function _waitForConfirmations(
-  txResponse: TransactionResponse,
-  inclusionReceipt: TransactionReceipt,
-  mode: ConfirmationMode,
-  targetConfirmations: number,
-  signer: Signer,
-  onStatus?: (result: TransactionStatusCallback) => void | Promise<void>,
-  cancelled?: boolean
-): Promise<TransactionReceipt> {
-  const inclusionBlock = inclusionReceipt.blockNumber;
-
-  switch (mode) {
+    txResponse: TransactionResponse,
+    inclusionReceipt: TransactionReceipt,
+    mode: ConfirmationMode,
+    targetConfirmations: number,
+    signer: Signer,
+    onStatus?: (result: TransactionStatusCallback) => void | Promise<void>,
+    cancelled?: boolean
+  ): Promise<TransactionReceipt> {
+    const provider = signer.provider!;
+    const inclusionBlock = inclusionReceipt.blockNumber;
+  
+    switch (mode) {
       case ConfirmationMode.FAST:
-          // Already have 1 confirmation, nothing more needed
-          return inclusionReceipt;
-
-      case ConfirmationMode.CUSTOM:
-          // Wait for user's target confirmations
-          const startingFinalized = await signer.provider!.getBlock("finalized");
-          if (!startingFinalized) {
-              throw new Error("Could not fetch finalized head");
-          }
-
-          const customReceipt = await txResponse.wait(targetConfirmations);
-          if (!customReceipt) {
-              throw new Error('Could not get receipt after waiting for confirmations');
-          }
-          
-          // Validate the receipt is still canonical to guard against chain reorgs
-          const canonicalReceipt = await signer.provider!.getTransactionReceipt(txResponse.hash);
-          if (!canonicalReceipt) {
-              throw new Error('Could not fetch canonical transaction receipt');
-          }
-          
-          const finalizedHead = await signer.provider!.getBlock("finalized");
-          if (!finalizedHead) {
-              throw new Error("Could not fetch finalized head");
-          }
-
-          const confirmationsSeen = finalizedHead.number - startingFinalized.number + 1;
-          const status = finalizedHead.number >= inclusionBlock 
-              ? TransactionStatus.FINALIZED 
-              : TransactionStatus.IN_BLOCK;
-
-          // Emit custom confirmations callback
-          _emitStatusCallback(onStatus, cancelled, {
-              status,
-              confirmationMode: mode,
-              totalConfirmations: confirmationsSeen,
-              receipt: canonicalReceipt,
-              hash: txResponse.hash
-          });
-          
-          return canonicalReceipt;
-
-      case ConfirmationMode.FINAL:
-          // Poll until the GRANDPA-finalized head >= inclusion block
-          const FINALITY_POLL_INTERVAL_MS = 1000;
-          let finalizedHeadFINAL;
-          let startingBlock = await signer.provider!.getBlock("finalized");
-          if (!startingBlock) {
-              throw new Error('Could not get finalized block');
-          }
-          
-          do {
-              finalizedHeadFINAL = await signer.provider!.getBlock("finalized");
-              if (!finalizedHeadFINAL) {
-                  throw new Error('Could not get finalized block');
-              }
-              if (finalizedHeadFINAL.number >= inclusionBlock) {
-                  break;
-              }
-              await new Promise(r => setTimeout(r, FINALITY_POLL_INTERVAL_MS));
-          } while (true);
-          
-          // Fetch new receipt after finalized head has passed inclusion block
-          const finalReceipt = await signer.provider!.getTransactionReceipt(inclusionReceipt.hash);
-          if (!finalReceipt) {
-              throw new Error("Could not fetch finalized head");
-          }
-
-          const finalConfirmations = finalReceipt.blockNumber - startingBlock.number;
-
-          // Emit finalized status callback
-          _emitStatusCallback(onStatus, cancelled, {
-              status: TransactionStatus.FINALIZED,
-              confirmationMode: mode,
-              totalConfirmations: finalConfirmations,
-              receipt: finalReceipt,
-              hash: txResponse.hash
-          });
-          
-          return finalReceipt;
-
+        return inclusionReceipt;
+  
+      case ConfirmationMode.CUSTOM: {
+        const startingFinalized = await provider.getBlock('finalized');
+        if (!startingFinalized) throw new Error('Could not fetch finalized head');
+  
+        const customReceipt = await txResponse.wait(targetConfirmations);
+        if (!customReceipt) throw new Error('Could not get receipt after waiting for confirmations');
+  
+        // Re-fetch canonical receipt
+        const canonicalReceipt = await provider.getTransactionReceipt(txResponse.hash);
+        if (!canonicalReceipt) throw new Error('Could not fetch canonical transaction receipt');
+  
+        const finalizedHead = await provider.getBlock('finalized');
+        if (!finalizedHead) throw new Error('Could not fetch finalized head');
+  
+        const confirmationsSeen = finalizedHead.number - startingFinalized.number + 1;
+        const status =
+          finalizedHead.number >= inclusionBlock
+            ? TransactionStatus.FINALIZED
+            : TransactionStatus.IN_BLOCK;
+  
+        _emitStatusCallback(onStatus, cancelled, {
+          status,
+          confirmationMode: mode,
+          totalConfirmations: confirmationsSeen,
+          receipt: canonicalReceipt,
+          hash: txResponse.hash
+        });
+  
+        return canonicalReceipt;
+      }
+  
+      case ConfirmationMode.FINAL: {
+        // bounded polling instead of while(true)
+        await pollFinalizedHead(provider, inclusionBlock, {
+          intervalMs: 1000,
+          maxTries: 300, // tune per chain
+        });
+  
+        const finalReceipt = await provider.getTransactionReceipt(inclusionReceipt.hash);
+        if (!finalReceipt) throw new Error('Could not fetch canonical transaction receipt');
+  
+        const startingBlock = await provider.getBlock('finalized'); // post-finality fetch
+        if (!startingBlock) throw new Error('Could not fetch finalized head');
+  
+        _emitStatusCallback(onStatus, cancelled, {
+          status: TransactionStatus.FINALIZED,
+          confirmationMode: mode,
+          totalConfirmations: 0, // optional to compute precisely; can be omitted or recomputed if you store initial head
+          receipt: finalReceipt,
+          hash: txResponse.hash
+        });
+  
+        return finalReceipt;
+      }
+  
       default:
-          throw new Error(`Unknown confirmation mode: ${mode}`);
-  }
+        throw new Error(`Unknown confirmation mode: ${mode}`);
+    }
 }
-

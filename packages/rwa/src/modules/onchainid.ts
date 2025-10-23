@@ -14,7 +14,7 @@ import { parseOptions, validators } from '../utils/helpers';
 import { generateKycClaim, signClaim } from '../utils/claims';
 
 // errors
-import { SDKError } from '../errors/onchainid';
+import { SDKError } from '../errors/errors';
 
 // ethers & typechain
 import { getAddress, ZeroAddress, type Provider, type Signer } from 'ethers';

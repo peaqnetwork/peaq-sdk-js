@@ -20,7 +20,7 @@ import { getAddress, parseUnits } from 'ethers';
 
 import { waitForTx } from '../utils/txs';
 import { getArgsFromTxEvent, parseOptions, validators } from '../utils/helpers';
-import { SDKError } from '../errors/onchainid';
+import { SDKError } from '../errors/errors';
 
 import {
   IMachineVaultFactory__factory,

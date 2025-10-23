@@ -25,5 +25,5 @@ export interface txOptions {
 export interface EvmSendResult {
     txHash: string;
     unsubscribe?: () => void;
-    receipt: Promise<TransactionReceipt>;
+    receipt: TransactionReceipt;
 }

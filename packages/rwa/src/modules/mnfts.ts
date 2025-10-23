@@ -5,7 +5,7 @@ import type { IssueMachineNFT, IssueMachineNFTResult } from '../types/mnfts';
 import { Fees } from "../config/fees";
 import { parseOptions, validators } from '../utils/helpers';
 import { waitForTx } from '../utils/txs';
-import { SDKError } from '../errors/onchainid';
+import { SDKError } from '../errors/errors';
 
 
 import type { Signer, Provider } from 'ethers';
