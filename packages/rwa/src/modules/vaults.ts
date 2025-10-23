@@ -1,17 +1,26 @@
-// import IMachineVaultFactoryABI from '../abis/IMachineVaultFactory.json';
-// import IMachineVaultABI from '../abis/IMachineVault.json';
-// import IIdentityRegistryABI from '../abis/IIdentityRegistry.json';
-// import ITokenABI from '../abis/IToken.json';
-// import IMachineNFTsABI from '../abis/IMachineNFTs.json';
 
 import type { NetworkAddresses } from '../types/core';
-import type { CreateVaultAndToken, CreateVaultAndTokenResult, MintSecurityTokens, MintSecurityTokensResult, UnpauseToken, UnpauseTokenResult, Transfer, TransferResult, RegisterIdentity, RegisterIdentityResult, ApproveVaultAsOperator, ApproveVaultAsOperatorResult } from '../types/vault';
+import type { 
+  CreateVaultAndToken, 
+  CreateVaultAndTokenResult, 
+  MintSecurityTokens, 
+  MintSecurityTokensResult, 
+  UnpauseToken, 
+  UnpauseTokenResult, 
+  Transfer, 
+  TransferResult, 
+  RegisterIdentity, 
+  RegisterIdentityResult, 
+  ApproveVaultAsOperator, 
+  ApproveVaultAsOperatorResult
+ } from '../types/vaults';
 
 import type { Provider, Signer } from 'ethers';
 import { getAddress, parseUnits } from 'ethers';
 
-import { getContract, waitForTx } from '../utils/txs';
-import { getArgsFromTxEvent } from '../utils/helpers';
+import { waitForTx } from '../utils/txs';
+import { getArgsFromTxEvent, parseOptions, validators } from '../utils/helpers';
+import { SDKError } from '../errors/onchainid';
 
 import {
   IMachineVaultFactory__factory,
@@ -21,6 +30,13 @@ import {
   IMachineNFTs__factory,
 } from '../typechain';
 
+/**
+ * Vaults module provides functionality for creating, registering, and managing MachineVaults and their associated tokens.
+ * 
+ * @class Vaults
+ * @param {NetworkAddresses} addresses - The network addresses for the Vaults module
+ * @param {Provider} provider - The provider for the Vaults module
+ */
 export class Vaults {
   constructor(
     private readonly addresses: NetworkAddresses,
@@ -58,44 +74,104 @@ export class Vaults {
  * @returns {CreateVaultAndTokenResult} The result of creating a MachineVault and its associated token
  */
   public async createVaultAndToken(opts: CreateVaultAndToken): Promise<CreateVaultAndTokenResult> {
-    const { admin, name, symbol, irs, tokenIdentity, claimIssuers, claimTopics } = opts;
+    // validate and parse parameter type options for improved error messages for user
+    const { admin, name, symbol, irs, tokenIdentity, claimIssuers, claimTopics } = parseOptions<CreateVaultAndToken>(opts, {
+      admin: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      name: { required: true, validator: validators.string, expected: 'string' },
+      symbol: { required: true, validator: validators.string, expected: 'string' },
+      irs: { required: true, validator: validators.address, expected: 'EVM address string' },
+      tokenIdentity: { required: true, validator: validators.address, expected: 'EVM address string' },
+      claimIssuers: { required: true, validator: validators.arrayOf(validators.address), expected: 'array of EVM address strings' },
+      claimTopics: { required: true, validator: validators.arrayOf(validators.number), expected: 'array of numbers' },
+    }, 'createVaultAndToken');
+
     const vaultFactory = this._vaultFactory(admin);
 
-    // TODO - for simplicity we are avoiding using populate tx so we can get tx logs easier
-    const tx = await vaultFactory.createVaultAndToken(name, symbol, irs, tokenIdentity, claimIssuers, claimTopics);
-    // const receipt = await waitForTx(admin, tx);
+    // preflight check
+    try {
+      await vaultFactory.createVaultAndToken.staticCall(name, symbol, irs, tokenIdentity, claimIssuers, claimTopics);
+    } catch (cause: any) {
+      throw new SDKError('SIMULATE/CREATE_VAULT', 'VaultFactory callStatic failed; creation would revert', { cause });
+    }
+    // if it doesn't revert, send the transaction
+    const tx = await vaultFactory.createVaultAndToken.populateTransaction(name, symbol, irs, tokenIdentity, claimIssuers, claimTopics);
+    const receipt = await waitForTx(admin, tx);
 
-    const args = await getArgsFromTxEvent(tx, 'VaultCreated');
+    const iface = IMachineVaultFactory__factory.createInterface();
+    const args = await getArgsFromTxEvent(receipt, 'VaultCreated', iface);
     const vault = args[0];
     const token = args[1];
 
-    // TODO maybe log token ids?
-
-    return {vault: vault, token: token}
+    return {vault: vault, token: token, receipt: receipt}
   }
 
+  /**
+   * Registers an identity for a given token.
+   * 
+   * @type {RegisterIdentity} - The parameter type options for registering an identity
+   * @returns {RegisterIdentityResult} The result of registering an identity
+   */
   public async registerIdentity(opts: RegisterIdentity): Promise<RegisterIdentityResult> {
-    const { admin, token, eoa, identity, country } = opts;
+    // validate and parse parameter type options forimproved error messages for user
+    const { admin, token, eoa, identity, country } = parseOptions<RegisterIdentity>(opts, {
+      admin: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      token: { required: true, validator: validators.address, expected: 'EVM address string' },
+      eoa: { required: true, validator: validators.address, expected: 'EVM address string' },
+      identity: { required: true, validator: validators.address, expected: 'EVM address string' },
+      country: { required: true, validator: validators.string, expected: 'string' },
+    }, 'registerIdentity');
 
     const tokenContract = this._token(this.provider, token);
 
     const tokenRegistry = await tokenContract.identityRegistry();
     const identityRegistry = this._identityRegistry(admin, tokenRegistry);
+    // preflight check
+    try {
+      await identityRegistry.registerIdentity.staticCall(eoa, identity, country);
+    } catch (cause: any) {
+      throw new SDKError('SIMULATE/REGISTER_TOKEN_IDENTITY', 'IdentityRegistry callStatic failed; registration would revert', { cause });
+    }
+    // if it doesn't revert, send the transaction
     const tx = await identityRegistry.registerIdentity.populateTransaction(eoa, identity, country);
-    const receipt = await waitForTx(admin, tx);
+    const result = await waitForTx(admin, tx);
     
-    return {result: "Registered identity for recipient: " + identity, receipt: receipt};
+    return {result: "Registered identity for recipient: " + identity, receipt: result};
   }
 
+  /**
+   * Approves a vault as an operator for a given machine NFT.
+   * 
+   * @type {ApproveVaultAsOperator} - The parameter type options for approving a vault as an operator
+   * @returns {ApproveVaultAsOperatorResult} The result of approving a vault as an operator
+   */
   public async approveVaultAsOperator(opts: ApproveVaultAsOperator): Promise<ApproveVaultAsOperatorResult> {
-    const { machineNFT, tokenOwner, vault } = opts;
+    // validate and parse parameter type options for improved error messages for user
+    const { machineNFT, tokenOwner, vault } = parseOptions<ApproveVaultAsOperator>(opts, {
+      machineNFT: { required: true, validator: validators.address, expected: 'EVM address string' },
+      tokenOwner: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      vault: { required: true, validator: validators.address, expected: 'EVM address string' },
+    }, 'approveVaultAsOperator');
+
     const mnfts = this._mnfts(tokenOwner, machineNFT)
-    const tx2 = await mnfts.setApprovalForAll.populateTransaction(vault, true);
-    const receipt = await waitForTx(tokenOwner, tx2);
+    // preflight check
+    try {
+      await mnfts.setApprovalForAll.staticCall(vault, true);
+    } catch (cause: any) {
+      throw new SDKError('SIMULATE/APPROVE_VAULT_AS_OPERATOR', 'MachineNFTs callStatic failed; approval would revert', { cause });
+    }
+    // if it doesn't revert, send the transaction
+    const tx = await mnfts.setApprovalForAll.populateTransaction(vault, true);
+    const receipt = await waitForTx(tokenOwner, tx);
 
     return {result: "Approved vault as operator", receipt: receipt};
   }
 
+  /**
+   * Mints security tokens for a given vault.
+   * 
+   * @type {MintSecurityTokens} - The parameter type options for minting security tokens
+   * @returns {MintSecurityTokensResult} The result of minting security tokens
+   */
   public async mintSecurityTokens(opts: MintSecurityTokens): Promise<MintSecurityTokensResult> {
     const { tokenOwner, vault, machineNFTs, tokenIds, amount } = opts;
       const machineVaultContract = this._machineVault(tokenOwner, vault);
@@ -106,28 +182,64 @@ export class Vaults {
   }
   
 
+  /**
+   * Unpauses a token for a given vault.
+   * 
+   * @type {UnpauseToken} - The parameter type options for unpausing a token
+   * @returns {UnpauseTokenResult} The result of unpausing a token
+   */
   public async unpauseToken(opts: UnpauseToken): Promise<UnpauseTokenResult> {
-    const { admin, vault } = opts;
+    // validate and parse parameter type options for improved error messages for user
+    const { admin, vault } = parseOptions<UnpauseToken>(opts, {
+      admin: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      vault: { required: true, validator: validators.address, expected: 'EVM address string' },
+    }, 'unpauseToken');
 
     const machineVault = this._machineVault(admin, vault);
+    // preflight check
+    try {
+      await machineVault.unpauseToken.staticCall();
+    } catch (cause: any) {
+      throw new SDKError('SIMULATE/UNPAUSE_TOKEN', 'MachineVault callStatic failed; unpausing would revert', { cause });
+    }
+    // if it doesn't revert, send the transaction
     const tx = await machineVault.unpauseToken.populateTransaction();
-    const receipt = await waitForTx(admin, tx);
+    const result = await waitForTx(admin, tx);
 
-    return {result: "Unpaused token for vault: " + vault, receipt: receipt};
+    return {result: "Unpaused token for vault: " + vault, receipt: result};
   }
 
 
+  /**
+   * Transfers tokens from one address to another.
+   * 
+   * @type {Transfer} - The parameter type options for transferring tokens
+   * @returns {TransferResult} The result of transferring tokens
+   */
   public async transfer(opts: Transfer): Promise<TransferResult> {
-    // TODO token owner better name than sender
-    const { token, sender, recipientAddr, amount } = opts;
+    // validate and parse parameter type options for improved error messages for user
+    const { token, sender, recipientAddr, amount } = parseOptions<Transfer>(opts, {
+      token: { required: true, validator: validators.address, expected: 'EVM address string' },
+      sender: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      recipientAddr: { required: true, validator: validators.address, expected: 'EVM address string' },
+      amount: { required: true, validator: validators.number, expected: 'number' },
+    }, 'transfer');
+
     const tokenContract = this._token(sender, token);
 
     // Scale amount according to token decimals. If decimals not provided, fetch from token.
     const tokenDecimals = Number(await tokenContract.decimals());
     const scaledAmount = parseUnits(amount.toString(), tokenDecimals);
+    // preflight check
+    try {
+      await tokenContract.transfer.staticCall(recipientAddr, scaledAmount);
+    } catch (cause: any) {
+      throw new SDKError('SIMULATE/TRANSFER_TOKENS', 'Token callStatic failed; transfer would revert', { cause });
+    }
+    // if it doesn't revert, send the transaction
     const tx2 = await tokenContract.transfer.populateTransaction(recipientAddr, scaledAmount);
-    const receipt2 = await waitForTx(sender, tx2);
+    const result = await waitForTx(sender, tx2);
 
-    return {result: "Transfered " + amount + " tokens (scaled by " + tokenDecimals + " decimals) from one address to another"};
+    return {result: "Transferred " + amount + " tokens (scaled by " + tokenDecimals + " decimals) from one address to another"};
   }
 }

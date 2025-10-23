@@ -14,6 +14,7 @@ export type CreateVaultAndToken = {
 export type CreateVaultAndTokenResult = {
     vault: string;
     token: string;
+    receipt: TransactionReceipt;
 }
 
 export type RegisterIdentity = {
@@ -32,7 +33,6 @@ export type RegisterIdentityResult = {
 export type ApproveVaultAsOperator = {
     machineNFT: string;
     tokenOwner: Signer;
-    token: string;
     vault: string;
 }
 

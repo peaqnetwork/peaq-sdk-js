@@ -1,41 +1,18 @@
-export class CreateIdentityArgumentError extends Error {
-  constructor(details: string) {
-    super(`createIdentity(): ${details}. Expected: { admin: Signer; eoa: string; salt: string }`);
-    this.name = 'CreateIdentityArgumentError';
-  }
-}
-
 // core/errors.ts
 import { toUtf8String } from 'ethers';
 
 // 1) Canonical error codes (stable surface for users & tests)
 export type SDKErrorCode =
-  // config & options
-  | 'CONFIG/FACTORY_ADDR_MISSING'
-  | 'CONFIG/ADDRESS_INVALID'
-  | 'OPTIONS/MISSING_REQUIRED'
-  | 'OPTIONS/INVALID_TYPE'
-
   // simulation & preflight
   | 'SIMULATE/CREATE_IDENTITY'
   | 'SIMULATE/ADD_CLAIM'
+  | 'SIMULATE/APPROVE_ERC20'
   | 'SIMULATE/ISSUE_MNFT'
   | 'SIMULATE/CREATE_VAULT'
-
-  // tx & chain
-  | 'TX/CREATE_IDENTITY_FAILED'
-  | 'TX/SEND_FAILED'
-  | 'TX/RECEIPT_TIMEOUT'
-  | 'CHAIN/REORG_DETECTED'
-  | 'CHAIN/RPC_ERROR'
-
-  // post-conditions
-  | 'POST/MAPPING_EMPTY'
-  | 'POST/NO_CODE'
-  | 'POST/VALIDATION_FAILED'
-
-  // general
-  | 'INTERNAL/UNEXPECTED';
+  | 'SIMULATE/REGISTER_TOKEN_IDENTITY'
+  | 'SIMULATE/APPROVE_VAULT_AS_OPERATOR'
+  | 'SIMULATE/UNPAUSE_TOKEN'
+  | 'SIMULATE/TRANSFER_TOKENS'
 
 // 2) Public shape (safe to serialize)
 export interface SDKErrorShape {
@@ -45,7 +22,6 @@ export interface SDKErrorShape {
   hint?: string;
   // Minimal cause details for logging without leaking secrets
   cause?: { reason?: string; code?: string | number; data?: string; method?: string };
-  meta?: Record<string, unknown>;
   stack?: string;
 }
 
@@ -53,19 +29,14 @@ export interface SDKErrorShape {
 export class SDKError extends Error implements SDKErrorShape {
   public readonly name = 'SDKError' as const;
   public readonly code: SDKErrorCode;
-  // public readonly hint?: string;
   public readonly cause?: SDKErrorShape['cause'];
-  public readonly meta?: Record<string, unknown>;
 
   constructor(code: SDKErrorCode, message: string, opts?: {
-    // hint?: string;
     cause?: unknown;            // raw error
     meta?: Record<string, unknown>;
   }) {
     super(message);
     this.code = code;
-    // this.hint = opts?.hint;
-    this.meta = opts?.meta;
 
     // Normalize cause to a small, non-sensitive object
     if (opts?.cause) this.cause = normalizeCause(opts.cause);
@@ -81,9 +52,7 @@ export class SDKError extends Error implements SDKErrorShape {
       name: this.name,
       code: this.code,
       message: this.message,
-      // hint: this.hint,
       cause: this.cause,
-      meta: this.meta,
       stack: this.stack,
     };
   }

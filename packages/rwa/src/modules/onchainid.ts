@@ -20,12 +20,18 @@ import { SDKError } from '../errors/onchainid';
 import { getAddress, ZeroAddress, type Provider, type Signer } from 'ethers';
 import {
   IIdentity__factory,
-  IIdFactory__factory,
-  IERC20__factory,
+  IIdFactory__factory
 } from '../typechain';
 
 
-export class OnchainID {
+/**
+ * OnchainID module provides functionality for creating, getting, and issuing KYC claims for ONCHAINID identities.
+ * 
+ * @class OnchainID
+ * @param {NetworkAddresses} addresses - The network addresses for the ONCHAINID module
+ * @param {Provider} provider - The provider for the ONCHAINID module
+ */
+export class OnChainID {
   constructor(
     private readonly addresses: NetworkAddresses,
     private readonly provider: Provider
@@ -39,11 +45,6 @@ export class OnchainID {
   private _idFactory(runner: Signer | Provider, address?: string) {
     const addr = getAddress(address ?? this.addresses.onchainid.idFactory);
     return IIdFactory__factory.connect(addr, runner);
-  }
-
-  private _erc20(runner: Signer | Provider, address: string) {
-    const addr = getAddress(address);
-    return IERC20__factory.connect(addr, runner);
   }
 
 
@@ -61,30 +62,28 @@ export class OnchainID {
       salt: { required: true, validator: validators.nonEmptyString, expected: 'non-empty string' },
     }, 'createIdentity');
 
-    const eoaChecksum = getAddress(eoa);
     const idFactory = this._idFactory(admin);
 
     // check if the identity already exists
-    const existing = await idFactory.getIdentity(eoaChecksum);
+    const existing = await idFactory.getIdentity(eoa);
     if (existing && existing !== ZeroAddress) {
       return { status: 'exists', identity: existing };
     }
 
     // preflight check
     try {
-      await idFactory.createIdentity.staticCall(eoaChecksum, salt);
+      await idFactory.createIdentity.staticCall(eoa, salt);
     } catch (cause: any) {
       throw new SDKError('SIMULATE/CREATE_IDENTITY', 'Factory callStatic failed; creation would revert', { cause });
     }
 
     // if it doesn't revert, send the transaction
-    const tx = await idFactory.createIdentity.populateTransaction(eoaChecksum, salt);
+    const tx = await idFactory.createIdentity.populateTransaction(eoa, salt);
     const receipt = await waitForTx(admin, tx);
-    const identity = await idFactory.getIdentity(eoaChecksum);
+    const identity = await idFactory.getIdentity(eoa);
 
-
-      return { status: 'created', identity: identity, receipt: receipt };
-    }
+    return { status: 'created', identity: identity, receipt: receipt };
+  }
 
 
   /**
@@ -94,15 +93,13 @@ export class OnchainID {
   * @returns {GetIdentityResult} The result of getting an ONCHAINID identity
   */
   public async getIdentity(opts: GetIdentity): Promise<GetIdentityResult> {
-    // validate and parse parameter type options for improved error messages
     const { eoa } = parseOptions<GetIdentity>(opts, {
       eoa: { required: true, validator: validators.address, expected: 'EVM address string' }
     }, 'getIdentity');
 
-    const eoaChecksum = getAddress(eoa);
     const idFactory = this._idFactory(this.provider);
 
-    const existing = await idFactory.getIdentity(eoaChecksum);
+    const existing = await idFactory.getIdentity(eoa);
     if (existing && existing !== ZeroAddress) {  
       return { status: 'found', identity: existing };
     }
@@ -129,7 +126,7 @@ export class OnchainID {
       placeOfBirth: { required: true, validator: validators.string, expected: 'string' },
       uri: { required: false, validator: validators.string, expected: 'string' },
     }, 'issueKycClaim');
-    // const { claimIssuer, issuerContract, identity, name, lastName, dateOfBirth, placeOfBirth, uri } = opts;
+
     const kyc = { identity, data: { name, lastName, dateOfBirth, placeOfBirth } };
 
     const claim = await generateKycClaim({issuerContract, kyc, uri });
@@ -137,6 +134,7 @@ export class OnchainID {
 
     return { claim, signature };
   }
+
 
   /**
   * Adds a signed claim to an ONCHAINID identity by calling the identity contract's addClaim.
@@ -171,6 +169,6 @@ export class OnchainID {
       claim.uri
     );
     const receipt = await waitForTx(identityOwner, tx);
-    return { receipt };
+    return { receipt: receipt };
   }
 }

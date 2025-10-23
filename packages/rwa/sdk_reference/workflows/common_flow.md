@@ -69,4 +69,6 @@ Replace the `ALICE_PUBLIC_ADDRESS` with `BOB_PUBLIC_ADDRESS` and `ALICE_PRIVATE_
 
 9. [Register Bob Token Identity](../vault/registerIdentity.md)
 
+Replace the `ALICE_PUBLIC_ADDRESS` with `BOB_PUBLIC_ADDRESS`
+
 10. [Transfer Token from Alice to Bob](../vault/transfer.md)

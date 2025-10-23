@@ -38,7 +38,7 @@ async function main() {
 
   // 2. Create Vault and Token
   const result = await rwa_sdk.vaults.createVaultAndToken({
-    admin,
+    admin: admin,
     name: "Alice Vault",
     symbol: "ALICE",
     irs: ZeroAddress,              // auto-deploy IRS

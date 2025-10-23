@@ -4,7 +4,7 @@ import { getAddresses } from './config/addresses';
 import { TREX } from './modules/trex';
 import { Vaults } from './modules/vaults';
 import { MachineNFTs } from './modules/mnfts';
-import { OnchainID } from './modules/onchainid';
+import { OnChainID } from './modules/onchainid';
 
 import type { Provider } from 'ethers';
 
@@ -25,7 +25,7 @@ export class RWA {
   readonly trex: TREX;
   readonly vaults: Vaults;
   readonly mnfts: MachineNFTs;
-  readonly onchainid: OnchainID;
+  readonly onchainid: OnChainID;
 
   /**
    * Initialize the RWA SDK for a specific chain
@@ -41,7 +41,7 @@ export class RWA {
     this.trex = new TREX(this.addresses, this.provider);
     this.vaults = new Vaults(this.addresses, this.provider);
     this.mnfts = new MachineNFTs(this.addresses, this.provider);
-    this.onchainid = new OnchainID(this.addresses, this.provider);
+    this.onchainid = new OnChainID(this.addresses, this.provider);
   }
 
   /** Return the resolved address book for this chain. */

@@ -11,8 +11,11 @@ import { keccak256, AbiCoder, getBytes } from 'ethers';
 
 
 /**
+ * Generates a KYC claim containing name, last name, date of birth and place of birth, along with
+ * the URI of the KYC claim.
  * 
- * TODO
+ * @type {GenerateKycClaim} - The parameter type options for generating a KYC claim
+ * @returns {IClaim} The result of generating a KYC claim
  * 
  */
 export async function generateKycClaim(opts: GenerateKycClaim): Promise<IClaim> {
@@ -33,8 +36,10 @@ export async function generateKycClaim(opts: GenerateKycClaim): Promise<IClaim> 
 }
 
 /**
+ * Signs a KYC claim using the claim issuer's private key.
  * 
- * TODO
+ * @type {SignClaim} - The parameter type options for signing a KYC claim
+ * @returns {string} The result of signing a KYC claim
  * 
  */
 export async function signClaim(opts: SignClaim): Promise<string> {
