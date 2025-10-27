@@ -74,3 +74,14 @@ export type Transfer = {
 export type TransferResult = {
     result: string;
 }
+
+export type BatchTransfer = {
+    token: string;
+    sender: Signer;
+    recipients: string[];
+    amounts: Array<string | number>;
+}
+
+export type BatchTransferResult = {
+    result: string;
+}

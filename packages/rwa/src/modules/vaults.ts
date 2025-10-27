@@ -9,6 +9,8 @@ import type {
   UnpauseTokenResult, 
   Transfer, 
   TransferResult, 
+  BatchTransfer,
+  BatchTransferResult,
   RegisterIdentity, 
   RegisterIdentityResult, 
   ApproveVaultAsOperator, 
@@ -241,5 +243,43 @@ export class Vaults {
     const result = await waitForTx(sender, tx2);
 
     return {result: "Transferred " + amount + " tokens (scaled by " + tokenDecimals + " decimals) from one address to another"};
+  }
+
+  /**
+   * Batch transfers tokens to multiple recipients.
+   * Mirrors contract `batchTransfer` which loops over `transfer`.
+   *
+   * @type {BatchTransfer}
+   * @returns {BatchTransferResult}
+   */
+  public async batchTransfer(opts: BatchTransfer): Promise<BatchTransferResult> {
+    // validate and parse parameter type options for improved error messages for user
+    const { token, sender, recipients, amounts } = parseOptions<BatchTransfer>(opts, {
+      token: { required: true, validator: validators.address, expected: 'EVM address string' },
+      sender: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      recipients: { required: true, validator: validators.arrayOf(validators.address), expected: 'array of EVM address strings' },
+      amounts: { required: true, validator: validators.arrayOf((v: any) => typeof v === 'number' || typeof v === 'bigint'), expected: 'array of numbers or bigints' },
+    }, 'batchTransfer');
+
+    if (recipients.length !== amounts.length) {
+      throw new SDKError('SIMULATE/BATCH_TRANSFER', 'recipients and amounts must be the same length');
+    }
+    const tokenContract = this._token(sender, token);
+    const tokenDecimals = Number(await tokenContract.decimals());
+    const scaledAmounts = amounts.map((a) => BigInt(parseUnits(a.toString(), tokenDecimals)));
+
+    try {
+      await tokenContract.batchTransfer.staticCall(recipients, scaledAmounts);
+    } catch (cause: any) {
+      throw new SDKError('SIMULATE/BATCH_TRANSFER', 'Token callStatic failed; batch transfer would revert', { cause });
+    }
+
+    const tx = await tokenContract.batchTransfer.populateTransaction(
+      recipients,
+      scaledAmounts
+    );
+    await waitForTx(sender, tx);
+
+    return { result: `Transferred to ${recipients.length} recipients (scaled by ${tokenDecimals} decimals)` };
   }
 }

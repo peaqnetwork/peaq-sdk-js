@@ -67,6 +67,10 @@ export class MachineNFTs {
     const count = opts.count ?? 1;    
     const mnfts = this._mnfts(machineIssuer, machineNFT);
 
+    // TODO 
+    // - see if we can get the value of the machine nfts from the contract
+    // - native deposit per mint is based on DID fees
+
     // 1) Merge fee overrides (if provided)
     const fees = {
       feePerMint: parseEther(String(opts.fees?.feePerMint)) ?? Fees.FeePerMint,

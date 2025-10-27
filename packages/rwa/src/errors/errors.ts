@@ -13,6 +13,7 @@ export type SDKErrorCode =
   | 'SIMULATE/APPROVE_VAULT_AS_OPERATOR'
   | 'SIMULATE/UNPAUSE_TOKEN'
   | 'SIMULATE/TRANSFER_TOKENS'
+  | 'SIMULATE/BATCH_TRANSFER'
 
 // 2) Public shape (safe to serialize)
 export interface SDKErrorShape {
