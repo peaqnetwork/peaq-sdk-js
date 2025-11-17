@@ -1,4 +1,4 @@
-## `vaults.registerIdentity(RegisterIdentity)`
+## `vault.registerIdentity(RegisterIdentity)`
 
 Register an ONCHAINID for a user in a token's Identity Registry. Must be called by a wallet authorized as an agent/operator for the registry.
 
@@ -45,7 +45,7 @@ async function main() {
     identity: alice.identity,
     country: '0'
   }
-  const result = await rwa_sdk.vaults.registerIdentity(registerIdentity);
+  const result = await rwa_sdk.vault.registerIdentity(registerIdentity);
   console.log("Result", result);
 }
 
@@ -73,7 +73,7 @@ async function main() {
   const alice = await rwa_sdk.onchainid.getIdentity({ eoa: process.env.ALICE_PUBLIC_ADDRESS });
 
   // 3. Register Bob's identity in the token's Identity Registry
-  const result = await rwa_sdk.vaults.registerIdentity({
+  const result = await rwa_sdk.vault.registerIdentity({
     admin: admin,
     token: "0xa26A27df75b1074a54d1BaB2f6e49059954E796E",
     eoa: process.env.ALICE_PUBLIC_ADDRESS,

@@ -1,4 +1,4 @@
-## `vaults.unpauseToken(UnpauseToken)`
+## `vault.unpauseToken(UnpauseToken)`
 
 Owner-only helper to unpause the T-REX token so transfers are enabled.
 
@@ -36,7 +36,7 @@ async function main() {
     admin: admin,
     vault: "0x26c13E26Fe20fc47f60B298b9F891F379E65631A",
   }
-  const result = await rwa_sdk.vaults.unpauseToken(unpauseToken);
+  const result = await rwa_sdk.vault.unpauseToken(unpauseToken);
   console.log("Result", result);
 }
 
@@ -61,7 +61,7 @@ async function main() {
   const admin = new Wallet(process.env.ADMIN_PRIVATE_KEY, provider);
 
   // 2. Unpause Security Tokens
-  const result = await rwa_sdk.vaults.unpauseToken({
+  const result = await rwa_sdk.vault.unpauseToken({
     admin: admin,
     vault: "0x5fa42Bb51c6770034a90FB5200e37e2Ce31Ba56a",
   });

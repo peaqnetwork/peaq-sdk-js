@@ -5,8 +5,18 @@ before trying to use the sdk. The official TREX Whitepaper is found [here](https
 For information on how to interact with the built SDK please see [sdk reference](./sdk_reference/).
 
 ## SDK Maintainers
+### Build Typechain:
+Inside of `/packages/rwa/` execute:
+```
+npm run codegen
+```
+
 ### Build:
-`npm run build`
+```
+npm run build
+```
 
 ### Pack:
-`npm pack -w @peaq-network/rwa`
+```
+npm pack -w @peaq-network/rwa
+```

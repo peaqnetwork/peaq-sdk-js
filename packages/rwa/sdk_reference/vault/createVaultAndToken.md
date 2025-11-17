@@ -1,4 +1,4 @@
-## `vaults.createVaultAndToken(CreateVaultAndToken)`
+## `vault.createVaultAndToken(CreateVaultAndToken)`
 
 Create a new MachineVault and its associated security token. You may pass existing IRS and ONCHAINID addresses or `ZeroAddress` to auto-deploy missing components.
 
@@ -48,7 +48,7 @@ async function main() {
     claimIssuers: [process.env.CLAIM_ISSUER_CONTRACT_ADDRESS!],
     claimTopics: [CT_KYC_APPROVED]
   }
-  const result = await rwa_sdk.vaults.createVaultAndToken(createVaultAndToken);
+  const result = await rwa_sdk.vault.createVaultAndToken(createVaultAndToken);
   console.log("Result", result);
 }
 
@@ -76,7 +76,7 @@ async function main() {
   const admin = new Wallet(process.env.ADMIN_PRIVATE_KEY, provider);
 
   // 2. Create Vault and Token
-  const result = await rwa_sdk.vaults.createVaultAndToken({
+  const result = await rwa_sdk.vault.createVaultAndToken({
     admin: admin,
     name: "Alice Vault",
     symbol: "ALICE",

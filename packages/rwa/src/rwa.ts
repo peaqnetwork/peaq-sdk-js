@@ -2,8 +2,8 @@ import type { SDKInit, NetworkAddresses } from './types/core';
 import { getAddresses } from './config/addresses';
 
 import { TREX } from './modules/trex';
-import { Vaults } from './modules/vaults';
-import { MachineNFTs } from './modules/mnfts';
+import { Vault } from './modules/vault';
+import { MachineNFT } from './modules/mnft';
 import { OnChainID } from './modules/onchainid';
 
 import type { Provider } from 'ethers';
@@ -23,8 +23,8 @@ export class RWA {
   readonly provider: Provider;
 
   readonly trex: TREX;
-  readonly vaults: Vaults;
-  readonly mnfts: MachineNFTs;
+  readonly vault: Vault;
+  readonly mnft: MachineNFT;
   readonly onchainid: OnChainID;
 
   /**
@@ -39,8 +39,8 @@ export class RWA {
 
     // modules: pass provider for reads; writes accept a Signer per method
     this.trex = new TREX(this.addresses, this.provider);
-    this.vaults = new Vaults(this.addresses, this.provider);
-    this.mnfts = new MachineNFTs(this.addresses, this.provider);
+    this.vault = new Vault(this.addresses, this.provider);
+    this.mnft = new MachineNFT(this.addresses, this.provider);
     this.onchainid = new OnChainID(this.addresses, this.provider);
   }
 

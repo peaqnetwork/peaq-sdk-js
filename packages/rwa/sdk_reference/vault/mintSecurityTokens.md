@@ -1,4 +1,4 @@
-## `vaults.mintSecurityTokens(MintSecurityTokens)`
+## `vault.mintSecurityTokens(MintSecurityTokens)`
 
 Deposit an array of Machine NFTs into the vault and mint the corresponding amount of T-REX tokens.
 
@@ -44,7 +44,7 @@ async function main() {
     tokenIds: [12, 13],
     amount: 1000
   }
-  const result = await rwa_sdk.vaults.mintSecurityTokens(mintSecurityTokens);
+  const result = await rwa_sdk.vault.mintSecurityTokens(mintSecurityTokens);
   console.log("Result", result);
 }
 
@@ -69,7 +69,7 @@ async function main() {
   const alice = new Wallet(process.env.ALICE_PRIVATE_KEY, provider);
 
   // 2. Mint Security Tokens
-  const result = await rwa_sdk.vaults.mintSecurityTokens({
+  const result = await rwa_sdk.vault.mintSecurityTokens({
     tokenOwner: alice,
     vault: "0x5fa42Bb51c6770034a90FB5200e37e2Ce31Ba56a",
     machineNFTs: [

@@ -2,32 +2,31 @@
   "chainId": 9990,
   "network": "agung",
   "onchainid": {
-    "identity": "0x17E69b6c3e33Fd780bc83B7Bf3D025948e5cC69c",
-    "implementationAuthority": "0xeE538D3fa9A950F8DD023AC1F3416F05d6b5327B",
-    "idFactory": "0x4F7EfcCcc3F6700F2aFB01C259e83EDbe1D98305",
-    "kycVerifier": "0xaa555e91D235585CbbE1270022BF4D11C4a0a6d4",
-    "mnftIssuerVerifier": "0xb78735E630Eaf77A8A00453fe040e0BE6Dd3ec28",
-    "mnftRegulatorVerifier": "0x9CA16BdD4068Dd9EA0e6BCdf7E9d893E657d2994"
+    "identity": "0xB419cB213c2E2e7a15589716aafA63b4A868Bb90",
+    "implementationAuthority": "0xE300158F7b62A725381Fb9De688533bc947F2C8A",
+    "idFactory": "0x52b6F7aaDd6AD0A20A58430e930bB583803771F9",
+    "kycVerifier": "0x1EA90F2c107dC0a0A693EA6bCd25a7f474B2eef9",
+    "mnftIssuerVerifier": "0xE0e40118bc6AAe38fA49CB16706D5CE8aE20Fa19",
+    "mnftRegulatorVerifier": "0x43D6C52E04e7c617A3a367692aEBc44F04E40434"
   },
   "trex": {
-    "trexImplementationAuthority": "0x3867e89f1487D10079dA3629EB7818dBf1f419E2",
-    "iaFactory": "0xf3f1dD6e3044A4817EB3e5966BEe33954d665bd5",
-    "trexFactory": "0x86942fd691201653eEB2CaB8dB2252a09c970870",
-    "trexGateway": "0x8298099D6742753b9c1aB3B40C888eb5dA97B6f7",
-    "modularComplianceProxy": "0x89e409a4c470c51Bfb7d06Fa69994E41BCd4D163",
-    "identityRegistryProxy": "0x3b3BDBeDe67d352897861b2dc45de2480d53cf78",
-    "identityRegistryStorageProxy": "0xA1CC216b7A7F6B1872628FE7343c4f045CD29548",
-    "trustedIssuersRegistryProxy": "0xFf14252262a4d189D31C544508522ea8C0B4190f",
-    "claimTopicsRegistryProxy": "0x7c41A11117E1B2528401d298875635b371A9E735"
+    "trexImplementationAuthority": "0x5fE7f2698dC5E7d83444a7F227c09C370F23667C",
+    "iaFactory": "0x82ea877a121a98Cc36B20FA65332B713BDAdf0F5",
+    "trexFactory": "0xC54AEB4e1A77CAB2560ABC6205Fc26f8A62d6a99",
+    "trexGateway": "0x79864E1d4A017fbBE36175786b3b2320b9cFd82d",
+    "modularComplianceProxy": "0x72A1956e54c356aA057Fe9e496C87E9d6f880c68",
+    "identityRegistryProxy": "0x0783481e9BD8bAD66FEF836432977b15F8B80e74",
+    "identityRegistryStorageProxy": "0x3b0A491F68644046d4Ec322Bc35a4d0b8371A4d2",
+    "trustedIssuersRegistryProxy": "0xE0EEC7f7d1F5f176ff9307834f80d6EB542b0c1f",
+    "claimTopicsRegistryProxy": "0xFDA06a2A6d0411B098477b746f33eC4952c3c0aB"
   },
-  "mnfts": {
-    "peaqMachineNfts": "0x8795A2Cf045a23DC2F2b3a09A1861a8678Fa8bA5",
-    "machineNft": "0x1008234A9dc43A747bBe4a3100d8Ff46a7Fb6E97",
-    "proxyAdmin": "0x26Ea8fed8bBa20c37C05e09E89070e148A523aC9"
+  "mnft": {
+    "peaqMachineNft": "0x33770F51cDa63ad988731077bD34d03aba9bE685",
+    "proxyAdmin": "0x7B4152A3685Bd92d77898371be42C10997Fe709A"
   },
-  "vaults": {
-    "factory": "0x9E228341e1C921696071BA188A0499482e3D7519",
-    "proxyAdmin": "0x26Ea8fed8bBa20c37C05e09E89070e148A523aC9"
+  "vault": {
+    "factory": "0x0558883Fd2Df4FF046907D1174DDfcb0c861E0a0",
+    "proxyAdmin": "0x7B4152A3685Bd92d77898371be42C10997Fe709A"
   },
   "erc20": {
     "peaq": "0x0000000000000000000000000000000000000809"

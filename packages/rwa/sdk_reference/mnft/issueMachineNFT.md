@@ -1,4 +1,4 @@
-## `mnfts.issueMachineNFT(IssueMachineNFT)`
+## `mnft.issueMachineNFT(IssueMachineNFT)`
 
 Mint one or more Machine NFTs to a designated owner. Handles ERC20 fee approval from the owner and sends the required native deposit per mint with the issuer's transaction.
 
@@ -56,7 +56,7 @@ async function main() {
       nativeDepositPerMint: 2n
     }
   }
-  const result = await rwa_sdk.mnfts.issueMachineNFT(issueMachineNFT);
+  const result = await rwa_sdk.mnft.issueMachineNFT(issueMachineNFT);
 
   console.log('Result', result);
 }
@@ -85,7 +85,7 @@ async function main() {
   const alice = new Wallet(process.env.ALICE_PRIVATE_KEY, provider);
 
   // 3. Create MachineNFT(s) for Alice
-  const result = await rwa_sdk.mnfts.issueMachineNFT({
+  const result = await rwa_sdk.mnft.issueMachineNFT({
     machineIssuer: admin,
     machineOwner: alice,
     machineNFT: "0x1008234A9dc43A747bBe4a3100d8Ff46a7Fb6E97",

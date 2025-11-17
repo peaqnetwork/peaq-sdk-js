@@ -1,4 +1,4 @@
-## `vaults.transfer(Transfer)`
+## `vault.transfer(Transfer)`
 
 Transfer T-REX tokens between addresses, scaling the human-readable amount using the token's decimals.
 
@@ -42,7 +42,7 @@ async function main() {
     recipientAddr: bob,
     amount: 10
   }
-  const result = await rwa_sdk.vaults.transfer(transfer);
+  const result = await rwa_sdk.vault.transfer(transfer);
   console.log("Result", result);
 }
 
@@ -70,7 +70,7 @@ async function main() {
   const bob = process.env.BOB_PUBLIC_ADDRESS;
 
   // 3. Transfer
-  const result = await rwa_sdk.vaults.transfer({
+  const result = await rwa_sdk.vault.transfer({
     token: "0xeE73efbD1D4B272E4fADe0A323feE028d9439c64",
     sender: alice,
     recipientAddr: bob,

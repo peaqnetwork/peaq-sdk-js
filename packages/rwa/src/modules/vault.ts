@@ -29,7 +29,7 @@ import {
   IMachineVault__factory,
   IIdentityRegistry__factory,
   IToken__factory,
-  IMachineNFTs__factory,
+  IMachineNft__factory,
 } from '../typechain';
 
 /**
@@ -39,14 +39,14 @@ import {
  * @param {NetworkAddresses} addresses - The network addresses for the Vaults module
  * @param {Provider} provider - The provider for the Vaults module
  */
-export class Vaults {
+export class Vault {
   constructor(
     private readonly addresses: NetworkAddresses,
     private readonly provider: Provider,
   ) {}
 
   private _vaultFactory(runner: Signer | Provider, address?: string) {
-    const addr = getAddress(address ?? this.addresses.vaults.factory);
+    const addr = getAddress(address ?? this.addresses.vault.factory);
     return IMachineVaultFactory__factory.connect(addr, runner);
   }
 
@@ -62,9 +62,9 @@ export class Vaults {
     return IToken__factory.connect(getAddress(address), runner);
   }
 
-  private _mnfts(runner: Signer | Provider, address?: string) {
-    const addr = getAddress(address ?? this.addresses.mnfts.machineNft);
-    return IMachineNFTs__factory.connect(addr, runner);
+  private _mnfts(runner: Signer | Provider, address: string) {
+    const addr = getAddress(address);
+    return IMachineNft__factory.connect(addr, runner);
   }
 
 /**

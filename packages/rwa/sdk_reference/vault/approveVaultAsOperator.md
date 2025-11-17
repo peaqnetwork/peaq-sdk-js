@@ -1,4 +1,4 @@
-## `vaults.approveVaultAsOperator(ApproveVaultAsOperator)`
+## `vault.approveVaultAsOperator(ApproveVaultAsOperator)`
 
 Approve the MachineVault to operate on all of the owner's Machine NFTs (sets `setApprovalForAll(vault, true)`).
 
@@ -38,7 +38,7 @@ async function main() {
     tokenOwner: alice,
     vault: "0x26c13E26Fe20fc47f60B298b9F891F379E65631A"
   }
-  const result = await rwa_sdk.vaults.approveVaultAsOperator(approveVaultAsOperator);
+  const result = await rwa_sdk.vault.approveVaultAsOperator(approveVaultAsOperator);
   console.log("Result", result);
 }
 
@@ -63,7 +63,7 @@ async function main() {
   const alice = new Wallet(process.env.ALICE_PRIVATE_KEY, provider);
 
   // 2. Approve the vault as operator over Alice's Machine NFTs
-  const result = await rwa_sdk.vaults.approveVaultAsOperator({
+  const result = await rwa_sdk.vault.approveVaultAsOperator({
     machineNFT: "0x1008234A9dc43A747bBe4a3100d8Ff46a7Fb6E97",
     tokenOwner: alice,
     vault: "0x5fa42Bb51c6770034a90FB5200e37e2Ce31Ba56a"

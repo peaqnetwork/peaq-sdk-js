@@ -10,25 +10,25 @@ import { SDKError } from '../errors/errors';
 
 import type { Signer, Provider } from 'ethers';
 import { parseEther, getAddress } from 'ethers';
-import { IMachineNFTs__factory, IERC20__factory } from '../typechain';
+import { IMachineNft__factory, IERC20__factory } from '../typechain';
 
 
 /**
  * MachineNFTs module provides functionality for issuing Machine NFTs for the PEAQ network.
  * 
- * @class MachineNFTs
+ * @class MachineNFT
  * @param {NetworkAddresses} addresses - The network addresses for the MachineNFTs module
  * @param {Provider} provider - The provider for the MachineNFTs module
  */
-export class MachineNFTs {
+export class MachineNFT {
   constructor(
     private readonly addresses: NetworkAddresses,
     private readonly provider: Provider
   ) {}
 
-  private _mnfts(runner: Signer | Provider, address?: string) {
-    const addr = getAddress(address ?? this.addresses.mnfts.machineNft);
-    return IMachineNFTs__factory.connect(addr, runner);
+  private _mnft(runner: Signer | Provider, address: string) {
+    const addr = getAddress(address);
+    return IMachineNft__factory.connect(addr, runner);
   }
 
   private _erc20(runner: Signer | Provider, address: string) {
@@ -65,7 +65,7 @@ export class MachineNFTs {
     }, 'issueMachineNFT');
 
     const count = opts.count ?? 1;    
-    const mnfts = this._mnfts(machineIssuer, machineNFT);
+    const mnfts = this._mnft(machineIssuer, machineNFT);
 
     // TODO 
     // - see if we can get the value of the machine nfts from the contract

@@ -7,8 +7,7 @@
     "idFactory": "",
     "kycVerifier": "",
     "mnftIssuerVerifier": "",
-    "mnftRegulatorVerifier": "",
-    "claimIssuer": ""
+    "mnftRegulatorVerifier": ""
   },
   "trex": {
     "trexImplementationAuthority": "",
@@ -21,12 +20,11 @@
     "trustedIssuersRegistryProxy": "",
     "claimTopicsRegistryProxy": ""
   },
-  "mnfts": {
-    "proxyAdmin": "",
-    "peaqMachineNfts": "",
-    "machineNft": ""
+  "mnft": {
+    "peaqMachineNft": "",
+    "proxyAdmin": ""
   },
-  "vaults": {
+  "vault": {
     "factory": "",
     "proxyAdmin": ""
   },

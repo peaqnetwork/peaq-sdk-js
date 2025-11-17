@@ -56,7 +56,7 @@ Replace the `ALICE_PUBLIC_ADDRESS` with `BOB_PUBLIC_ADDRESS`
 
 Replace the `ALICE_PUBLIC_ADDRESS` with `BOB_PUBLIC_ADDRESS` and `ALICE_PRIVATE_KEY` with `BOB_PRIVATE_KEY`
 
-5. [Issue Machine NFTs](../mnfts/issueMachineNFT.md)
+5. [Issue Machine NFTs](../mnft/issueMachineNFT.md)
 
 6. [Create Vault and Token](../vault/createVaultAndToken.md)
 

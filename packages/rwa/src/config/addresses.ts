@@ -26,12 +26,11 @@ export type RwaAddresses = {
     trustedIssuersRegistryProxy: string;
     claimTopicsRegistryProxy: string;
   };
-  mnfts: {
-    peaqMachineNfts: string;
-    machineNft: string;
+  mnft: {
+    peaqMachineNft: string;
     proxyAdmin: string;
   };
-  vaults: {
+  vault: {
     factory: string;
     proxyAdmin: string;
   };
