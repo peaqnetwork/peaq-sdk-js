@@ -162,9 +162,9 @@ export class DIDV2Implementation extends Base {
     });
 
     if (this.metadata.chainType === ChainType.EVM) {
-      return this._updateEvm(name, effectiveController, didDocumentHex, statusCallback, txOptions);
+      return this._updateEvm(name, idAddress, didDocumentHex, statusCallback, txOptions);
     }
-    return this._updateSubstrate(name, effectiveController, didDocumentHex, statusCallback);
+    return this._updateSubstrate(name, idAddress, didDocumentHex, statusCallback);
   }
 
   // ---------------------------------------------------------
