@@ -4,7 +4,8 @@ import type {
   CreateIdentity, CreateIdentityResult,
   GetIdentity, GetIdentityResult,
   IssueKycClaim, KycClaimResult,
-  AddClaimToIdentity, AddClaimToIdentityResult
+  AddClaimToIdentity, AddClaimToIdentityResult,
+  GetClaim, GetClaimResult
 } from '../types/onchainid';
 
 
@@ -155,7 +156,7 @@ export class OnChainID {
 
     // preflight check
     try {
-      await identityContract.addClaim.staticCall(claim.topic, claim.scheme, claim.issuer, kycSignature, claim.data, claim.uri); 
+      const claimId = await identityContract.addClaim.staticCall(claim.topic, claim.scheme, claim.issuer, kycSignature, claim.data, claim.uri); 
     } catch (cause: any) {
       throw new SDKError('SIMULATE/ADD_CLAIM', 'Identity callStatic failed; addition would revert', { cause });
     }
@@ -171,4 +172,25 @@ export class OnChainID {
     const receipt = await waitForTx(identityOwner, tx);
     return { receipt: receipt };
   }
-}
+
+  /**
+  * Gets a claim from an ONCHAINID identity by calling the identity contract's getClaim by claimId.
+  * 
+  * @type {GetClaim} - The parameter type options for getting a claim from an ONCHAINID identity
+  * @returns {GetClaimResult} The result of getting a claim from an ONCHAINID identity
+  */
+  public async getClaim(opts: GetClaim): Promise<GetClaimResult> {
+    // TODO how to validate the claim?
+    const { identity, claimId } = parseOptions<GetClaim>(opts, {
+      identity: { required: true, validator: validators.address, expected: 'EVM address string' },
+      claimId: { required: true, validator: validators.string, expected: 'string' },  
+    }, 'getClaim');
+
+    const identityContract = this._identity(this.provider, identity);
+
+    const claim = await identityContract.getClaim(
+      claimId
+    );
+    return { claim: { topic: Number(claim[0]), scheme: Number(claim[1]), issuer: claim[2], signature: claim[3], data: claim[4], uri: claim[5] } };
+    }
+  }

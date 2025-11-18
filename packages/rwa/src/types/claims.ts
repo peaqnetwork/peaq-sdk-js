@@ -1,11 +1,20 @@
 import type { KYC } from './onchainid';
 import type { Signer } from 'ethers';
 
-export interface IClaim {
-    identity: string;
-    issuer: string;
+export type Claim = {
     topic: number;
     scheme: number;
+    issuer: string;
+    signature: string;
+    data: string;
+    uri: string;
+}
+
+export interface IClaim {
+    topic: number;
+    scheme: number;
+    issuer: string;
+    identity: string;
     data: string;
     uri: string;
 }

@@ -1,5 +1,5 @@
 import type { Signer, TransactionReceipt } from 'ethers';
-import type { IClaim } from './claims';
+import type { Claim, IClaim } from './claims';
 
 export type KYC = {
     identity: string;
@@ -59,4 +59,13 @@ export type AddClaimToIdentity = {
 
 export type AddClaimToIdentityResult = {
     receipt: TransactionReceipt;
+}
+
+export type GetClaim = {
+    identity: string;
+    claimId: string
+}
+
+export type GetClaimResult = {
+    claim: Claim;
 }
