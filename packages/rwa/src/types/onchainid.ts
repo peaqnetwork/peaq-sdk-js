@@ -69,3 +69,14 @@ export type GetClaim = {
 export type GetClaimResult = {
     claim: Claim;
 }
+
+export type RemoveClaimFromIdentity = {
+    identity: string;
+    identityOwner: Signer;
+    claimId: string
+}
+
+export type RemoveClaimFromIdentityResult = {
+    receipt: TransactionReceipt;
+    result: string;
+}

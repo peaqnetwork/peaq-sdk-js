@@ -6,6 +6,7 @@ export type SDKErrorCode =
   // simulation & preflight
   | 'SIMULATE/CREATE_IDENTITY'
   | 'SIMULATE/ADD_CLAIM'
+  | 'SIMULATE/REMOVE_CLAIM'
   | 'SIMULATE/APPROVE_ERC20'
   | 'SIMULATE/ISSUE_MNFT'
   | 'SIMULATE/CREATE_VAULT'

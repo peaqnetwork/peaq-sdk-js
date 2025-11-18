@@ -5,7 +5,8 @@ import type {
   GetIdentity, GetIdentityResult,
   IssueKycClaim, KycClaimResult,
   AddClaimToIdentity, AddClaimToIdentityResult,
-  GetClaim, GetClaimResult
+  GetClaim, GetClaimResult,
+  RemoveClaimFromIdentity, RemoveClaimFromIdentityResult
 } from '../types/onchainid';
 
 
@@ -38,8 +39,8 @@ export class OnChainID {
     private readonly provider: Provider
   ) {}
 
-  private _identity(runner: Signer | Provider, address?: string) {
-    const addr = getAddress(address ?? this.addresses.onchainid.identity);
+  private _identity(runner: Signer | Provider, address: string) {
+    const addr = getAddress(address);
     return IIdentity__factory.connect(addr, runner);
   }
 
@@ -193,4 +194,36 @@ export class OnChainID {
     );
     return { claim: { topic: Number(claim[0]), scheme: Number(claim[1]), issuer: claim[2], signature: claim[3], data: claim[4], uri: claim[5] } };
     }
+
+  /**
+  * Removes a signed claim from an ONCHAINID identity by calling the identity contract's removeClaim.
+  * 
+  * @type {RemoveClaimFromIdentity} - The parameter type options for removing a claim from an ONCHAINID identity
+  * @returns {RemoveClaimFromIdentityResult} The result of removing a claim from an ONCHAINID identity
+  */
+  public async removeClaimFromIdentity(opts: RemoveClaimFromIdentity): Promise<RemoveClaimFromIdentityResult> {
+    // TODO how to validate the claim?
+    const { identity, identityOwner, claimId } = parseOptions<RemoveClaimFromIdentity>(opts, {
+      identity: { required: true, validator: validators.address, expected: 'EVM address string' },
+      identityOwner: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      claimId: { required: true, validator: validators.string, expected: 'string' },
+    }, 'removeClaimFromIdentity');
+
+    const identityContract = this._identity(identityOwner, identity);
+
+    // preflight check
+    try {
+      await identityContract.removeClaim.staticCall(claimId); 
+    } catch (cause: any) {
+      throw new SDKError('SIMULATE/REMOVE_CLAIM', 'Identity callStatic failed; removal would revert', { cause });
+    }
+
+    const tx = await identityContract.removeClaim.populateTransaction(
+      claimId
+    );
+    const receipt = await waitForTx(identityOwner, tx);
+    return { receipt: receipt, result: `Successfully removed claim for Identity ${identity}` };
   }
+  
+}
+
