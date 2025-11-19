@@ -70,10 +70,10 @@ export class DIDV2Implementation extends Base {
     });
 
     if (this.metadata.chainType === ChainType.EVM) {
-      return this._createEvm(name, effectiveController, didDocumentHex, statusCallback, txOptions);
+      return this._createEvm(name, idAddress, didDocumentHex, statusCallback, txOptions);
     }
     // TODO: MACTH: Don't default to substrate, just offer as another option. If not other options his, then default to an error saying chain type is not supported.
-    return this._createSubstrate(name, effectiveController, didDocumentHex, statusCallback);
+    return this._createSubstrate(name, idAddress, didDocumentHex, statusCallback);
   }
 
   // ---------------------------------------------------------
