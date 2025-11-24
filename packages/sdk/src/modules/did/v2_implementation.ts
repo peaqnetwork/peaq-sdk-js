@@ -47,6 +47,8 @@ export class DIDV2Implementation extends Base {
     statusCallback?: (result: TransactionStatusCallback) => void | Promise<void>,
     txOptions?: txOptions
   ): Promise<DidWriteResult> {
+    // TODO: rename didAddress to subjectAddress
+    // 12 char maximum length for projectId (for evm) and then 6 char max for ss58
     const { name, controller, didAddress, verificationMethods = [], services = [], signature } = options;
 
     // Get the connected wallet/keypair address
@@ -70,10 +72,10 @@ export class DIDV2Implementation extends Base {
     });
 
     if (this.metadata.chainType === ChainType.EVM) {
-      return this._createEvm(name, effectiveController, didDocumentHex, statusCallback, txOptions);
+      return this._createEvm(name, idAddress, didDocumentHex, statusCallback, txOptions);
     }
     // TODO: MACTH: Don't default to substrate, just offer as another option. If not other options his, then default to an error saying chain type is not supported.
-    return this._createSubstrate(name, effectiveController, didDocumentHex, statusCallback);
+    return this._createSubstrate(name, idAddress, didDocumentHex, statusCallback);
   }
 
   // ---------------------------------------------------------
@@ -162,9 +164,9 @@ export class DIDV2Implementation extends Base {
     });
 
     if (this.metadata.chainType === ChainType.EVM) {
-      return this._updateEvm(name, effectiveController, didDocumentHex, statusCallback, txOptions);
+      return this._updateEvm(name, idAddress, didDocumentHex, statusCallback, txOptions);
     }
-    return this._updateSubstrate(name, effectiveController, didDocumentHex, statusCallback);
+    return this._updateSubstrate(name, idAddress, didDocumentHex, statusCallback);
   }
 
   // ---------------------------------------------------------
@@ -177,9 +179,9 @@ export class DIDV2Implementation extends Base {
     const { name, address } = options;
 
     if (this.metadata.chainType === ChainType.EVM) {
-      return this._removeEvm(name, (this.metadata.pair as any)?.address || address, statusCallback, txOptions);
+      return this._removeEvm(name, address || (this.metadata.pair as any)?.address, statusCallback, txOptions);
     }
-    return this._removeSubstrate(name, (this.metadata.pair as any)?.address || address, statusCallback);
+    return this._removeSubstrate(name, address || (this.metadata.pair as any)?.address, statusCallback);
   }
 
   // ---------------------------------------------------------
