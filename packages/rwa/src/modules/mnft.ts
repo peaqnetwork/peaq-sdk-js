@@ -1,12 +1,13 @@
 import type { NetworkAddresses } from '../types/core';
-import type { IssueMachineNFT, IssueMachineNFTResult } from '../types/mnfts';
+import type { IMachineMetadata, IssueMachineNFT, IssueMachineNFTResult } from '../types/mnfts';
 
 // utils
 import { Fees } from "../config/fees";
-import { parseOptions, validators } from '../utils/helpers';
+import { getArgsFromTxEvent, parseOptions, validators } from '../utils/helpers';
 import { waitForTx } from '../utils/txs';
 import { SDKError } from '../errors/errors';
 
+import { Sdk } from '@peaq-network/sdk';
 
 import type { Signer, Provider } from 'ethers';
 import { parseEther, getAddress } from 'ethers';
@@ -37,6 +38,71 @@ export class MachineNFT {
   }
 
 
+
+  private async _createDIDDocument(machineOwner: Signer, machineNFT: string, project: string, metadataEndpoint: string, tokenId: string) {
+		// creates sdk instance for peaq-did construction
+    const peaq_sdk = await Sdk.createInstance({
+      baseUrl: "https://peaq-agung.api.onfinality.io/public", // hardcoding for now
+      chainType: Sdk.ChainType.EVM
+    });
+
+    // 1. Assign the did subject address and controller
+    const didAddress = machineNFT;
+    const controller = await machineOwner.getAddress(); // machine owner or machine issuer??
+
+    // 2. Create the did name as per our naming convention
+    const rwaSubject = `${didAddress}.${tokenId}`;
+    const name = `did:peaq:${project}:${rwaSubject}`;
+
+    // 3. Construct the signature for the did address to prove machine owner has ownership on the machine nft
+    const rwaSubjectSignature = await machineOwner.signMessage(rwaSubject);
+    const signature = {
+      type: Sdk.VerificationMethodType.ECDSA,
+      issuer: controller,
+      hash: rwaSubjectSignature
+    };
+
+    // 4. Attach the verification method to the did document
+    const verification = [{
+      type: Sdk.VerificationMethodType.ECDSA,
+    }];
+
+    // 5. Attach the metadata service endpoint to the did document with the appropriate data (token id)
+    const service = [{
+      id: `#metadata`,
+      type: 'RWA Machine Metadata',
+      serviceEndpoint: metadataEndpoint,
+      data: tokenId
+    }];
+
+
+    // 6. Generate the serialized did document via protobuf with the sdk
+    const result = await peaq_sdk.did.create({
+      name: name,
+      didAddress: didAddress,
+      controller: controller,
+      verificationMethods: verification,
+      services: service,
+      signature: signature,
+      project: project,
+      tokenId: tokenId
+    });
+
+    // 7. Send the transaction to the network using rwa tx algorithm
+    if ('tx' in result && result.tx) {
+      await waitForTx(machineOwner, result.tx);
+
+      // Read the did document from the network
+      const didDocument = await peaq_sdk.did.read({
+        name: name,
+        address: didAddress
+      });
+      console.log(didDocument)
+      console.log(didDocument?.document);
+    } else {
+      throw new SDKError('DID/CREATE', 'Unexpected DID write result shape; expected unsigned EVM tx.');
+    }
+  }
   /**
    * Issues a Machine NFT to a designated owner. Make sure the Machine NFT contract is funded.
    * 
@@ -45,10 +111,12 @@ export class MachineNFT {
    */
   public async issueMachineNFT(opts: IssueMachineNFT): Promise<IssueMachineNFTResult> {
     // validate and parse parameter type options for improved error messages for user
-    const { machineIssuer, machineOwner, machineNFT, metadata } = parseOptions<IssueMachineNFT>(opts, {
+    const { machineIssuer, machineOwner, machineNFT, project, metadataEndpoint, metadata } = parseOptions<IssueMachineNFT>(opts, {
       machineIssuer: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
       machineOwner: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
       machineNFT: { required: true, validator: validators.address, expected: 'EVM address string' },
+      project: { required: true, validator: validators.string, expected: 'string' },
+      metadataEndpoint: { required: true, validator: validators.string, expected: 'string' },
       metadata: { required: true, validator: validators.partialObject({
         brand: validators.string,
         model: validators.string,
@@ -65,7 +133,9 @@ export class MachineNFT {
     }, 'issueMachineNFT');
 
     const count = opts.count ?? 1;    
-    const mnfts = this._mnft(machineIssuer, machineNFT);
+    const mnft = this._mnft(machineIssuer, machineNFT);
+
+   
 
     // TODO 
     // - see if we can get the value of the machine nfts from the contract
@@ -98,17 +168,25 @@ export class MachineNFT {
     for (let i = 0; i < count; i++) {
       // preflight check
       try {
-        await mnfts.registerMachine.staticCall(ownerAddr, fees.machineValue, metadata, { value: fees.nativeDepositPerMint });
+        await mnft.registerMachine.staticCall(ownerAddr, fees.machineValue, metadata, { value: fees.nativeDepositPerMint });
       } catch (cause: any) {
         throw new SDKError('SIMULATE/ISSUE_MNFT', 'MachineNFTs callStatic failed; issuance would revert', { cause });
       }
-      const mintTx = await mnfts.registerMachine.populateTransaction(
+      const mintTx = await mnft.registerMachine.populateTransaction(
         ownerAddr,
         fees.machineValue,
         metadata,
         { value: fees.nativeDepositPerMint }
       );
-      await waitForTx(machineIssuer, mintTx);
+      const result = await waitForTx(machineIssuer, mintTx);
+      console.log(result)
+
+      const iface = IMachineNft__factory.createInterface();
+      const args = await getArgsFromTxEvent(result, 'MetadataUpdate', iface);
+      const tokenId = args[0].toString();
+
+      // request a serviceEndpoint to link in the service field that shows the machine nft metadata (stored off chain)
+      await this._createDIDDocument(machineOwner, machineNFT, project, metadataEndpoint, tokenId);
     }
   
     return { result: `Created ${count} Machine NFT${count > 1 ? 's' : ''} for user: ${ownerAddr}` };

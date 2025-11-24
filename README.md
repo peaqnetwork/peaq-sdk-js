@@ -28,7 +28,7 @@ npm run clean --workspaces
 ### Pack tarballs
 ```bash
 # Pack specific workspaces
-npm pack -w @peaq-network/sdk 
+npm pack -w @peaq-network/sdk
 npm pack -w @peaq-network/msf
 npm pack -w @peaq-network/rwa
 

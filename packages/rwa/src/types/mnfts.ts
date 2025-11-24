@@ -4,6 +4,8 @@ export type IssueMachineNFT = {
     machineIssuer: Signer;
     machineOwner: Signer;
     machineNFT: string;
+    project: string
+    metadataEndpoint: string;
     metadata: IMachineMetadata;
     count?: number;
     fees?: Partial<{
