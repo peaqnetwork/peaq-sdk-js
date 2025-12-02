@@ -104,6 +104,13 @@ export class MachineNFT {
     }
   }
   /**
+   * 
+   * TODO: Update function name to registerMachine(), and then split up function into two:
+   * - approveErc20()
+   * - registerMachine()
+   * - determine if count is necessary
+   * - update function parameters 'feePerMint' to 'feePerRegistration'
+   * 
    * Issues a Machine NFT to a designated owner. Make sure the Machine NFT contract is funded.
    * 
    * @param {IssueMachineNFT} opts - The options for issuing a Machine NFT
@@ -189,6 +196,6 @@ export class MachineNFT {
       await this._createDIDDocument(machineOwner, machineNFT, project, metadataEndpoint, tokenId);
     }
   
-    return { result: `Created ${count} Machine NFT${count > 1 ? 's' : ''} for user: ${ownerAddr}` };
+    return { result: `Registered ${count} Machine NFT${count > 1 ? 's' : ''} for user: ${ownerAddr}` }; // or assigned rather than registered?
   }
 }
