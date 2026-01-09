@@ -20,14 +20,9 @@ export type RwaAddresses = {
     iaFactory: string;
     trexFactory: string;
     trexGateway: string;
-    modularComplianceProxy: string;
-    identityRegistryProxy: string;
-    identityRegistryStorageProxy: string;
-    trustedIssuersRegistryProxy: string;
-    claimTopicsRegistryProxy: string;
   };
-  mnft: {
-    peaqMachineNft: string;
+  nft: {
+    peaqRwaNft: string;
     proxyAdmin: string;
   };
   vault: {

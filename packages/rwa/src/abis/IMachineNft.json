@@ -1,12 +1,72 @@
 [
   {
     "inputs": [],
-    "name": "MachineNftFull",
+    "name": "FeeSetupError",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "IncompatibleVault",
     "type": "error"
   },
   {
     "inputs": [],
+    "name": "MachineNftAlreadyExists",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "MachineNftDoesNotExist",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "NoIdentityFound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      }
+    ],
     "name": "TransferFailed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "UnauthorizedVault",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "UserNotKyxd",
     "type": "error"
   },
   {
@@ -95,9 +155,9 @@
       },
       {
         "indexed": true,
-        "internalType": "uint256",
+        "internalType": "uint160",
         "name": "machineId",
-        "type": "uint256"
+        "type": "uint160"
       }
     ],
     "name": "MachineAdded",
@@ -200,44 +260,17 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint160",
         "name": "tokenId",
-        "type": "uint256"
+        "type": "uint160"
       }
     ],
-    "name": "getMachineMetadata",
+    "name": "getMachineDid",
     "outputs": [
       {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "brand",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "model",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "serialNumber",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "uri",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "timestamp",
-            "type": "string"
-          }
-        ],
-        "internalType": "struct IMachineNft.MachineMetadata",
+        "internalType": "bytes",
         "name": "",
-        "type": "tuple"
+        "type": "bytes"
       }
     ],
     "stateMutability": "view",
@@ -316,26 +349,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "refundableNative",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "owner",
+        "name": "machineOwner",
         "type": "address"
       },
       {
@@ -344,47 +358,49 @@
         "type": "uint256"
       },
       {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "brand",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "model",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "serialNumber",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "uri",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "timestamp",
-            "type": "string"
-          }
-        ],
-        "internalType": "struct IMachineNft.MachineMetadata",
-        "name": "machineMetadata",
-        "type": "tuple"
+        "internalType": "uint160",
+        "name": "tokenId",
+        "type": "uint160"
+      },
+      {
+        "internalType": "bytes",
+        "name": "did",
+        "type": "bytes"
       }
     ],
     "name": "registerMachine",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint160",
         "name": "",
-        "type": "uint256"
+        "type": "uint160"
       }
     ],
     "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "machineValue",
+        "type": "uint256"
+      }
+    ],
+    "name": "registrationFeeAndAccount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "fee",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -460,7 +476,7 @@
       },
       {
         "internalType": "bool",
-        "name": "_approved",
+        "name": "approved",
         "type": "bool"
       }
     ],
@@ -525,8 +541,19 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "withdrawRefund",
+    "inputs": [
+      {
+        "internalType": "uint160",
+        "name": "tokenId",
+        "type": "uint160"
+      },
+      {
+        "internalType": "bytes",
+        "name": "did",
+        "type": "bytes"
+      }
+    ],
+    "name": "updateDid",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
