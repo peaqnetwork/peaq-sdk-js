@@ -23,6 +23,7 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
 
     const salt = 'identity-' + Date.now().toString();
     const result = await rwa.onchainid.createIdentity({ admin, eoa: ALICE_PUBLIC_ADDRESS!, salt });
+    console.log(result);
 
     expect(['created', 'exists']).toContain(result.status);
     expect(result.identity).toMatch(/^0x[a-fA-F0-9]{40}$/);

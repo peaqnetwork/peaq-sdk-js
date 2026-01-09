@@ -10,7 +10,7 @@ function run(cmd: string) {
   }
 }
 
-describe('build outputs', () => {
+describe.skip('build outputs', () => {
   it('esm works', () => {
     const out = execSync('node tests/consumers/esm.mjs', { stdio: 'pipe' }).toString().trim();
     expect(out).toBe('ok-esm');

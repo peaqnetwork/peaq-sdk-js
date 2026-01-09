@@ -44,7 +44,7 @@ import type {
   // NetworkAddresses should at least expose top-level sections you rely on.
   // We don’t assert inner shapes here to keep the test stable across networks.
   type _NetworkAddresses_top =
-    Expect<HasKeys<NetworkAddresses, 'onchainid' | 'trex' | 'mnfts' | 'vaults' | 'erc20'>>;
+    Expect<HasKeys<NetworkAddresses, 'onchainid' | 'trex' | 'nfts' | 'vault' | 'erc20'>>;
   
   /* ------------------------------- onchainid.ts ------------------------------ */
   

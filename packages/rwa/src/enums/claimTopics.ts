@@ -1,3 +1,3 @@
 export enum ClaimTopics {
-  CT_KYC_APPROVED = 777,
+  CT_KYC_APPROVED = 666,
 }
