@@ -2,26 +2,26 @@
   "chainId": 9990,
   "network": "agung",
   "onchainid": {
-    "identity": "0xcbD7d56dc59c3867216308555AF87e83d5BcdFd3",
-    "implementationAuthority": "0xC4C76FB1D03984d4870744D8c480A742F62cC07F",
-    "idFactory": "0xF8D73a38fDEc5fd92f076d0d3F4306C6df9322e5",
-    "kycVerifier": "0xDBb99CF5E3Cdfff19C883FF8D7E3B415dFE84d46",
-    "mnftIssuerVerifier": "0xdA0eAB221c16c9fb3287D079bA566496bfc1407F",
-    "mnftRegulatorVerifier": "0xd20C7498d8635175bd7D0F74b50f7004E3B35Ca4"
+    "identity": "0x334A237949bA41b5BEdD3523c8Ac26177e8e8bE9",
+    "implementationAuthority": "0x36d4DFFcc32BA1F92a593cCcf176f79035B242a3",
+    "idFactory": "0x2E54fbF02E9eD2a674276e218F2215E25Bd44C3a",
+    "kycVerifier": "0x03f58C9374dC94b11DbB3b4CD54a4dC19C3eF4C5",
+    "mnftIssuerVerifier": "0x0d9513c0759f1459feB8f82EaC80E89216E6B70D",
+    "mnftRegulatorVerifier": "0xb53BE3bcf5472437E86fa37729437A461C7A10a0"
   },
   "trex": {
-    "trexImplementationAuthority": "0x811Dc64b17e126C062eC0E13260CDe2F41D6aBD8",
-    "iaFactory": "0xfDD2E1A81472844Af2dF1947Eb7E3CBA14Eab745",
-    "trexFactory": "0xaf84c13f09Eec96b4f79f2B3B79893ABfaBfBF4b",
-    "trexGateway": "0xe9709c53Fe3Bd0Ecee1d33e0360894A00917a2f7"
+    "trexImplementationAuthority": "0x0a0F5C5d5BEa3b2804e987Af99E3b5113e210A6e",
+    "iaFactory": "0x57f19E376b234CEB14c24eE061f89BEfEC1e0346",
+    "trexFactory": "0xb015e5C58F4469A65D8CA7a81bC362A6dB81D3c7",
+    "trexGateway": "0x328F2C5f3afD02aA7992bE23584785FbE83E0CDA"
   },
   "nft": {
-    "peaqRwaNft": "0xa54c58Bc3a7272b1D8F95a905E9D5534f8d6AB74",
-    "proxyAdmin": "0xAa2d18f46A710595493601dF2892B4c7CdBA5788"
+    "peaqRwaNft": "0xB52ef170F6285B0682DF391c0df303D362527027",
+    "proxyAdmin": "0xf53398805a16b69005B28703d80e1B2e87854823"
   },
   "vault": {
-    "factory": "0x31d19aE97d4Fdf2225Bac574404f589093f6bAD4",
-    "proxyAdmin": "0xAa2d18f46A710595493601dF2892B4c7CdBA5788"
+    "factory": "0xDd7e040c9791B9b3D65171417D5eddcdF216F226",
+    "proxyAdmin": "0xf53398805a16b69005B28703d80e1B2e87854823"
   },
   "erc20": {
     "peaq": "0x0000000000000000000000000000000000000809"

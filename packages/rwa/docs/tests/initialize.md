@@ -1,11 +1,16 @@
 # Setup Test Environment
-Before you can execute the integration tests locally, you must first download the dependencies locally. To do so, clone this repository:
+Before you can execute the integration tests locally, you must first download the dependencies locally.
+## 1. Clone this repository
 ```
 git clone https://github.com/peaqnetwork/peaq-sdk-js.git
 cd packages/rwa
 npm install
 ```
-Next, you must make sure you are interacting with a deployed framework. To learn how to deploy one yourself please checkout [the guide](../sdk_maintainers/initialization.md). Once you have a proper framework setup you can define a `.env` file that your local tests will reference. Below is out outline to help you fill out the proper fields for your `.env` file.
+## 2. Deploy Framework
+Next, you must make sure you are interacting with a deployed framework. To learn how to deploy one yourself please checkout [the guide](../sdk_maintainers/initialization.md). 
+
+## 3. Setup `.env` file
+Once you have a proper framework setup you can define a `.env` file that your local tests will reference. Below is out outline to help you fill out the proper fields for your `.env` file.
 ```
 HTTPS_BASE_URL="https://peaq-agung.api.onfinality.io/public"
 
@@ -28,4 +33,11 @@ ALICE_PRIVATE_KEY=""
 BOB_PUBLIC_ADDRESS=""
 BOB_PRIVATE_KEY=""
 ```
+
+## 4. Run tests
+After following all of the steps above you can able to execute the tests with the cmd:
+```
+npm test
+```
+It will run through module execution
 
