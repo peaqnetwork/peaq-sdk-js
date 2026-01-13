@@ -16,7 +16,7 @@ const ALICE_PUBLIC_ADDRESS = process.env.ALICE_PUBLIC_ADDRESS;
 const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_ADDRESS);
 
 // Integration test that creates or returns an existing identity
-(shouldRun ? describe : describe.skip)('OnchainID.issueKycClaim [integration]', () => {
+(shouldRun ? describe.sequential : describe.skip)('OnchainID.issueKycClaim [integration]', () => {
   it('issues a KYC claim', async () => {
     // 0. Create RWA instance and provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);

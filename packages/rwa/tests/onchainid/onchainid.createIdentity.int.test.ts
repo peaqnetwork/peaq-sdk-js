@@ -15,7 +15,7 @@ const ALICE_PUBLIC_ADDRESS = process.env.ALICE_PUBLIC_ADDRESS;
 const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_ADDRESS);
 
 // Integration test that creates or returns an existing identity
-(shouldRun ? describe : describe.skip)('OnchainID.createIdentity [integration]', () => {
+(shouldRun ? describe.sequential : describe.skip)('OnchainID.createIdentity [integration]', () => {
   it('creates or returns existing identity', async () => {
     const provider = new JsonRpcProvider(HTTPS_BASE_URL);
     const rwa = new RWA({ chainId: Chain.AGUNG, provider });
