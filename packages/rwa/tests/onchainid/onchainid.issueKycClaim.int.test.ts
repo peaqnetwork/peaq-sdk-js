@@ -40,9 +40,6 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
         uri: 'https://example.com/kyc'
     });
 
-    console.log(claim, signature);
-
-
     expect(claim).toBeDefined();
     expect(typeof claim).toBe('object');
     
