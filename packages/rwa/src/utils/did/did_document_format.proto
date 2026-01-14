@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package document;
+option go_package = "github.com/peaqnetwork/peaq-network-did-proto-format/golang/document;document";
+option java_multiple_files = true;
+option java_outer_classname = "PeaqDidProto";
+option java_package = "io.peaq.did";
+
+message MachineSubject {
+  optional string type = 1;
+  optional string manufacturer = 2;
+  optional string model = 3;
+  optional string version = 4;
+  optional string edition = 5;
+  optional string color = 6;
+  optional string day_of_manufacture = 7;
+  optional string country = 8;
+  optional string city = 9;
+  optional string serial_number = 10;
+}
+
+enum SubjectType {
+  MACHINE = 0;
+  // More types to be added in the future
+}
+
+message CredentialSubject {
+  optional string id = 1;
+  SubjectType type = 2;
+  oneof subject {
+    MachineSubject machine = 3;
+    // More subject types to be added in the future
+  }
+}
+
+message VerifiableCredential {
+  optional string context = 1;
+  optional string id = 2;
+  optional string type = 3;
+  optional string issuer = 4;
+  optional string issuance_date = 5;
+  optional CredentialSubject credential_subject = 6;
+}
+
+enum VerificationType {
+  Ed25519VerificationKey2020 = 0;
+  Sr25519VerificationKey2020 = 1;
+  EcdsaSecp256k1RecoveryMethod2020 = 2;
+}
+
+message VerificationMethod {
+  string id = 1;
+  string type = 2;
+  string controller = 3;
+  optional string public_key_multibase = 4;
+  optional string blockchain_account_id = 5;
+}
+
+message Signature {
+  string type = 1;
+  string issuer = 2;
+  string hash = 3;
+}
+
+message Service {
+  string id = 1;
+  string type = 2;
+  optional string service_endpoint = 3;
+  optional string data = 4;
+}
+
+message Document {
+  string id = 1;
+  string controller = 2;
+  repeated VerificationMethod verification_methods = 3;
+  Signature signature = 4;
+  repeated Service services = 5;
+  repeated string authentications = 6;
+  optional VerifiableCredential verifiable_credential = 7;
+}

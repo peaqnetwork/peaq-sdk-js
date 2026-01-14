@@ -1,14 +1,18 @@
 ## `mnft.issueMachineNFT(IssueMachineNFT)`
 
+TODO update
+
 Mint one or more Machine NFTs to a designated owner. Handles ERC20 fee approval from the owner and sends the required native deposit per mint with the issuer's transaction.
 
 ### IssueMachineNFT Type Parameters
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
+| **machineValue** | `bigint` | Required | Value of the machine in PEAQ tokens in human readable format. |
 | **machineIssuer** | `Signer` | Required | Authorized issuer/operator who submits the mint transactions (pays native deposit). |
 | **machineOwner** | `Signer` | Required | Owner/recipient of the Machine NFT(s); approves ERC20 fee spending. |
 | **machineNFT** | `string` | Required | Address of the `MachineNFTs` contract. |
 | **metadata** | `IMachineMetadata` | Required | Machine details: `{ brand, model, serialNumber, uri, timestamp }`. |
+| **runSeed** | `number` | Required | Salt used for machineNFT issuance. |
 | **count** | `number` | Optional | Number of NFTs to mint. Defaults to `1`. |
 | **fees** | `{ feePerMint: bigint; machineValue: bigint; nativeDepositPerMint: bigint; }` | Optional | Fee overrides. Values are interpreted in 18-decimal units (via `parseEther`). |
 

@@ -38,7 +38,7 @@ npx hardhat deploy-mvp-test-setup --network agung
 While the framework is deploying, contract addresses will be logged to the console. Make sure to save the terminal output in a safe location as it will be needed to configure the SDK in the next step. The logs that has been used to link the contracts to this SDK has been saved under `log_example`.
 
 ## 4. Update ABIs and Contract Configs
-After you have deployed the framework, you will need to update the abis at `./src/abis/` directory in this rwa sdk codebase. You can do so by copying over the interface files that were generated in `peaq-rwa-evm` inside artifacts after compilation. Once that has been completed, you must updated the `./src/addresses/` with the new addresses that were logged during the deployment of the framework in step 3.
+After you have deployed the framework, you will need to update the abis at `./src/abis/` directory in this rwa sdk codebase. You can do so by copying over the interface files that were generated in `peaq-rwa-evm` inside artifacts after compilation. Once that has been completed, you must updated the `./src/addresses/` with the new addresses that were logged during the deployment of the framework in step 3. Make sure you also update your `.env` file to include the new Claim Issuer contract and Admin owner.
 
 
 ## 5. Add new functionality

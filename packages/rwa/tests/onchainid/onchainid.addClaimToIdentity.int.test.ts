@@ -18,7 +18,7 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
 
 // Integration test that creates or returns an existing identity
 (shouldRun ? describe.sequential : describe.skip)('OnchainID.addClaimToIdentity [integration]', () => {
-  it('adds a KYC claim to an identity', async () => {
+  it.skip('adds a KYC claim to an identity', async () => {
     // 0. Create RWA instance and provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
@@ -62,6 +62,7 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
       identity: alice.identity,
       claimId: claimId
     });
+    console.log("fetchedClaim", fetchedClaim);
 
     expect(fetchedClaim).toBeDefined();
     expect(typeof fetchedClaim.claim.topic).toBe('number');

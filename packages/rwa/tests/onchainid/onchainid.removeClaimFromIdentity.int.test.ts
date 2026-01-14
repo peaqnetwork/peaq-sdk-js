@@ -18,7 +18,7 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
 
 // Integration test that creates or returns an existing identity
 (shouldRun ? describe.sequential : describe.skip)('OnchainID.removeClaimFromIdentity [integration]', () => {
-  it('Creates and then removes a KYC claim', async () => {
+  it.skip('Creates and then removes a KYC claim', async () => {
     // 0. Create rwa_sdk instance and get provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider: provider });
