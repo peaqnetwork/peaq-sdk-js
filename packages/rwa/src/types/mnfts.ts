@@ -5,24 +5,14 @@ export type IssueMachineNFT = {
     machineIssuer: Signer;
     machineOwner: Signer;
     machineNFT: string;
-    // project: string
-    // metadataEndpoint: string;
-    // metadata: IMachineMetadata;
     runSeed: number;
     count?: number;
-    // fees?: Partial<{
-    //     feePerMint: bigint;
-    //     machineValue: bigint;
-    //     nativeDepositPerMint: bigint;
-    // }>;
 }
 
 // TODO improve return type
 export type IssueMachineNFTResult = {
     result: string;
 }
-
-
 export interface IMachineMetadata {
     brand: string;
     model: string;
@@ -30,3 +20,12 @@ export interface IMachineMetadata {
     uri: string;
     timestamp: string;
   }
+
+export type GetMachineDid = {
+    machineNFT: string;
+    tokenId: string;
+}
+
+export type GetMachineDidResult = {
+    didDocument: Object;
+}

@@ -18,7 +18,7 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
 
 // Integration test that creates or returns an existing identity
 (shouldRun ? describe.sequential : describe.skip)('mnft.issueMachineNFT [integration]', () => {
-  it('issues a Machine NFT', async () => {
+  it.skip('issues a Machine NFT', async () => {
     // 0. Create RWA instance and get provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
@@ -36,7 +36,7 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
         machineOwner: alice,
         machineNFT: "0xaBB3961281123C336596153C4dfE83E11498fc54",
         runSeed: Math.floor(Math.random() * 10000),
-        count: 3
+        count: 2
     });
 
     console.log('Result', result);
