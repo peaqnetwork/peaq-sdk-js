@@ -4,6 +4,8 @@ import { getAddresses } from './config/addresses';
 import { TREX } from './modules/trex';
 import { Vault } from './modules/vault';
 import { MachineNFT } from './modules/mnft';
+import { ContractNFT } from './modules/cnft';
+
 import { OnChainID } from './modules/onchainid';
 
 import type { Provider } from 'ethers';
@@ -25,6 +27,7 @@ export class RWA {
   readonly trex: TREX;
   readonly vault: Vault;
   readonly mnft: MachineNFT;
+  readonly cnft: ContractNFT;
   readonly onchainid: OnChainID;
 
   /**
@@ -41,6 +44,7 @@ export class RWA {
     this.trex = new TREX(this.addresses, this.provider);
     this.vault = new Vault(this.addresses, this.provider);
     this.mnft = new MachineNFT(this.addresses, this.provider);
+    this.cnft = new ContractNFT(this.addresses, this.provider);
     this.onchainid = new OnChainID(this.addresses, this.provider);
   }
 

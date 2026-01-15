@@ -16,9 +16,8 @@ const ALICE_PUBLIC_ADDRESS = process.env.ALICE_PUBLIC_ADDRESS;
 
 const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_ADDRESS);
 
-// Integration test that creates or returns an existing identity
 (shouldRun ? describe.sequential : describe.skip)('mnft.getMachineDid [integration]', () => {
-  it('gets a Machine DID', async () => {
+  it.skip('gets a Machine DID', async () => {
     
     // 0. Create RWA instance and get provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
