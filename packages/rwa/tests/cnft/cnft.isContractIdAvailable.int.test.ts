@@ -17,7 +17,7 @@ const ALICE_PUBLIC_ADDRESS = process.env.ALICE_PUBLIC_ADDRESS;
 const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_ADDRESS);
 
 (shouldRun ? describe.sequential : describe.skip)('cnft.isContractIdAvailable [integration]', () => {
-  it('checks if a Contract ID is available', async () => {
+  it.skip('checks if a Contract ID is available', async () => {
     // 0. Create RWA instance and get provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });

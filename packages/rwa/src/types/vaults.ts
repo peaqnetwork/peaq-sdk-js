@@ -1,5 +1,21 @@
 import type { Signer, TransactionReceipt } from "ethers";
 
+export type CreateVault = {
+    recipient: string;
+    tokenName: string;
+    tokenSymbol: string;
+    vaultFactory: string;
+    infoDesk: string;
+    trustedClaimIssuers: string[];
+    owner: Signer;
+    erc20Address: string;
+}   
+
+export type CreateVaultResult = {
+    vault: string;
+    token: string;
+    distributor: string;
+}
 
 export type CreateVaultAndToken = {
     admin: Signer;

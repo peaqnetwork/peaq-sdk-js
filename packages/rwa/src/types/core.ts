@@ -9,3 +9,11 @@ export type SDKInit = {
 }
 
 export type NetworkAddresses = typeof agung | typeof peaq;
+
+export enum IDImplementationType {
+  PeaqVault = 0,
+  MachineNft = 1,
+  ContractNft = 2,
+  RewardDistributor = 3,
+  NativeTransferFeeModule = 4
+}
