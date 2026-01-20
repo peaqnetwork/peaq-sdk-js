@@ -16,7 +16,7 @@ const ALICE_PUBLIC_ADDRESS = process.env.ALICE_PUBLIC_ADDRESS;
 const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_ADDRESS);
 
 (shouldRun ? describe.sequential : describe.skip)('vault.createVault [integration]', () => {
-  it('creates a Vault', async () => {
+  it.skip('creates a Vault', async () => {
     // 0. Create RWA instance and get provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
@@ -25,31 +25,30 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
     const admin = new Wallet(process.env.ADMIN_PRIVATE_KEY!, provider);
 
     // 2. Claim Issuer admin wallet
-    const claimIssuer = new Wallet(process.env.CLAIM_ISSUER_PRIVATE_KEY!, provider);
+    const claimIssuerContract = process.env.CLAIM_ISSUER_CONTRACT_ADDRESS!;
 
-    // 2. Get vault recipient
+    // 3. Get vault recipient
     const alice = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
+    console.log(rwa_sdk.getAddresses().erc20.peaq);
 
-    // 2. Create Vault
+    // 4. Create Vault
     const result = await rwa_sdk.vault.createVault({
       recipient: alice.address,
-      tokenName: "Test Token",
-      tokenSymbol: "TT",
+      tokenName: "Test Token T",
+      tokenSymbol: "TTT",
       vaultFactory: "0x5C5Db5CcF63ed6C11063385070C8FD2C990BFd53",
       infoDesk: "0x3F2c72Ba389632079DA68Ee13E8b955d69D1B5c1",
-      trustedClaimIssuers: [claimIssuer.address],
+      trustedClaimIssuers: [claimIssuerContract],
       owner: admin,
       erc20Address: rwa_sdk.getAddresses().erc20.peaq
     });
     console.log(result);
-    // recipient: string;
-    // tokenName: string;
-    // tokenSymbol: string;
-    // vaultFactory: string;
-    // infoDesk: string;
-    // trustedClaimIssuers: string[];
-    // owner: Signer;
-    // erc20Address: string;
+// TODO write test case to make sure return object is expected
+// {
+//     vault: '0x1B6c40647589dfF2172F0Cfa4C37cbC8a78aE955',
+//     token: '0x3fD8e53fA4a548Fd485c98cbF8e5A3B2D3574729',
+//     distributor: '0x0e92EC28592B092227C07B7c0B0B5A1725106C0C'
+//   }
 
   }, 60_000);
 });

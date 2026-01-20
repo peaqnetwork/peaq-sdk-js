@@ -71,6 +71,7 @@ export type MintSecurityTokensResult = {
 
 export type UnpauseToken = {
     admin: Signer;
+    vaultFactory: string;
     vault: string;
 }
 
@@ -100,4 +101,15 @@ export type BatchTransfer = {
 
 export type BatchTransferResult = {
     result: string;
+}
+
+export type PauseToken = {
+    admin: Signer;
+    vaultFactory: string;
+    vault: string;
+}
+
+export type PauseTokenResult = {
+    result: string;
+    receipt: TransactionReceipt;
 }
