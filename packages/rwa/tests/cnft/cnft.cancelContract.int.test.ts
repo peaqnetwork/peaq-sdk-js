@@ -8,17 +8,14 @@ import { RWA } from '../../src/rwa';
 import { Chain } from '../../src/enums/core';
 import { contractId as computeContractId } from '../../src/utils/nft';
 
-// This is a smoke test that requires env vars and a live endpoint.
-// It will be skipped automatically if env vars are missing.
-
 const HTTPS_BASE_URL = process.env.HTTPS_BASE_URL;
 const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY;
 const ALICE_PUBLIC_ADDRESS = process.env.ALICE_PUBLIC_ADDRESS;
 
 const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_ADDRESS);
 
-(shouldRun ? describe.sequential : describe.skip)('cnft.createContract [integration]', () => {
-  it.skip('creates a Contract NFT', async () => {
+(shouldRun ? describe.sequential : describe.skip)('cnft.cancelContract [integration]', () => {
+  it.skip('cancels a Contract NFT', async () => {
     // 0. Create RWA instance and get provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
@@ -113,36 +110,25 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
     expect(signResult.message).toContain(bob.address);
     expect(signResult.message).toContain('(2/3 signatures collected)');
 
-    // 7. Have Charlie sign the contract
-    const signResult2 = await rwa_sdk.cnft.signContract({
-      counterpartySigner: charlie,
+    // 7. Rather than having Charlie sign the contract, cancel it from the initiator (Alice)
+    const cancelResult = await rwa_sdk.cnft.cancelContract({
+      contractInitiator: alice,
       contractNft: contractNft,
       contractId: result.contractId
     });
-    expect(signResult2).toBeDefined();
-    expect(signResult2).toHaveProperty('message');
-    expect(typeof signResult2.message).toBe('string');
-    expect(signResult2.message).toContain(result.contractId);
-    expect(signResult2.message).toContain('completed');
-    expect(signResult2.message).toContain(charlie.address);
-    expect(signResult2.message).toContain('NFT minted');
+    expect(cancelResult).toBeDefined();
+    expect(cancelResult).toHaveProperty('message');
+    expect(typeof cancelResult.message).toBe('string');
+    expect(cancelResult.message).toContain(result.contractId);
+    expect(cancelResult.message).toContain('cancelled');
 
-    // 8. Get the contract
-    const contract = await rwa_sdk.cnft.getContract({
-      contractNft: contractNft,
-      contractId: result.contractId
-    });
-    expect(contract).toBeDefined();
-    expect(contract).toHaveProperty('contract');
-    const c: any = (contract as any).contract;
-    expect(Array.isArray(c)).toBe(true);
-    expect(c.length).toBe(4);
-    expect(c[0]).toBe(alice.address);
-    expect(Array.isArray(c[1])).toBe(true);
-    expect(c[1]).toContain(bob.address);
-    expect(c[1]).toContain(charlie.address);
-    expect(c[2]).toBe(BigInt(hashDigest));
-    expect(c[3]).toBe(url);
+    // 8. Try to get the draft of the contract (expected failure)
+    await expect(
+      rwa_sdk.cnft.getDraft({
+        contractNft: contractNft,
+        contractId: result.contractId,
+      })
+    ).rejects.toThrow(/Not found/i);
 
   }, 60_000);
 });

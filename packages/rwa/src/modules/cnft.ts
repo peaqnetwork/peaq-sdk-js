@@ -1,5 +1,7 @@
 import type { NetworkAddresses } from '../types/core';
-import type { CreateContract, CreateContractResult, GetDraft, GetDraftResult, GetContract, GetContractResult, SignContract, SignContractResult } from '../types/cnft';
+import type { CreateContract, 
+  CreateContractResult, 
+  GetDraft, GetDraftResult, GetContract, GetContractResult, SignContract, SignContractResult, CancelContract, CancelContractResult, SetBlocked, SetBlockedResult, IsBlocked, IsBlockedResult, IsContractIdAvailable, IsContractIdAvailableResult   } from '../types/cnft';
 
 import type { Signer, Provider } from 'ethers';
 import { getAddress, formatUnits } from 'ethers';
@@ -165,6 +167,60 @@ export class ContractNFT {
 
   /**
    * 
+   * Cancels a Contract NFT.
+   * 
+   * @param {CancelContract} opts - The options for cancelling a Contract NFT
+   * @returns {CancelContractResult} The result of cancelling a Contract NFT
+   */
+  public async cancelContract(opts: CancelContract): Promise<CancelContractResult> {
+    const { contractInitiator, contractNft, contractId } = parseOptions<CancelContract>(opts, {
+        contractInitiator: { required: true, validator: validators.signerWithProvider, expected: 'Signer' },
+        contractNft: { required: true, validator: validators.address, expected: 'EVM address string' },
+        contractId: { required: true, validator: validators.string, expected: 'string' },
+      }, 'cancelContract');
+    const cnft = this._cnft(contractInitiator, contractNft);
+
+    try {
+      await cnft.cancelContract.staticCall(contractId);
+    } catch (cause: any) {
+      console.log(cause);
+      throw new SDKError('SIMULATE/CANCEL_CONTRACT', 'ContractNFTs callStatic failed; cancellation would revert', { cause });
+    }
+
+    const cancelContractTx = await cnft.cancelContract.populateTransaction(contractId);
+    const result = await waitForTx(contractInitiator, cancelContractTx);
+
+    const iface = IContractNft__factory.createInterface();
+    const args = await getArgsFromTxEvent(result, 'ContractCancelled', iface);
+    const contractCancelledId = args[0].toString();
+
+    return { message: `Contract ${contractCancelledId} cancelled.` };
+  }
+
+  public async setBlocked(opts: SetBlocked): Promise<SetBlockedResult> {
+    const { contractNftOwner, contractNft, blocked } = parseOptions<SetBlocked>(opts, {
+      contractNftOwner: { required: true, validator: validators.signerWithProvider, expected: 'Signer' },
+      contractNft: { required: true, validator: validators.address, expected: 'EVM address string' },
+      blocked: { required: true, validator: validators.boolean, expected: 'boolean' },
+    }, 'setBlocked');
+
+    const cnft = this._cnft(contractNftOwner, contractNft);
+
+    try {
+      await cnft.setBlocked.staticCall(blocked);
+    } catch (cause: any) {
+      console.log(cause);
+      throw new SDKError('SIMULATE/SET_BLOCKED', 'ContractNFTs callStatic failed; setting blocked would revert', { cause });
+    }
+
+    const setBlockedTx = await cnft.setBlocked.populateTransaction(blocked);
+    await waitForTx(contractNftOwner, setBlockedTx);
+
+    return { message: `Contract set blocked to ${blocked}.` };
+  }
+
+  /**
+   * 
    * Gets a Draft of a Contract NFT.
    * 
    * @param {GetDraft} opts - The options for creating a Contract NFT draft
@@ -197,11 +253,37 @@ export class ContractNFT {
     return { contract };
   }
 
+  /**
+   * 
+   * Checks if a Contract NFT is blocked.
+   * 
+   * @param {IsBlocked} opts - The options for checking if a Contract NFT is blocked
+   * @returns {IsBlockedResult} The result of checking if a Contract NFT is blocked
+   */
+  public async isBlocked(opts: IsBlocked): Promise<IsBlockedResult> {
+    const { contractNft } = parseOptions<IsBlocked>(opts, {
+      contractNft: { required: true, validator: validators.address, expected: 'EVM address string' }
+    }, 'isBlocked');
+    const cnft = this._cnft(this.provider, contractNft);
+    const blocked = await cnft.isBlocked();
+    return { blocked };
+  }
 
-// TODO:
-// cancelContract()
-// setBlocked()
-// isBlocked()
-// isContractIdAvailable()
+  /**
+   * 
+   * Checks if a Contract ID is available.
+   * 
+   * @param {IsContractIdAvailable} opts - The options for checking if a Contract ID is available
+   * @returns {IsContractIdAvailableResult} The result of checking if a Contract ID is available
+   */
+  public async isContractIdAvailable(opts: IsContractIdAvailable): Promise<IsContractIdAvailableResult> {
+    const { contractNft, contractId } = parseOptions<IsContractIdAvailable>(opts, {
+      contractNft: { required: true, validator: validators.address, expected: 'EVM address string' },
+      contractId: { required: true, validator: validators.string, expected: 'string' },
+    }, 'isContractIdAvailable');
+    const cnft = this._cnft(this.provider, contractNft);
+    const available = await cnft.isContractIdAvailable(contractId);
+    return { available };
+  }
 
 }

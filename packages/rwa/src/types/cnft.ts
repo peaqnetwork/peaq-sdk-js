@@ -40,3 +40,40 @@ export type GetContract = {
 export type GetContractResult = {
     contract: Contract;
 }
+
+export type CancelContract = {
+    contractInitiator: Signer;
+    contractNft: string;
+    contractId: string;
+}
+
+export type CancelContractResult = {
+    message: string;
+}
+
+export type SetBlocked = {
+    contractNftOwner: Signer;
+    contractNft: string;
+    blocked: boolean;
+}
+
+export type SetBlockedResult = {
+    message: string;
+}
+
+export type IsBlocked = {
+    contractNft: string;
+}
+
+export type IsBlockedResult = {
+    blocked: boolean;
+}
+
+export type IsContractIdAvailable = {
+    contractNft: string;
+    contractId: string;
+}
+
+export type IsContractIdAvailableResult = {
+    available: boolean;
+}
