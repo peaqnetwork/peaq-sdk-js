@@ -21,6 +21,10 @@ import type {
   TransferResult,
   DepositYield,
   DepositYieldResult,
+  ClaimYield,
+  ClaimYieldResult,
+  ClaimYieldTo,
+  ClaimYieldToResult,
  } from '../types/vaults';
 
 import type { Provider, Signer } from 'ethers';
@@ -45,6 +49,7 @@ import {
   IToken__factory,
   IRewardDistributor__factory
 } from '../typechain';
+import type { Claim } from '../types/claims';
 
 /**
  * Vaults module provides functionality for creating, registering, and managing MachineVaults and their associated tokens.
@@ -442,6 +447,61 @@ export class Vault {
       await waitForTx(sender, depositYieldTx);
 
       return {result: "Yield deposited for vault " + vault + " with amount " + amount};
+    }
+
+  /**
+   * Claims yield from a given vault.
+   * 
+   * @type {ClaimYield} - The parameter type options for claiming yield from a vault
+   * @returns {ClaimYieldResult} The result of claiming yield from a vault
+   */
+    public async claimYield(opts: ClaimYield): Promise<ClaimYieldResult> {
+      const { sender, vault } = parseOptions<ClaimYield>(opts, {
+        sender: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+        vault: { required: true, validator: validators.address, expected: 'EVM address string' },
+      }, 'claimYield');
+
+      const rewardDistributorAddr = await this._getRewardDistributor(vault);
+      const rewardDistributor = this._rewardDistributor(sender, rewardDistributorAddr);
+
+      try {
+        await rewardDistributor.claim.staticCall();
+      } catch (cause: any) { 
+        console.log(cause)
+        throw new SDKError('SIMULATE/CLAIM_YIELD', 'RewardDistributor callStatic failed; claim yield would revert', { cause });
+      }
+      const depositYieldTx = await rewardDistributor.claim.populateTransaction();
+      await waitForTx(sender, depositYieldTx);
+
+      return {result: "Yield claimed for vault " + vault};
+    }
+
+  /**
+   * Claims yield to a given address.
+   * 
+   * @type {ClaimYieldTo} - The parameter type options for claiming yield from a vault
+   * @returns {ClaimYieldToResult} The result of claiming yield from a vault
+   */
+    public async claimYieldTo(opts: ClaimYieldTo): Promise<ClaimYieldToResult> {
+      const { sender, vault, to } = parseOptions<ClaimYieldTo>(opts, {
+        sender: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+        vault: { required: true, validator: validators.address, expected: 'EVM address string' },
+        to: { required: true, validator: validators.address, expected: 'EVM address string' },
+      }, 'claimYieldTo');
+
+      const rewardDistributorAddr = await this._getRewardDistributor(vault);
+      const rewardDistributor = this._rewardDistributor(sender, rewardDistributorAddr);
+
+      try {
+        await rewardDistributor.claimTo.staticCall(to);
+      } catch (cause: any) { 
+        console.log(cause)
+        throw new SDKError('SIMULATE/CLAIM_YIELD_TO', 'RewardDistributor callStatic failed; claim yield would revert', { cause });
+      }
+      const depositYieldTx = await rewardDistributor.claimTo.populateTransaction(to);
+      await waitForTx(sender, depositYieldTx);
+
+      return  {result: "Yield claimed for vault " + vault};
     }
 
 

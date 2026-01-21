@@ -15,8 +15,8 @@ const ALICE_PUBLIC_ADDRESS = process.env.ALICE_PUBLIC_ADDRESS;
 
 const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_ADDRESS);
 
-(shouldRun ? describe.sequential : describe.skip)('vault.depositYield [integration]', () => {    
-  it.skip('deposits yield to a vault', async () => {
+(shouldRun ? describe.sequential : describe.skip)('vault.claimYieldTo [integration]', () => {    
+  it('claims yield to a given address', async () => {
     // 0. Create RWA instance and get provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
@@ -24,25 +24,23 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
     // 1. Get alice wallet
     const alice = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
 
-    // 2. Get known vault address
+    // 2. Get bob wallet
+    const bob = new Wallet(process.env.BOB_PRIVATE_KEY!, provider);
+
+    // 3. Get known vault address
     const vault = "0x1B6c40647589dfF2172F0Cfa4C37cbC8a78aE955";
 
-    // 3. Deposit Yield
-    const result = await rwa_sdk.vault.depositYield({
-      sender: alice,
-      vault: vault,
-      assetErc20: "0x0000000000000000000000000000000000000809",
-      decimals: 18,
-      amount: 1
+    // 3. Claim Yield
+    const result = await rwa_sdk.vault.claimYieldTo({
+        sender: alice,
+        vault: vault,
+        to: bob.address
     });
     console.log(result);
     expect(result).toBeDefined();
     expect(result).toHaveProperty('result');
     expect(typeof result.result).toBe('string');
-    expect(result.result).toContain('Yield deposited for vault');
+    expect(result.result).toContain('Yield claimed for vault');
     expect(result.result).toContain(vault);
-    expect(result.result).toContain('with amount');
-    expect(result.result).toContain(1);
-
   }, 60_000);
 });

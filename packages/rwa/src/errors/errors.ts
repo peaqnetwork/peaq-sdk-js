@@ -27,6 +27,8 @@ export type SDKErrorCode =
   | 'SIMULATE/TRANSFER_TOKENS'
   | 'SIMULATE/BATCH_TRANSFER'
   | 'SIMULATE/DEPOSIT_YIELD'
+  | 'SIMULATE/CLAIM_YIELD'
+  | 'SIMULATE/CLAIM_YIELD_TO'
 
 // 2) Public shape (safe to serialize)
 export interface SDKErrorShape {

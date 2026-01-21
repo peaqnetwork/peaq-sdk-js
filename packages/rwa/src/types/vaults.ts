@@ -170,3 +170,22 @@ export type DepositYield = {
 export type DepositYieldResult = {
     result: string;
 }
+
+export type ClaimYield = {
+    sender: Signer;
+    vault: string;
+}
+
+export type ClaimYieldResult = {
+    result: string;
+}
+
+export type ClaimYieldTo = {
+    sender: Signer;
+    vault: string;
+    to: string;
+}
+
+export type ClaimYieldToResult = {
+    result: string;
+}
