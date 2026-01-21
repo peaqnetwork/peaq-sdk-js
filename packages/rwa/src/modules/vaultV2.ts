@@ -19,6 +19,8 @@ import type {
   EnsureTransferFeeAllowanceResult,
   Transfer,
   TransferResult,
+  DepositYield,
+  DepositYieldResult,
  } from '../types/vaults';
 
 import type { Provider, Signer } from 'ethers';
@@ -40,7 +42,8 @@ import {
   NativeTransferFeeModule__factory,
   ModuleProxy__factory,
   IERC20__factory,
-  IToken__factory
+  IToken__factory,
+  IRewardDistributor__factory
 } from '../typechain';
 
 /**
@@ -89,6 +92,10 @@ export class Vault {
 
   private _token(runner: Signer | Provider, address: string) {
     return IToken__factory.connect(getAddress(address), runner);
+  }
+
+  private _rewardDistributor(runner: Signer | Provider, address: string) {
+    return IRewardDistributor__factory.connect(address, runner);
   }
 
 //   private _mnfts(runner: Signer | Provider, address: string) {
@@ -358,7 +365,7 @@ export class Vault {
     return {result: "Transfer fee allowance set for token " + token + " in vault " + vault};
   }
 
-    /**
+  /**
    * Transfers tokens from one address to another.
    * 
    * @type {Transfer} - The parameter type options for transferring tokens
@@ -393,6 +400,51 @@ export class Vault {
     }
 
 
+  /**
+   * Deposits yield to a given vault.
+   * 
+   * @type {DepositYield} - The parameter type options for depositing yield to a vault
+   * @returns {DepositYieldResult} The result of depositing yield to a vault
+   */
+    public async depositYield(opts: DepositYield): Promise<DepositYieldResult> {
+      const { sender, vault, assetErc20, decimals, amount } = parseOptions<DepositYield>(opts, {
+        sender: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+        vault: { required: true, validator: validators.address, expected: 'EVM address string' },
+        assetErc20: { required: true, validator: validators.address, expected: 'EVM address string' },
+        decimals: { required: true, validator: validators.number, expected: 'number' },
+        amount: { required: true, validator: validators.number, expected: 'number' },
+      }, 'depositYield');
+
+      const rewardDistributorAddr = await this._getRewardDistributor(vault);
+      const rewardDistributor = this._rewardDistributor(sender, rewardDistributorAddr);
+
+      const erc20Contract = this._erc20(sender, assetErc20);
+      const scaledAmount = parseUnits(amount.toString(), decimals);
+
+
+      // TODO maybe split up again...
+      try {
+        await erc20Contract.approve.staticCall(rewardDistributorAddr, scaledAmount);
+      } catch (cause: any) {
+        console.log(cause)
+        throw new SDKError('SIMULATE/APPROVE_ERC20', 'ERC20 callStatic failed; approval would revert', { cause });
+      }
+      const approveTx = await erc20Contract.approve.populateTransaction(rewardDistributorAddr, scaledAmount);
+      await waitForTx(sender, approveTx);
+
+      try {
+        await rewardDistributor.depositYield.staticCall(scaledAmount);
+      } catch (cause: any) { 
+        console.log(cause)
+        throw new SDKError('SIMULATE/DEPOSIT_YIELD', 'RewardDistributor callStatic failed; deposit yield would revert', { cause });
+      }
+      const depositYieldTx = await rewardDistributor.depositYield.populateTransaction(scaledAmount);
+      await waitForTx(sender, depositYieldTx);
+
+      return {result: "Yield deposited for vault " + vault + " with amount " + amount};
+    }
+
+
   private async _deployVaultComplianceModule(infoDesk: string, owner: Signer) {
     let complianceModuleAddrs: string[] = [];
 
@@ -420,5 +472,11 @@ export class Vault {
     const address = await proxy.getAddress();   
     console.log('Module Proxy address: ', address);
     return address;
+  }
+
+  private async _getRewardDistributor(vault: string) {
+    const peaqVault = this._peaqVault(this.provider, vault);
+    const rewardDistributor = await peaqVault.rewardDistributor();
+    return rewardDistributor;
   }
 }

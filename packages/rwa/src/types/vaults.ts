@@ -158,3 +158,15 @@ export type EnsureTransferFeeAllowance = {
 export type EnsureTransferFeeAllowanceResult = {
     result: string;
 }
+
+export type DepositYield = {
+    sender: Signer;
+    vault: string;
+    assetErc20: string;
+    decimals: number;
+    amount: string | number;
+}
+
+export type DepositYieldResult = {
+    result: string;
+}
