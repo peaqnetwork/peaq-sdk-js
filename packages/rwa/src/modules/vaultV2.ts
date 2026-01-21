@@ -15,6 +15,10 @@ import type {
   CnftApprovalForAllResult,
   DepositAndMint,
   DepositAndMintResult,
+  EnsureTransferFeeAllowance,
+  EnsureTransferFeeAllowanceResult,
+  Transfer,
+  TransferResult,
  } from '../types/vaults';
 
 import type { Provider, Signer } from 'ethers';
@@ -34,7 +38,9 @@ import {
   IMachineNft__factory,
   IContractNft__factory,
   NativeTransferFeeModule__factory,
-  ModuleProxy__factory
+  ModuleProxy__factory,
+  IERC20__factory,
+  IToken__factory
 } from '../typechain';
 
 /**
@@ -75,9 +81,15 @@ export class Vault {
   private _cnft(runner: Signer | Provider, address: string) {
     return IContractNft__factory.connect(address, runner);
   }
-//   private _token(runner: Signer | Provider, address: string) {
-//     return IToken__factory.connect(getAddress(address), runner);
-//   }
+
+  private _erc20(runner: Signer | Provider, address: string) {
+    const addr = getAddress(address);
+    return IERC20__factory.connect(addr, runner);
+  }
+
+  private _token(runner: Signer | Provider, address: string) {
+    return IToken__factory.connect(getAddress(address), runner);
+  }
 
 //   private _mnfts(runner: Signer | Provider, address: string) {
 //     const addr = getAddress(address);
@@ -301,9 +313,84 @@ export class Vault {
     }
     const depositAndMintTx = await peaqVault.depositAndMint.populateTransaction(rwaNfts, tokenIdsBigInt, amount);  
     const result = await waitForTx(owner, depositAndMintTx);
-    
+
     return {result: `Deposited and minted tokens for vault ${vault}.`}; 
   }
+
+
+  /**
+   * Ensures a transfer fee allowance is set for a given token.
+   * 
+   * @type {EnsureTransferFeeAllowance} - The parameter type options for ensuring a transfer fee allowance is set
+   * @returns {EnsureTransferFeeAllowanceResult} The result of ensuring a transfer fee allowance is set
+   */
+  public async ensureTransferFeeAllowance(opts: EnsureTransferFeeAllowance): Promise<EnsureTransferFeeAllowanceResult> {
+    const { sender, vault, erc20, token, amount } = parseOptions<EnsureTransferFeeAllowance>(opts, {
+      sender: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      vault: { required: true, validator: validators.address, expected: 'EVM address string' },
+      erc20: { required: true, validator: validators.address, expected: 'EVM address string' },
+      token: { required: true, validator: validators.address, expected: 'EVM address string' },
+      amount: { required: true, validator: validators.number, expected: 'number' },
+    }, 'ensureTransferFeeAllowance');
+
+    const tokenContract = this._token(this.provider, token);
+    const tokenDecimals = Number(await tokenContract.decimals());
+    const scaledAmount = parseUnits(amount.toString(), tokenDecimals);
+
+    const peaqVault = this._peaqVault(this.provider, vault);
+
+    const [fee, account] = await peaqVault.transactionFeeAndAccount(scaledAmount);
+    console.log('fee', fee);
+    console.log('account', account);
+
+    const erc20Contract = this._erc20(sender, erc20); // TODO: DO NOT HARDCODE THE PEAQ TOKEN ADDRESS
+
+    // preflight check
+    try {
+      await erc20Contract.approve.staticCall(account, fee * 2n);
+    } catch (cause: any) {
+      console.log(cause)
+      throw new SDKError('SIMULATE/APPROVE_ERC20', 'ERC20 callStatic failed; approval would revert', { cause });
+    }
+    const approveTx = await erc20Contract.approve.populateTransaction(account, fee * 2n);
+    await waitForTx(sender, approveTx);
+
+    return {result: "Transfer fee allowance set for token " + token + " in vault " + vault};
+  }
+
+    /**
+   * Transfers tokens from one address to another.
+   * 
+   * @type {Transfer} - The parameter type options for transferring tokens
+   * @returns {TransferResult} The result of transferring tokens
+   */
+    public async transfer(opts: Transfer): Promise<TransferResult> {
+      // validate and parse parameter type options for improved error messages for user
+      const { token, sender, recipientAddr, amount } = parseOptions<Transfer>(opts, {
+        token: { required: true, validator: validators.address, expected: 'EVM address string' },
+        sender: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+        recipientAddr: { required: true, validator: validators.address, expected: 'EVM address string' },
+        amount: { required: true, validator: validators.number, expected: 'number' },
+      }, 'transfer');
+
+      const tokenContract = this._token(sender, token);
+  
+      // Scale amount according to token decimals. If decimals not provided, fetch from token.
+      const tokenDecimals = Number(await tokenContract.decimals());
+      const scaledAmount = parseUnits(amount.toString(), tokenDecimals);
+      // preflight check
+      try {
+        await tokenContract.transfer.staticCall(recipientAddr, scaledAmount);
+      } catch (cause: any) {
+        console.log(cause)
+        throw new SDKError('SIMULATE/TRANSFER_TOKENS', 'Token callStatic failed; transfer would revert', { cause });
+      }
+      // if it doesn't revert, send the transaction
+      const tx2 = await tokenContract.transfer.populateTransaction(recipientAddr, scaledAmount);
+      const result = await waitForTx(sender, tx2);
+  
+      return {result: "Transferred " + amount + " tokens (scaled by " + tokenDecimals + " decimals) from one address to another"};
+    }
 
 
   private async _deployVaultComplianceModule(infoDesk: string, owner: Signer) {

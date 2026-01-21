@@ -146,3 +146,15 @@ export type DepositAndMint = {
 export type DepositAndMintResult = {
     result: string;
 }
+
+export type EnsureTransferFeeAllowance = {
+    sender: Signer;
+    vault: string
+    erc20: string;
+    token: string;
+    amount: string | number;
+}
+
+export type EnsureTransferFeeAllowanceResult = {
+    result: string;
+}

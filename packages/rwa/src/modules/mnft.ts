@@ -71,7 +71,7 @@ export class MachineNFT {
 
     // 2) Approve ERC20
     const ownerAddr = await machineOwner.getAddress();
-    const erc20 = this._erc20(machineOwner, this.addresses.erc20.peaq);
+    const erc20 = this._erc20(machineOwner, this.addresses.erc20.peaq); // TODO: DO NOT HARDCODE THE PEAQ TOKEN ADDRESS
     const startingBalance = await erc20.balanceOf(ownerAddr);
     const allowance = await erc20.allowance(ownerAddr, account);
     if (allowance < fee * BigInt(count)) {
