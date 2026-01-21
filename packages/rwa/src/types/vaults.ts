@@ -35,7 +35,7 @@ export type CreateVaultAndTokenResult = {
 
 export type RegisterIdentity = {
     admin: Signer;
-    token: string;
+    vault: string;
     eoa: string;
     identity: string;
     country: string;
@@ -43,7 +43,6 @@ export type RegisterIdentity = {
 
 export type RegisterIdentityResult = {
     result: string;
-    receipt: TransactionReceipt;
 }
 
 export type ApproveVaultAsOperator = {
@@ -112,4 +111,38 @@ export type PauseToken = {
 export type PauseTokenResult = {
     result: string;
     receipt: TransactionReceipt;
+}
+
+export type MnftApprovalForAll = {
+    owner: Signer;
+    mnft: string;
+    vault: string;
+    approved: boolean;
+}
+
+export type MnftApprovalForAllResult = {
+    result: string;
+}
+
+export type CnftApprovalForAll = {
+    owner: Signer;
+    cnft: string;
+    vault: string;
+    approved: boolean;
+}
+
+export type CnftApprovalForAllResult = {
+    result: string;
+}
+
+export type DepositAndMint = {
+    owner: Signer;
+    vault: string;
+    rwaNfts: string[];
+    tokenIds: string[];
+    amount: number;
+}
+
+export type DepositAndMintResult = {
+    result: string;
 }

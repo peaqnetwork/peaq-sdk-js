@@ -7,6 +7,14 @@ import type {
   UnpauseTokenResult,
   PauseToken,
   PauseTokenResult,
+  RegisterIdentity,
+  RegisterIdentityResult,
+  MnftApprovalForAll,
+  MnftApprovalForAllResult,
+  CnftApprovalForAll,
+  CnftApprovalForAllResult,
+  DepositAndMint,
+  DepositAndMintResult,
  } from '../types/vaults';
 
 import type { Provider, Signer } from 'ethers';
@@ -19,8 +27,12 @@ import { getArgsFromTxEvent, parseOptions, validators } from '../utils/helpers';
 import { SDKError } from '../errors/errors';
 
 import {
+  IPeaqVault__factory,
   IPeaqVaultFactory__factory,
+  IIdentityRegistry__factory,
   IInfoDesk__factory,
+  IMachineNft__factory,
+  IContractNft__factory,
   NativeTransferFeeModule__factory,
   ModuleProxy__factory
 } from '../typechain';
@@ -48,10 +60,21 @@ export class Vault {
     return IInfoDesk__factory.connect(addr, runner);
   }
 
-//   private _identityRegistry(runner: Signer | Provider, address: string) {
-//     return IIdentityRegistry__factory.connect(getAddress(address), runner);
-//   }
+  private _peaqVault(runner: Signer | Provider, address: string) {
+    return IPeaqVault__factory.connect(address, runner);
+  }
 
+  private _vaultIdentityRegistry(runner: Signer | Provider, address: string) {
+    return IIdentityRegistry__factory.connect(address, runner);
+  }
+
+  private _mnft(runner: Signer | Provider, address: string) {
+    return IMachineNft__factory.connect(address, runner);
+  }
+
+  private _cnft(runner: Signer | Provider, address: string) {
+    return IContractNft__factory.connect(address, runner);
+  }
 //   private _token(runner: Signer | Provider, address: string) {
 //     return IToken__factory.connect(getAddress(address), runner);
 //   }
@@ -160,6 +183,126 @@ export class Vault {
     const result = await waitForTx(admin, tx);
 
     return {result: "Paused token for vault: " + vault, receipt: result};
+  }
+
+  /**
+   * Registers an identity for a given token.
+   * 
+   * @type {RegisterIdentity} - The parameter type options for registering an identity
+   * @returns {RegisterIdentityResult} The result of registering an identity
+   */
+  public async registerIdentity(opts: RegisterIdentity): Promise<RegisterIdentityResult> {
+    const { admin, vault, eoa, identity, country } = parseOptions<RegisterIdentity>(opts, {
+      admin: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      vault: { required: true, validator: validators.address, expected: 'EVM address string' },
+      eoa: { required: true, validator: validators.address, expected: 'EVM address string' },
+      identity: { required: true, validator: validators.address, expected: 'EVM address string' },
+      country: { required: true, validator: validators.string, expected: 'string' },
+    }, 'registerIdentity');
+
+    const peaqVault = this._peaqVault(this.provider, vault);
+    const irAddr = await peaqVault.identityRegistry();
+    const identityRegistry = this._vaultIdentityRegistry(admin, irAddr);
+
+    try {
+      await identityRegistry.registerIdentity.staticCall(eoa, identity, country);
+    } catch (cause: any) {
+        console.log(cause) // TODO: Improve error handling in the SDKError class; for now just log the cause
+      throw new SDKError('SIMULATE/REGISTER_IDENTITY', 'IdentityRegistry callStatic failed; registration would revert', { cause });
+    }
+    // if it doesn't revert, send the transaction
+    const tx = await identityRegistry.registerIdentity.populateTransaction(eoa, identity, country);
+    const result = await waitForTx(admin, tx);
+    return {result: `Registered eoa ${eoa} with identity ${identity} in vault ${vault}.`};
+    
+  }
+
+  /**
+   * Approves a vault as an operator for a given machine NFT.
+   * 
+   * @type {MnftApprovalForAll} - The parameter type options for approving a vault as an operator for a machine NFT
+   * @returns {MnftApprovalForAllResult} The result of approving a vault as an operator for a machine NFT
+   */
+  public async mnftApprovalForAll(opts: MnftApprovalForAll): Promise<MnftApprovalForAllResult> {
+    const { owner, mnft, vault, approved } = parseOptions<MnftApprovalForAll>(opts, {
+      owner: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      mnft: { required: true, validator: validators.address, expected: 'EVM address string' },
+      vault: { required: true, validator: validators.address, expected: 'EVM address string' },
+      approved: { required: true, validator: validators.boolean, expected: 'boolean' },
+    }, 'mnftApprovalForAll');
+    
+    const mnftContract = this._mnft(owner, mnft);
+
+    try {
+      await mnftContract.setApprovalForAll.staticCall(vault, approved);
+    } catch (cause: any) {
+        console.log(cause)
+      throw new SDKError('SIMULATE/MNFT_APPROVAL_FOR_ALL', 'MachineNFT callStatic failed; approval would revert', { cause });
+    }
+    const approvalTx = await mnftContract.setApprovalForAll.populateTransaction(vault, approved);
+    const result = await waitForTx(owner, approvalTx);
+
+    return {result: `Set approval of vault ${vault} as operator for MNFT ${mnft} to ${approved}.`};
+  }
+
+    /**
+   * Approves a vault as an operator for a given contract NFT.
+   * 
+   * @type {CnftApprovalForAll} - The parameter type options for approving a vault as an operator for a contract NFT
+   * @returns {CnftApprovalForAllResult} The result of approving a vault as an operator for a contract NFT
+   */
+    public async cnftApprovalForAll(opts: CnftApprovalForAll): Promise<CnftApprovalForAllResult> {
+      const { owner, cnft, vault, approved } = parseOptions<CnftApprovalForAll>(opts, {
+        owner: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+        cnft: { required: true, validator: validators.address, expected: 'EVM address string' },
+        vault: { required: true, validator: validators.address, expected: 'EVM address string' },
+        approved: { required: true, validator: validators.boolean, expected: 'boolean' },
+      }, 'cnftApprovalForAll');
+      
+      const cnftContract = this._cnft(owner, cnft);
+  
+      try {
+        await cnftContract.setApprovalForAll.staticCall(vault, approved);
+      } catch (cause: any) {
+          console.log(cause)
+        throw new SDKError('SIMULATE/CNFT_APPROVAL_FOR_ALL', 'ContractNFT callStatic failed; approval would revert', { cause });
+      }
+      const approvalTx = await cnftContract.setApprovalForAll.populateTransaction(vault, approved);
+      const result = await waitForTx(owner, approvalTx);
+  
+      return {result: `Set approval of vault ${vault} as operator for CNFT ${cnft} to ${approved}.`};
+    }
+
+  /**
+   * Deposits and mints tokens for a given vault.
+   * 
+   * @type {DepositAndMint} - The parameter type options for depositing and minting tokens
+   * @returns {DepositAndMintResult} The result of depositing and minting tokens
+   */
+  public async depositAndMint(opts: DepositAndMint): Promise<DepositAndMintResult> {
+    const { owner, vault, rwaNfts, tokenIds, amount } = parseOptions<DepositAndMint>(opts, {
+      owner: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      vault: { required: true, validator: validators.address, expected: 'EVM address string' },
+      rwaNfts: { required: true, validator: validators.arrayOf(validators.address), expected: 'array of EVM address strings' },
+      tokenIds: { required: true, validator: validators.arrayOf(validators.string), expected: 'array of numbers' },
+      amount: { required: true, validator: validators.number, expected: 'number' },
+    }, 'depositAndMint');
+
+    // Normalize tokenIds to bigint
+    const tokenIdsBigInt = tokenIds.map((id) => BigInt(id));
+
+    const peaqVault = this._peaqVault(owner, vault);
+
+    try {
+      await peaqVault.depositAndMint.staticCall(rwaNfts, tokenIdsBigInt, amount);
+    } catch (cause: any) {
+        console.log(cause)
+      throw new SDKError('SIMULATE/DEPOSIT_AND_MINT', 'PeaqVault callStatic failed; deposit and mint would revert', { cause });
+    }
+    const depositAndMintTx = await peaqVault.depositAndMint.populateTransaction(rwaNfts, tokenIdsBigInt, amount);  
+    const result = await waitForTx(owner, depositAndMintTx);
+    
+    return {result: `Deposited and minted tokens for vault ${vault}.`}; 
   }
 
 
