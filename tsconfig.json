@@ -3,6 +3,6 @@
     "references": [
         { "path": "packages/sdk" },
         { "path": "packages/msf" },
-        // { "path": "packages/rwa" }
+        { "path": "packages/rwa" }
     ]
 }

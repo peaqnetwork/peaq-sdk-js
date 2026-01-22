@@ -1,0 +1,34 @@
+{
+  "chainId": 9990,
+  "network": "agung",
+  "onchainid": {
+    "identity": "0xB419cB213c2E2e7a15589716aafA63b4A868Bb90",
+    "implementationAuthority": "0xE300158F7b62A725381Fb9De688533bc947F2C8A",
+    "idFactory": "0x52b6F7aaDd6AD0A20A58430e930bB583803771F9",
+    "kycVerifier": "0x1EA90F2c107dC0a0A693EA6bCd25a7f474B2eef9",
+    "mnftIssuerVerifier": "0xE0e40118bc6AAe38fA49CB16706D5CE8aE20Fa19",
+    "mnftRegulatorVerifier": "0x43D6C52E04e7c617A3a367692aEBc44F04E40434"
+  },
+  "trex": {
+    "trexImplementationAuthority": "0x5fE7f2698dC5E7d83444a7F227c09C370F23667C",
+    "iaFactory": "0x82ea877a121a98Cc36B20FA65332B713BDAdf0F5",
+    "trexFactory": "0xC54AEB4e1A77CAB2560ABC6205Fc26f8A62d6a99",
+    "trexGateway": "0x79864E1d4A017fbBE36175786b3b2320b9cFd82d",
+    "modularComplianceProxy": "0x72A1956e54c356aA057Fe9e496C87E9d6f880c68",
+    "identityRegistryProxy": "0x0783481e9BD8bAD66FEF836432977b15F8B80e74",
+    "identityRegistryStorageProxy": "0x3b0A491F68644046d4Ec322Bc35a4d0b8371A4d2",
+    "trustedIssuersRegistryProxy": "0xE0EEC7f7d1F5f176ff9307834f80d6EB542b0c1f",
+    "claimTopicsRegistryProxy": "0xFDA06a2A6d0411B098477b746f33eC4952c3c0aB"
+  },
+  "mnft": {
+    "peaqMachineNft": "0x33770F51cDa63ad988731077bD34d03aba9bE685",
+    "proxyAdmin": "0x7B4152A3685Bd92d77898371be42C10997Fe709A"
+  },
+  "vault": {
+    "factory": "0x0558883Fd2Df4FF046907D1174DDfcb0c861E0a0",
+    "proxyAdmin": "0x7B4152A3685Bd92d77898371be42C10997Fe709A"
+  },
+  "erc20": {
+    "peaq": "0x0000000000000000000000000000000000000809"
+  }
+}

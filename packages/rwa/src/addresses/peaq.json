@@ -1,0 +1,34 @@
+{
+  "chainId": 3338,
+  "network": "peaq",
+  "onchainid": {
+    "identity": "",
+    "implementationAuthority": "",
+    "idFactory": "",
+    "kycVerifier": "",
+    "mnftIssuerVerifier": "",
+    "mnftRegulatorVerifier": ""
+  },
+  "trex": {
+    "trexImplementationAuthority": "",
+    "iaFactory": "",
+    "trexFactory": "",
+    "trexGateway": "",
+    "modularComplianceProxy": "",
+    "identityRegistryProxy": "",
+    "identityRegistryStorageProxy": "",
+    "trustedIssuersRegistryProxy": "",
+    "claimTopicsRegistryProxy": ""
+  },
+  "mnft": {
+    "peaqMachineNft": "",
+    "proxyAdmin": ""
+  },
+  "vault": {
+    "factory": "",
+    "proxyAdmin": ""
+  },
+  "erc20": {
+    "peaq": "0x0000000000000000000000000000000000000809"
+  }
+}

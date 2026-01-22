@@ -608,13 +608,13 @@ export abstract class Base {
                     throw new Error("Could not fetch finalized head");
                 }
 
-                const customReceipt = await txResponse.wait(targetConfirmations);
-                if (!customReceipt) {
+                const targetReceipt = await txResponse.wait(targetConfirmations);
+                if (!targetReceipt) {
                     throw new Error('Could not get receipt after waiting for confirmations');
                 }
                 
-                // Validate the receipt is still canonical to guard against chain reorgs
-                const canonicalReceipt = await provider.getTransactionReceipt(txResponse.hash);
+                // Validate the receipt is still canonical to guard against chain reorgs (use customReceipt.hash instead of txResponse.hash)
+                const canonicalReceipt = await provider.getTransactionReceipt(targetReceipt.hash);
                 if (!canonicalReceipt) {
                     throw new Error('Could not fetch canonical transaction receipt');
                 }
