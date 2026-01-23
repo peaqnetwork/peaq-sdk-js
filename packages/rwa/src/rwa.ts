@@ -2,8 +2,7 @@ import type { SDKInit, NetworkAddresses } from './types/core';
 import { getAddresses } from './config/addresses';
 
 import { TREX } from './modules/trex';
-// import { Vault } from './modules/vault';
-import { Vault } from './modules/vaultV2';
+import { Vault } from './modules/vault';
 
 import { MachineNFT } from './modules/mnft';
 import { ContractNFT } from './modules/cnft';

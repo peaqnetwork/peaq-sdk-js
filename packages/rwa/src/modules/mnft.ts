@@ -1,5 +1,5 @@
 import type { NetworkAddresses } from '../types/core';
-import type { IMachineMetadata, IssueMachineNFT, IssueMachineNFTResult, GetMachineDid, GetMachineDidResult } from '../types/mnfts';
+import type { IMachineMetadata, IssueMachineNFT, IssueMachineNFTResult, GetMachineDid, GetMachineDidResult } from '../types/mnft';
 
 // utils
 import { Fees } from "../config/fees";
