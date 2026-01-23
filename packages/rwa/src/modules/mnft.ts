@@ -10,8 +10,6 @@ import { setupDidDocument,  } from '../utils/did/functions';
 import { deserializeDidFromNft, machineId, serializeDidForNft } from '../utils/nft';
 import { SDKError } from '../errors/errors';
 
-import { Sdk } from '@peaq-network/sdk';
-
 import type { Signer, Provider } from 'ethers';
 import { getAddress, parseUnits, formatUnits } from 'ethers';
 import { IMachineNft__factory, IERC20__factory } from '../typechain';
