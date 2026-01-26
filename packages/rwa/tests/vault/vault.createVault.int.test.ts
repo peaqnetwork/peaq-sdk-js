@@ -2,20 +2,12 @@
 
 import 'dotenv/config';
 import { describe, it, expect } from 'vitest';
-import { JsonRpcProvider, Wallet, AbiCoder, keccak256, toUtf8Bytes } from 'ethers';
+import { JsonRpcProvider, Wallet } from 'ethers';
 
 import { RWA } from '../../src/rwa';
 import { Chain } from '../../src/enums/core';
-import { contractId as computeContractId } from '../../src/utils/nft';
 
-
-const HTTPS_BASE_URL = process.env.HTTPS_BASE_URL;
-const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY;
-const ALICE_PUBLIC_ADDRESS = process.env.ALICE_PUBLIC_ADDRESS;
-
-const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_ADDRESS);
-
-(shouldRun ? describe.sequential : describe.skip)('vault.createVault [integration]', () => {
+describe.sequential('vault.createVault [integration]', () => {
   it.skip('creates a Vault', async () => {
     // 0. Create RWA instance and get provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
@@ -29,26 +21,34 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
 
     // 3. Get vault recipient
     const alice = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
-    console.log(rwa_sdk.getAddresses().erc20.peaq);
 
     // 4. Create Vault
     const result = await rwa_sdk.vault.createVault({
-      recipient: alice.address,
-      tokenName: "Test Token T",
-      tokenSymbol: "TTT",
+      vaultDeployer: admin,
+      vaultController: alice.address,
       vaultFactory: "0x5C5Db5CcF63ed6C11063385070C8FD2C990BFd53",
       infoDesk: "0x3F2c72Ba389632079DA68Ee13E8b955d69D1B5c1",
       trustedClaimIssuers: [claimIssuerContract],
-      owner: admin,
-      erc20Address: rwa_sdk.getAddresses().erc20.peaq
+      tokenName: "Test Token J",
+      tokenSymbol: "JGG",
+      payoutToken: rwa_sdk.getAddresses().erc20.peaq,
     });
     console.log(result);
-// TODO write test case to make sure return object is expected
-// {
-//     vault: '0x1B6c40647589dfF2172F0Cfa4C37cbC8a78aE955',
-//     token: '0x3fD8e53fA4a548Fd485c98cbF8e5A3B2D3574729',
-//     distributor: '0x0e92EC28592B092227C07B7c0B0B5A1725106C0C'
-//   }
+    expect(result).toBeDefined();
+    expect(result).toHaveProperty('vault');
+    expect(result).toHaveProperty('token');
+    expect(result).toHaveProperty('distributor');
+    expect(typeof result.vault).toBe('string');
+    expect(typeof result.token).toBe('string');
+    expect(typeof result.distributor).toBe('string');
+    expect(result.vault).toMatch(/^0x[a-fA-F0-9]{40}$/);
+    expect(result.token).toMatch(/^0x[a-fA-F0-9]{40}$/);
 
+
+    // {
+    //   vault: '0x807C971828bfc2CcfF326e86e9C4c8787DcC46Af',
+    //   token: '0x9dEA19d20F504678593118C4FCaed839A4b91770',
+    //   distributor: '0x5d4d74445B7c9CD0ADE6A97667904a63403BD01d'
+    // }
   }, 60_000);
 });

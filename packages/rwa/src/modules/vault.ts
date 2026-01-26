@@ -49,7 +49,6 @@ import {
   IToken__factory,
   IRewardDistributor__factory
 } from '../typechain';
-import type { Claim } from '../types/claims';
 
 /**
  * Vaults module provides functionality for creating, registering, and managing MachineVaults and their associated tokens.
@@ -103,49 +102,38 @@ export class Vault {
     return IRewardDistributor__factory.connect(address, runner);
   }
 
-//   private _mnfts(runner: Signer | Provider, address: string) {
-//     const addr = getAddress(address);
-//     return IMachineNft__factory.connect(addr, runner);
-//   }
-
   public async createVault(opts: CreateVault): Promise<CreateVaultResult> {
-    const { recipient, tokenName, tokenSymbol, vaultFactory, infoDesk, trustedClaimIssuers, owner, erc20Address } = parseOptions<CreateVault>(opts, {
-      recipient: { required: true, validator: validators.address, expected: 'EVM address string' },
-      tokenName: { required: true, validator: validators.string, expected: 'string' },
-      tokenSymbol: { required: true, validator: validators.string, expected: 'string' },
+    const { vaultDeployer, vaultController, vaultFactory, infoDesk, trustedClaimIssuers, tokenName, tokenSymbol, payoutToken } = parseOptions<CreateVault>(opts, {
+      vaultDeployer: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      vaultController: { required: true, validator: validators.address, expected: 'EVM address string' },
       vaultFactory: { required: true, validator: validators.address, expected: 'EVM address string' },
       infoDesk: { required: true, validator: validators.address, expected: 'EVM address string' },
       trustedClaimIssuers: { required: true, validator: validators.arrayOf(validators.address), expected: 'array of EVM address strings' },
-      owner: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
-      erc20Address: { required: true, validator: validators.address, expected: 'EVM address string' },
+      tokenName: { required: true, validator: validators.string, expected: 'string' },
+      tokenSymbol: { required: true, validator: validators.string, expected: 'string' },
+      payoutToken: { required: true, validator: validators.address, expected: 'EVM address string' },
     }, 'createVault');
 
-    const vaultFactoryContract = this._vaultFactory(owner, vaultFactory);
-
-    const complianceModules = await this._deployVaultComplianceModule(infoDesk, owner);
+    const vaultFactoryContract = this._vaultFactory(vaultDeployer, vaultFactory);
+    const complianceModules = await this._deployVaultComplianceModule(infoDesk, vaultDeployer);
 
     try {
-        await vaultFactoryContract.createVault.staticCall(recipient, tokenName, tokenSymbol, erc20Address, ZeroAddress, trustedClaimIssuers, [ClaimTopics.CT_KYC_APPROVED], complianceModules);
+        await vaultFactoryContract.createVault.staticCall(vaultController, tokenName, tokenSymbol, payoutToken, ZeroAddress, trustedClaimIssuers, [ClaimTopics.CT_KYC_APPROVED], complianceModules);
       } catch (cause: any) {
-        console.log(cause) // TODO: Improve error handling in the SDKError class; for now just log the cause
+        console.log(cause)
         throw new SDKError('SIMULATE/CREATE_VAULT', 'VaultFactory callStatic failed; creating vault would revert', { cause });
       }
   
-    const createVaultTx = await vaultFactoryContract.createVault.populateTransaction(recipient, tokenName, tokenSymbol, erc20Address, ZeroAddress, trustedClaimIssuers, [ClaimTopics.CT_KYC_APPROVED], complianceModules);
-    const receipt = await waitForTx(owner, createVaultTx);
+    const createVaultTx = await vaultFactoryContract.createVault.populateTransaction(vaultController, tokenName, tokenSymbol, payoutToken, ZeroAddress, trustedClaimIssuers, [ClaimTopics.CT_KYC_APPROVED], complianceModules);
+    const receipt = await waitForTx(vaultDeployer, createVaultTx);
 
     const iface = IPeaqVaultFactory__factory.createInterface();
     const args = await getArgsFromTxEvent(receipt, 'VaultCreated', iface);
     const vaultAddr = args[0];
     const tokenAddr = args[1];
     const distributorAddr = args[2];
-    console.log('✅ Vault created successfully:');
-    console.log(`   - Vault address:       ${vaultAddr}`);
-    console.log(`   - Token address:       ${tokenAddr}`);
-    console.log(`   - Distributor address: ${distributorAddr}`);
   
     return { vault: vaultAddr, token: tokenAddr, distributor: distributorAddr };
-    
   }
 
   /**
@@ -155,25 +143,24 @@ export class Vault {
    * @returns {UnpauseTokenResult} The result of unpausing a token
    */
   public async unpauseToken(opts: UnpauseToken): Promise<UnpauseTokenResult> {
-    // validate and parse parameter type options for improved error messages for user
-    const { admin, vaultFactory, vault } = parseOptions<UnpauseToken>(opts, {
-      admin: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+    const { vaultDeployer, vaultFactory, vault } = parseOptions<UnpauseToken>(opts, {
+      vaultDeployer: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
       vaultFactory: { required: true, validator: validators.address, expected: 'EVM address string' },
       vault: { required: true, validator: validators.address, expected: 'EVM address string' },
     }, 'unpauseToken');
 
-    const vaultFactoryContract = this._vaultFactory(admin, vaultFactory);
+    const vaultFactoryContract = this._vaultFactory(vaultDeployer, vaultFactory);
 
     // preflight check
     try {
       await vaultFactoryContract.unpauseVaultToken.staticCall(vault);
     } catch (cause: any) {
-        console.log(cause) // TODO: Improve error handling in the SDKError class; for now just log the cause
+        console.log(cause)
       throw new SDKError('SIMULATE/UNPAUSE_TOKEN', 'VaultFactory callStatic failed; unpausing would revert', { cause });
     }
     // if it doesn't revert, send the transaction
     const tx = await vaultFactoryContract.unpauseVaultToken.populateTransaction(vault);
-    const result = await waitForTx(admin, tx);
+    const result = await waitForTx(vaultDeployer, tx);
 
     return {result: "Unpaused token for vault: " + vault, receipt: result};
   }
@@ -186,14 +173,14 @@ export class Vault {
    */
   public async pauseToken(opts: PauseToken): Promise<PauseTokenResult> {
     // validate and parse parameter type options for improved error messages for user
-    const { admin, vaultFactory, vault } = parseOptions<PauseToken>(opts, {
-      admin: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+    const { vaultDeployer, vaultFactory, vault } = parseOptions<PauseToken>(opts, {
+      vaultDeployer: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
       vaultFactory: { required: true, validator: validators.address, expected: 'EVM address string' },
       vault: { required: true, validator: validators.address, expected: 'EVM address string' },
     }, 'pauseToken');
 
     // NOTE: `vault` is the vault address to be unpaused. The tx must be sent to the VaultFactory.
-    const vaultFactoryContract = this._vaultFactory(admin, vaultFactory);
+    const vaultFactoryContract = this._vaultFactory(vaultDeployer, vaultFactory);
 
     // preflight check
     try {
@@ -204,7 +191,7 @@ export class Vault {
     }
     // if it doesn't revert, send the transaction
     const tx = await vaultFactoryContract.pauseVaultToken.populateTransaction(vault);
-    const result = await waitForTx(admin, tx);
+    const result = await waitForTx(vaultDeployer, tx);
 
     return {result: "Paused token for vault: " + vault, receipt: result};
   }
@@ -216,29 +203,28 @@ export class Vault {
    * @returns {RegisterIdentityResult} The result of registering an identity
    */
   public async registerIdentity(opts: RegisterIdentity): Promise<RegisterIdentityResult> {
-    const { admin, vault, eoa, identity, country } = parseOptions<RegisterIdentity>(opts, {
-      admin: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+    const { vaultDeployer, vault, subject, subjectIdentity, country } = parseOptions<RegisterIdentity>(opts, {
+      vaultDeployer: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
       vault: { required: true, validator: validators.address, expected: 'EVM address string' },
-      eoa: { required: true, validator: validators.address, expected: 'EVM address string' },
-      identity: { required: true, validator: validators.address, expected: 'EVM address string' },
+      subject: { required: true, validator: validators.address, expected: 'EVM address string' },
+      subjectIdentity: { required: true, validator: validators.address, expected: 'EVM address string' },
       country: { required: true, validator: validators.string, expected: 'string' },
     }, 'registerIdentity');
 
     const peaqVault = this._peaqVault(this.provider, vault);
     const irAddr = await peaqVault.identityRegistry();
-    const identityRegistry = this._vaultIdentityRegistry(admin, irAddr);
+    const identityRegistry = this._vaultIdentityRegistry(vaultDeployer, irAddr);
 
     try {
-      await identityRegistry.registerIdentity.staticCall(eoa, identity, country);
+      await identityRegistry.registerIdentity.staticCall(subject, subjectIdentity, country);
     } catch (cause: any) {
         console.log(cause) // TODO: Improve error handling in the SDKError class; for now just log the cause
       throw new SDKError('SIMULATE/REGISTER_IDENTITY', 'IdentityRegistry callStatic failed; registration would revert', { cause });
     }
     // if it doesn't revert, send the transaction
-    const tx = await identityRegistry.registerIdentity.populateTransaction(eoa, identity, country);
-    const result = await waitForTx(admin, tx);
-    return {result: `Registered eoa ${eoa} with identity ${identity} in vault ${vault}.`};
-    
+    const tx = await identityRegistry.registerIdentity.populateTransaction(subject, subjectIdentity, country);
+    const result = await waitForTx(vaultDeployer, tx);
+    return {result: `Registered eoa ${subject} with identity ${subjectIdentity} in vault ${vault}.`};
   }
 
   /**
@@ -248,14 +234,14 @@ export class Vault {
    * @returns {MnftApprovalForAllResult} The result of approving a vault as an operator for a machine NFT
    */
   public async mnftApprovalForAll(opts: MnftApprovalForAll): Promise<MnftApprovalForAllResult> {
-    const { owner, mnft, vault, approved } = parseOptions<MnftApprovalForAll>(opts, {
-      owner: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
-      mnft: { required: true, validator: validators.address, expected: 'EVM address string' },
+    const { machineController, machineNft, vault, approved } = parseOptions<MnftApprovalForAll>(opts, {
+      machineController: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      machineNft: { required: true, validator: validators.address, expected: 'EVM address string' },
       vault: { required: true, validator: validators.address, expected: 'EVM address string' },
       approved: { required: true, validator: validators.boolean, expected: 'boolean' },
     }, 'mnftApprovalForAll');
     
-    const mnftContract = this._mnft(owner, mnft);
+    const mnftContract = this._mnft(machineController, machineNft);
 
     try {
       await mnftContract.setApprovalForAll.staticCall(vault, approved);
@@ -264,9 +250,9 @@ export class Vault {
       throw new SDKError('SIMULATE/MNFT_APPROVAL_FOR_ALL', 'MachineNFT callStatic failed; approval would revert', { cause });
     }
     const approvalTx = await mnftContract.setApprovalForAll.populateTransaction(vault, approved);
-    const result = await waitForTx(owner, approvalTx);
+    const result = await waitForTx(machineController, approvalTx);
 
-    return {result: `Set approval of vault ${vault} as operator for MNFT ${mnft} to ${approved}.`};
+    return {result: `Set approval of vault ${vault} as operator for MNFT ${machineNft} to ${approved}.`};
   }
 
     /**
@@ -276,14 +262,14 @@ export class Vault {
    * @returns {CnftApprovalForAllResult} The result of approving a vault as an operator for a contract NFT
    */
     public async cnftApprovalForAll(opts: CnftApprovalForAll): Promise<CnftApprovalForAllResult> {
-      const { owner, cnft, vault, approved } = parseOptions<CnftApprovalForAll>(opts, {
-        owner: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
-        cnft: { required: true, validator: validators.address, expected: 'EVM address string' },
+      const { contractController, contractNft, vault, approved } = parseOptions<CnftApprovalForAll>(opts, {
+        contractController: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+        contractNft: { required: true, validator: validators.address, expected: 'EVM address string' },
         vault: { required: true, validator: validators.address, expected: 'EVM address string' },
         approved: { required: true, validator: validators.boolean, expected: 'boolean' },
       }, 'cnftApprovalForAll');
       
-      const cnftContract = this._cnft(owner, cnft);
+      const cnftContract = this._cnft(contractController, contractNft);
   
       try {
         await cnftContract.setApprovalForAll.staticCall(vault, approved);
@@ -292,9 +278,9 @@ export class Vault {
         throw new SDKError('SIMULATE/CNFT_APPROVAL_FOR_ALL', 'ContractNFT callStatic failed; approval would revert', { cause });
       }
       const approvalTx = await cnftContract.setApprovalForAll.populateTransaction(vault, approved);
-      const result = await waitForTx(owner, approvalTx);
+      const result = await waitForTx(contractController, approvalTx);
   
-      return {result: `Set approval of vault ${vault} as operator for CNFT ${cnft} to ${approved}.`};
+      return {result: `Set approval of vault ${vault} as operator for CNFT ${contractNft} to ${approved}.`};
     }
 
   /**
@@ -304,8 +290,8 @@ export class Vault {
    * @returns {DepositAndMintResult} The result of depositing and minting tokens
    */
   public async depositAndMint(opts: DepositAndMint): Promise<DepositAndMintResult> {
-    const { owner, vault, rwaNfts, tokenIds, amount } = parseOptions<DepositAndMint>(opts, {
-      owner: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+    const { vaultController, vault, rwaNfts, tokenIds, amount } = parseOptions<DepositAndMint>(opts, {
+      vaultController: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
       vault: { required: true, validator: validators.address, expected: 'EVM address string' },
       rwaNfts: { required: true, validator: validators.arrayOf(validators.address), expected: 'array of EVM address strings' },
       tokenIds: { required: true, validator: validators.arrayOf(validators.string), expected: 'array of numbers' },
@@ -315,7 +301,7 @@ export class Vault {
     // Normalize tokenIds to bigint
     const tokenIdsBigInt = tokenIds.map((id) => BigInt(id));
 
-    const peaqVault = this._peaqVault(owner, vault);
+    const peaqVault = this._peaqVault(vaultController, vault);
 
     try {
       await peaqVault.depositAndMint.staticCall(rwaNfts, tokenIdsBigInt, amount);
@@ -324,7 +310,7 @@ export class Vault {
       throw new SDKError('SIMULATE/DEPOSIT_AND_MINT', 'PeaqVault callStatic failed; deposit and mint would revert', { cause });
     }
     const depositAndMintTx = await peaqVault.depositAndMint.populateTransaction(rwaNfts, tokenIdsBigInt, amount);  
-    const result = await waitForTx(owner, depositAndMintTx);
+    const result = await waitForTx(vaultController, depositAndMintTx);
 
     return {result: `Deposited and minted tokens for vault ${vault}.`}; 
   }
@@ -337,25 +323,23 @@ export class Vault {
    * @returns {EnsureTransferFeeAllowanceResult} The result of ensuring a transfer fee allowance is set
    */
   public async ensureTransferFeeAllowance(opts: EnsureTransferFeeAllowance): Promise<EnsureTransferFeeAllowanceResult> {
-    const { sender, vault, erc20, token, amount } = parseOptions<EnsureTransferFeeAllowance>(opts, {
-      sender: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+    const { allowanceSigner, vault, token, erc20, transferAmountHuman } = parseOptions<EnsureTransferFeeAllowance>(opts, {  
+      allowanceSigner: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
       vault: { required: true, validator: validators.address, expected: 'EVM address string' },
-      erc20: { required: true, validator: validators.address, expected: 'EVM address string' },
       token: { required: true, validator: validators.address, expected: 'EVM address string' },
-      amount: { required: true, validator: validators.number, expected: 'number' },
+      erc20: { required: true, validator: validators.address, expected: 'EVM address string' },
+      transferAmountHuman: { required: true, validator: validators.string, expected: 'string' },
     }, 'ensureTransferFeeAllowance');
 
     const tokenContract = this._token(this.provider, token);
     const tokenDecimals = Number(await tokenContract.decimals());
-    const scaledAmount = parseUnits(amount.toString(), tokenDecimals);
+    const scaledAmount = parseUnits(transferAmountHuman, tokenDecimals);
 
     const peaqVault = this._peaqVault(this.provider, vault);
 
     const [fee, account] = await peaqVault.transactionFeeAndAccount(scaledAmount);
-    console.log('fee', fee);
-    console.log('account', account);
 
-    const erc20Contract = this._erc20(sender, erc20); // TODO: DO NOT HARDCODE THE PEAQ TOKEN ADDRESS
+    const erc20Contract = this._erc20(allowanceSigner, erc20);
 
     // preflight check
     try {
@@ -365,7 +349,7 @@ export class Vault {
       throw new SDKError('SIMULATE/APPROVE_ERC20', 'ERC20 callStatic failed; approval would revert', { cause });
     }
     const approveTx = await erc20Contract.approve.populateTransaction(account, fee * 2n);
-    await waitForTx(sender, approveTx);
+    await waitForTx(allowanceSigner, approveTx);
 
     return {result: "Transfer fee allowance set for token " + token + " in vault " + vault};
   }
@@ -378,30 +362,30 @@ export class Vault {
    */
     public async transfer(opts: Transfer): Promise<TransferResult> {
       // validate and parse parameter type options for improved error messages for user
-      const { token, sender, recipientAddr, amount } = parseOptions<Transfer>(opts, {
+      const { from, to, token, transferAmountHuman } = parseOptions<Transfer>(opts, {
+        from: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+        to: { required: true, validator: validators.address, expected: 'EVM address string' },
         token: { required: true, validator: validators.address, expected: 'EVM address string' },
-        sender: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
-        recipientAddr: { required: true, validator: validators.address, expected: 'EVM address string' },
-        amount: { required: true, validator: validators.number, expected: 'number' },
+        transferAmountHuman: { required: true, validator: validators.string, expected: 'string' },
       }, 'transfer');
 
-      const tokenContract = this._token(sender, token);
+      const tokenContract = this._token(from, token);
   
       // Scale amount according to token decimals. If decimals not provided, fetch from token.
       const tokenDecimals = Number(await tokenContract.decimals());
-      const scaledAmount = parseUnits(amount.toString(), tokenDecimals);
+      const scaledAmount = parseUnits(transferAmountHuman, tokenDecimals);
       // preflight check
       try {
-        await tokenContract.transfer.staticCall(recipientAddr, scaledAmount);
+        await tokenContract.transfer.staticCall(to, scaledAmount);
       } catch (cause: any) {
         console.log(cause)
         throw new SDKError('SIMULATE/TRANSFER_TOKENS', 'Token callStatic failed; transfer would revert', { cause });
       }
       // if it doesn't revert, send the transaction
-      const tx2 = await tokenContract.transfer.populateTransaction(recipientAddr, scaledAmount);
-      const result = await waitForTx(sender, tx2);
+      const tx2 = await tokenContract.transfer.populateTransaction(to, scaledAmount);
+      const result = await waitForTx(from, tx2);
   
-      return {result: "Transferred " + amount + " tokens (scaled by " + tokenDecimals + " decimals) from one address to another"};
+      return {result: "Transferred " + transferAmountHuman + " tokens (scaled by " + tokenDecimals + " decimals) from one address to another"};
     }
 
 
@@ -412,19 +396,19 @@ export class Vault {
    * @returns {DepositYieldResult} The result of depositing yield to a vault
    */
     public async depositYield(opts: DepositYield): Promise<DepositYieldResult> {
-      const { sender, vault, assetErc20, decimals, amount } = parseOptions<DepositYield>(opts, {
-        sender: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      const { depositorSigner, vault, erc20, decimals, humanReadableAmount } = parseOptions<DepositYield>(opts, {  
+        depositorSigner: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
         vault: { required: true, validator: validators.address, expected: 'EVM address string' },
-        assetErc20: { required: true, validator: validators.address, expected: 'EVM address string' },
-        decimals: { required: true, validator: validators.number, expected: 'number' },
-        amount: { required: true, validator: validators.number, expected: 'number' },
+        erc20: { required: true, validator: validators.address, expected: 'EVM address string' },
+        decimals: { required: true, validator: validators.number, expected: 'number' },   
+        humanReadableAmount: { required: true, validator: validators.string, expected: 'string' },
       }, 'depositYield');
 
       const rewardDistributorAddr = await this._getRewardDistributor(vault);
-      const rewardDistributor = this._rewardDistributor(sender, rewardDistributorAddr);
+      const rewardDistributor = this._rewardDistributor(depositorSigner, rewardDistributorAddr);
 
-      const erc20Contract = this._erc20(sender, assetErc20);
-      const scaledAmount = parseUnits(amount.toString(), decimals);
+      const erc20Contract = this._erc20(depositorSigner, erc20);
+      const scaledAmount = parseUnits(humanReadableAmount, decimals);
 
 
       // TODO maybe split up again...
@@ -435,7 +419,7 @@ export class Vault {
         throw new SDKError('SIMULATE/APPROVE_ERC20', 'ERC20 callStatic failed; approval would revert', { cause });
       }
       const approveTx = await erc20Contract.approve.populateTransaction(rewardDistributorAddr, scaledAmount);
-      await waitForTx(sender, approveTx);
+      await waitForTx(depositorSigner, approveTx);
 
       try {
         await rewardDistributor.depositYield.staticCall(scaledAmount);
@@ -444,9 +428,9 @@ export class Vault {
         throw new SDKError('SIMULATE/DEPOSIT_YIELD', 'RewardDistributor callStatic failed; deposit yield would revert', { cause });
       }
       const depositYieldTx = await rewardDistributor.depositYield.populateTransaction(scaledAmount);
-      await waitForTx(sender, depositYieldTx);
+      await waitForTx(depositorSigner, depositYieldTx);
 
-      return {result: "Yield deposited for vault " + vault + " with amount " + amount};
+      return {result: "Yield deposited for vault " + vault + " with amount " + humanReadableAmount}; 
     }
 
   /**
@@ -456,13 +440,13 @@ export class Vault {
    * @returns {ClaimYieldResult} The result of claiming yield from a vault
    */
     public async claimYield(opts: ClaimYield): Promise<ClaimYieldResult> {
-      const { sender, vault } = parseOptions<ClaimYield>(opts, {
-        sender: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      const { claimerSigner, vault } = parseOptions<ClaimYield>(opts, {
+        claimerSigner: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
         vault: { required: true, validator: validators.address, expected: 'EVM address string' },
       }, 'claimYield');
 
       const rewardDistributorAddr = await this._getRewardDistributor(vault);
-      const rewardDistributor = this._rewardDistributor(sender, rewardDistributorAddr);
+      const rewardDistributor = this._rewardDistributor(claimerSigner, rewardDistributorAddr);
 
       try {
         await rewardDistributor.claim.staticCall();
@@ -471,7 +455,7 @@ export class Vault {
         throw new SDKError('SIMULATE/CLAIM_YIELD', 'RewardDistributor callStatic failed; claim yield would revert', { cause });
       }
       const depositYieldTx = await rewardDistributor.claim.populateTransaction();
-      await waitForTx(sender, depositYieldTx);
+      await waitForTx(claimerSigner, depositYieldTx);
 
       return {result: "Yield claimed for vault " + vault};
     }
@@ -483,14 +467,14 @@ export class Vault {
    * @returns {ClaimYieldToResult} The result of claiming yield from a vault
    */
     public async claimYieldTo(opts: ClaimYieldTo): Promise<ClaimYieldToResult> {
-      const { sender, vault, to } = parseOptions<ClaimYieldTo>(opts, {
-        sender: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      const { claimerSigner, vault, to } = parseOptions<ClaimYieldTo>(opts, {  
+        claimerSigner: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
         vault: { required: true, validator: validators.address, expected: 'EVM address string' },
         to: { required: true, validator: validators.address, expected: 'EVM address string' },
       }, 'claimYieldTo');
 
       const rewardDistributorAddr = await this._getRewardDistributor(vault);
-      const rewardDistributor = this._rewardDistributor(sender, rewardDistributorAddr);
+      const rewardDistributor = this._rewardDistributor(claimerSigner, rewardDistributorAddr);
 
       try {
         await rewardDistributor.claimTo.staticCall(to);
@@ -499,7 +483,7 @@ export class Vault {
         throw new SDKError('SIMULATE/CLAIM_YIELD_TO', 'RewardDistributor callStatic failed; claim yield would revert', { cause });
       }
       const depositYieldTx = await rewardDistributor.claimTo.populateTransaction(to);
-      await waitForTx(sender, depositYieldTx);
+      await waitForTx(claimerSigner, depositYieldTx);  
 
       return  {result: "Yield claimed for vault " + vault};
     }
@@ -512,10 +496,8 @@ export class Vault {
 
     const iface = NativeTransferFeeModule__factory.createInterface();
     const initData = iface.encodeFunctionData("initialize", [infoDesk]);
-    console.log('initData', initData);
 
     const addr = await infoDeskContract.getImplementation(IDImplementationType.NativeTransferFeeModule);
-    console.log('addr', addr);
 
     const moduleAddress = await this._deployComplianceModule(addr, initData, owner);
     complianceModuleAddrs.push(moduleAddress);
@@ -529,8 +511,7 @@ export class Vault {
     await proxy.waitForDeployment();
 
     // Get the deployed address
-    const address = await proxy.getAddress();   
-    console.log('Module Proxy address: ', address);
+    const address = await proxy.getAddress();
     return address;
   }
 

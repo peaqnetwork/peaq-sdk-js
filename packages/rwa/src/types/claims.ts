@@ -20,7 +20,7 @@ export interface IClaim {
 }
 
 export type GenerateKycClaim = {
-    issuerContract: string;
+    claimIssuerContract: string;
     kyc: KYC;
     uri: string | null;
 }

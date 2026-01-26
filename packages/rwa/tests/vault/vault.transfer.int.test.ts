@@ -1,19 +1,11 @@
 import 'dotenv/config';
 import { describe, it, expect } from 'vitest';
-import { JsonRpcProvider, Wallet, AbiCoder, keccak256, toUtf8Bytes } from 'ethers';
+import { JsonRpcProvider, Wallet } from 'ethers';
 
 import { RWA } from '../../src/rwa';
 import { Chain } from '../../src/enums/core';
-import { contractId as computeContractId } from '../../src/utils/nft';
 
-
-const HTTPS_BASE_URL = process.env.HTTPS_BASE_URL;
-const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY;
-const ALICE_PUBLIC_ADDRESS = process.env.ALICE_PUBLIC_ADDRESS;
-
-const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_ADDRESS);
-
-(shouldRun ? describe.sequential : describe.skip)('vault.transfer [integration]', () => {
+describe.sequential('vault.transfer [integration]', () => {
   it.skip('transfers tokens', async () => {
     // 0. Create RWA instance and get provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
@@ -29,15 +21,15 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
     const charlie = new Wallet(process.env.CHARLIE_PRIVATE_KEY!, provider);
 
     // 4. Get token
-    const token = "0x3fD8e53fA4a548Fd485c98cbF8e5A3B2D3574729";
+    const token = "0x9dEA19d20F504678593118C4FCaed839A4b91770";
 
     // 5. Ensure transfer fee allowance is set
     const result = await rwa_sdk.vault.ensureTransferFeeAllowance({
+      allowanceSigner: alice,
+      vault: "0x807C971828bfc2CcfF326e86e9C4c8787DcC46Af",
       token: token,
-      sender: alice,
-      erc20: "0x0000000000000000000000000000000000000809",
-      vault: "0x1B6c40647589dfF2172F0Cfa4C37cbC8a78aE955",
-      amount: 1
+      erc20: rwa_sdk.getAddresses().erc20.peaq,
+      transferAmountHuman: "1"
     });
 
     expect(result).toBeDefined();
@@ -48,10 +40,10 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
 
     // 6. Transfer tokens to Bob
     const resp = await rwa_sdk.vault.transfer({
+      from: alice,
+      to: bob.address,
       token: token,
-      sender: alice,
-      recipientAddr: bob.address,
-      amount: 1
+      transferAmountHuman: "1"
     });
 
     console.log(resp);
@@ -62,10 +54,10 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
 
     // 7. Transfer tokens to Charlie
     const resp2 = await rwa_sdk.vault.transfer({
-        token: token,
-        sender: alice,
-        recipientAddr: charlie.address,
-        amount: 1
+      from: alice,
+      to: charlie.address,
+      token: token,
+      transferAmountHuman: "1"
     });
     expect(resp2).toBeDefined();
     expect(resp2).toHaveProperty('result');

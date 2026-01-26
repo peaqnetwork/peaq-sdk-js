@@ -1,3 +1,6 @@
+# SDK Installation Tutorial
+Before interacting with the packaged sdk, please read the [users](../docs/users/) portion of the docs page to have proper background.
+
 ## Set up TS ENV
 ### 1. New Project
 ```bash

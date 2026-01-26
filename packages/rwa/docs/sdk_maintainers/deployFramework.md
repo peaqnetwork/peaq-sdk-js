@@ -40,19 +40,28 @@ While the framework is deploying, contract addresses will be logged to the conso
 ## 4. Update ABIs and Contract Configs
 After you have deployed the framework, you will need to update the abis at `./src/abis/` directory in this rwa sdk codebase. You can do so by copying over the interface files that were generated in `peaq-rwa-evm` inside artifacts after compilation. Once that has been completed, you must updated the `./src/addresses/` with the new addresses that were logged during the deployment of the framework in step 3. Make sure you also update your `.env` file to include the new Claim Issuer contract and Admin owner.
 
+## 5. Build TypeChain
+Now we will need to create the typechain from the contract abis so we can interact with the contracts appropriately, You can do so inside of `/packages/rwa/` and execute:
+```
+npm run codegen
+```
 
-## 5. Add new functionality
+## 6. Add new functionality
 For the new functionality in the RWA Framework, additional modules / functions may need to be added.
 
-## 6. Testing
-After new modules / functions has been written create test cases to ensure proper behavior.
+## 7. Testing
+After new modules / functions has been written create test cases to ensure proper behavior. Please checkout the [tests docs](./tests/initialize.md) for more information.
 
-## 7. Create package
+## 8. Build project
 Once all local tests have passed you may build the package in this repository following the instructions:
 ### Build:
 ```
 npm run build
 ```
+This will create `dist` file that allows for `cjs`, `esm`, and `ts` interactions
+
+## 9. Create package
+Now finally, we can pack together the build project in order to test a shippable executable file:
 ### Pack:
 ```
 npm pack -w @peaq-network/rwa

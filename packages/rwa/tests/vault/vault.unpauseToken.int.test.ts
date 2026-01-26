@@ -2,34 +2,27 @@
 
 import 'dotenv/config';
 import { describe, it, expect } from 'vitest';
-import { JsonRpcProvider, Wallet, AbiCoder, keccak256, toUtf8Bytes } from 'ethers';
+import { JsonRpcProvider, Wallet } from 'ethers';
 
 import { RWA } from '../../src/rwa';
 import { Chain } from '../../src/enums/core';
-import { contractId as computeContractId } from '../../src/utils/nft';
 
 
-const HTTPS_BASE_URL = process.env.HTTPS_BASE_URL;
-const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY;
-const ALICE_PUBLIC_ADDRESS = process.env.ALICE_PUBLIC_ADDRESS;
-
-const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_ADDRESS);
-
-(shouldRun ? describe.sequential : describe.skip)('vault.unpauseToken [integration]', () => {    
+describe.sequential('vault.unpauseToken [integration]', () => {    
   it.skip('unpauses a token', async () => {
     // 0. Create RWA instance and get provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
 
     // 1. Get admin wallet
-    const admin = new Wallet(process.env.ADMIN_PRIVATE_KEY!, provider);
+    const vaultDeployer = new Wallet(process.env.ADMIN_PRIVATE_KEY!, provider);
 
     // 2. Get known vault address
-    const vault = "0x1B6c40647589dfF2172F0Cfa4C37cbC8a78aE955";
+    const vault = "0xc5233ACEe90e6f756D506f3a79179401ae4B3977";
 
     // 3. Unpause Token
     const result = await rwa_sdk.vault.unpauseToken({
-      admin: admin,
+      vaultDeployer: vaultDeployer,
       vaultFactory: "0x5C5Db5CcF63ed6C11063385070C8FD2C990BFd53",
       vault: vault
     });

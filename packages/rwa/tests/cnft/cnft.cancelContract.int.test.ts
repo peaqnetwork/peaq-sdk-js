@@ -2,19 +2,14 @@
 
 import 'dotenv/config';
 import { describe, it, expect } from 'vitest';
-import { JsonRpcProvider, Wallet, AbiCoder, keccak256, toUtf8Bytes } from 'ethers';
+import { JsonRpcProvider, Wallet, keccak256, toUtf8Bytes } from 'ethers';
 
 import { RWA } from '../../src/rwa';
 import { Chain } from '../../src/enums/core';
 import { contractId as computeContractId } from '../../src/utils/nft';
 
-const HTTPS_BASE_URL = process.env.HTTPS_BASE_URL;
-const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY;
-const ALICE_PUBLIC_ADDRESS = process.env.ALICE_PUBLIC_ADDRESS;
 
-const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_ADDRESS);
-
-(shouldRun ? describe.sequential : describe.skip)('cnft.cancelContract [integration]', () => {
+describe.sequential('cnft.cancelContract [integration]', () => {
   it.skip('cancels a Contract NFT', async () => {
     // 0. Create RWA instance and get provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
@@ -36,10 +31,12 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
 
     // 4. Create MachineNFT(s) for Alice
     const result = await rwa_sdk.cnft.createContract({
-        contractInitiator: alice,
+        contractController: alice,
+        erc20: rwa_sdk.getAddresses().erc20.peaq,
+        tokenDecimals: 18,
         counterparties: [bob.address, charlie.address],
         contractNft: contractNft,
-        hashDigest: hashDigest,
+        contractHash: hashDigest,
         url: url
     });
     expect(result).toBeDefined();
@@ -112,7 +109,7 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
 
     // 7. Rather than having Charlie sign the contract, cancel it from the initiator (Alice)
     const cancelResult = await rwa_sdk.cnft.cancelContract({
-      contractInitiator: alice,
+      contractController: alice,
       contractNft: contractNft,
       contractId: result.contractId
     });

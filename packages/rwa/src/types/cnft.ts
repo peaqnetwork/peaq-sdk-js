@@ -2,10 +2,12 @@ import type { Signer } from "ethers";
 import type { Contract, ContractDraft } from "../utils/nft";
 
 export type CreateContract = {
-    contractInitiator: Signer;
+    contractController: Signer;
+    erc20: string;
+    tokenDecimals: number;
     counterparties: string[];
     contractNft: string;
-    hashDigest: string;
+    contractHash: string;
     url: string;
 }
 
@@ -42,7 +44,7 @@ export type GetContractResult = {
 }
 
 export type CancelContract = {
-    contractInitiator: Signer;
+    contractController: Signer;
     contractNft: string;
     contractId: string;
 }
@@ -52,7 +54,7 @@ export type CancelContractResult = {
 }
 
 export type SetBlocked = {
-    contractNftOwner: Signer;
+    contractNftSigner: Signer;
     contractNft: string;
     blocked: boolean;
 }

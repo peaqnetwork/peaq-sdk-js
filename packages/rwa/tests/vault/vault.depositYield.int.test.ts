@@ -25,17 +25,17 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
     const alice = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
 
     // 2. Get known vault address
-    const vault = "0x1B6c40647589dfF2172F0Cfa4C37cbC8a78aE955";
+    const vault = "0x807C971828bfc2CcfF326e86e9C4c8787DcC46Af";
 
     // 3. Deposit Yield
     const result = await rwa_sdk.vault.depositYield({
-      sender: alice,
+      depositorSigner: alice,
       vault: vault,
-      assetErc20: "0x0000000000000000000000000000000000000809",
+      erc20: rwa_sdk.getAddresses().erc20.peaq,
       decimals: 18,
-      amount: 1
+      humanReadableAmount: "1"
     });
-    console.log(result);
+    // console.log(result);
     expect(result).toBeDefined();
     expect(result).toHaveProperty('result');
     expect(typeof result.result).toBe('string');

@@ -2,21 +2,13 @@
 
 import 'dotenv/config';
 import { describe, it, expect } from 'vitest';
-import { JsonRpcProvider, Wallet, AbiCoder, keccak256 } from 'ethers';
+import { JsonRpcProvider } from 'ethers';
 
 import { RWA } from '../../src/rwa';
 import { Chain } from '../../src/enums/core';
 
-// This is a smoke test that requires env vars and a live endpoint.
-// It will be skipped automatically if env vars are missing.
 
-const HTTPS_BASE_URL = process.env.HTTPS_BASE_URL;
-const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY;
-const ALICE_PUBLIC_ADDRESS = process.env.ALICE_PUBLIC_ADDRESS;
-
-const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_ADDRESS);
-
-(shouldRun ? describe.sequential : describe.skip)('mnft.getMachineDid [integration]', () => {
+describe.sequential('mnft.getMachineDid [integration]', () => {
   it.skip('gets a Machine DID', async () => {
     
     // 0. Create RWA instance and get provider
@@ -25,18 +17,18 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
 
     // 1. Get a known Machine NFT and tokenId
     const mnft = "0xaBB3961281123C336596153C4dfE83E11498fc54";
-    const tokenId = "619681761651764163179645917096521812807432994659"; 
+    const tokenId = "95044317769373976152348576528544002775282921045"; 
 
     // 2. Create MachineNFT(s) for Alice
     const did = await rwa_sdk.mnft.getMachineDid({
-        machineNFT: mnft,
+        machineNft: mnft,
         tokenId: tokenId
     });
 
-    // // Remove comments to see the result
-    // console.log('Result', did);
-    // console.log('Services', did.didDocument.services);
-    // console.log('Verifiable Credential', did.didDocument.verifiable_credential);
+    // Remove comments to see the result
+    console.log('Result', did);
+    console.log('Services', (did.didDocument as any).services);
+    console.log('Verifiable Credential', (did.didDocument as any).verifiable_credential);
 
 
     // Top-level result

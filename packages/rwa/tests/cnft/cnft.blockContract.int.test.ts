@@ -2,22 +2,13 @@
 
 import 'dotenv/config';
 import { describe, it, expect } from 'vitest';
-import { JsonRpcProvider, Wallet, AbiCoder, keccak256, toUtf8Bytes } from 'ethers';
+import { JsonRpcProvider, Wallet, keccak256, toUtf8Bytes } from 'ethers';
 
 import { RWA } from '../../src/rwa';
 import { Chain } from '../../src/enums/core';
-import { contractId as computeContractId } from '../../src/utils/nft';
 
-// This is a smoke test that requires env vars and a live endpoint.
-// It will be skipped automatically if env vars are missing.
 
-const HTTPS_BASE_URL = process.env.HTTPS_BASE_URL;
-const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY;
-const ALICE_PUBLIC_ADDRESS = process.env.ALICE_PUBLIC_ADDRESS;
-
-const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_ADDRESS);
-
-(shouldRun ? describe.sequential : describe.skip)('cnft.blockContract [integration]', () => {
+describe.sequential('cnft.blockContract [integration]', () => {
   it.skip('blocks a Contract NFT', async () => {
     // 0. Create RWA instance and get provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
@@ -35,11 +26,10 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
     // 3. Block the contract before it is created
     const contractNft = "0xA00ee5b948E3E1cb293f57F7008721353416Aa2E";
     const blockedResult = await rwa_sdk.cnft.setBlocked({
-        contractNftOwner: admin,
+        contractNftSigner: admin,
         contractNft: contractNft,
         blocked: true
     });
-    console.log(blockedResult);
     expect(blockedResult).toBeDefined();
     expect(blockedResult).toHaveProperty('message');
     expect(typeof blockedResult.message).toBe('string');
@@ -49,7 +39,6 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
     const isBlockedResult = await rwa_sdk.cnft.isBlocked({
         contractNft: contractNft
     });
-    console.log(isBlockedResult);
     expect(isBlockedResult).toBeDefined();
     expect(isBlockedResult).toHaveProperty('blocked');
     expect(typeof isBlockedResult.blocked).toBe('boolean');
@@ -62,23 +51,19 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
     const hashDigest = keccak256(toUtf8Bytes(content));
     await expect(
       rwa_sdk.cnft.createContract({
-        contractInitiator: alice,
+        contractController: alice,
+        erc20: rwa_sdk.getAddresses().erc20.peaq,
+        tokenDecimals: 18,
         counterparties: [bob.address, charlie.address],
         contractNft: contractNft,
-        hashDigest: hashDigest,
+        contractHash: hashDigest,
         url: url,
       })
-    ).rejects.toMatchObject({
-      name: 'SDKError',
-      code: 'SIMULATE/INIT_CONTRACT',
-      cause: expect.objectContaining({
-        reason: expect.stringMatching(/blocked/i),
-      }),
-    });
+    ).rejects.toThrow(/ContractNFTs callStatic failed; initialization would revert/i); 
 
     // 6. Set contract blocked to false
     const blockedResult2 = await rwa_sdk.cnft.setBlocked({
-        contractNftOwner: admin,
+        contractNftSigner: admin,
         contractNft: contractNft,
         blocked: false
     });
@@ -98,10 +83,12 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
 
     // 7. Create the contract
     const result = await rwa_sdk.cnft.createContract({
-        contractInitiator: alice,
+        contractController: alice,
+        erc20: rwa_sdk.getAddresses().erc20.peaq,
+        tokenDecimals: 18,
         counterparties: [bob.address, charlie.address],
         contractNft: contractNft,
-        hashDigest: hashDigest,
+        contractHash: hashDigest,
         url: url
     });
     expect(result).toBeDefined();
@@ -114,7 +101,7 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
 
     // Cancel the contract for cleanup
     await rwa_sdk.cnft.cancelContract({
-        contractInitiator: alice,
+        contractController: alice,
         contractNft: contractNft,
         contractId: result.contractId
       });

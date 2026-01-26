@@ -14,9 +14,9 @@ export type Person = {
 }
 
 export type CreateIdentity = {
-    admin: Signer;
-    eoa: string;
-    salt: string;
+    idFactoryAdmin: Signer;
+    subject: string;
+    deploymentSalt: string;
 }
 
 export type CreateIdentityResult = {
@@ -26,7 +26,7 @@ export type CreateIdentityResult = {
 }
 
 export type GetIdentity = {
-    eoa: string;
+    subject: string;
 }
 
 export type GetIdentityResult = {
@@ -35,26 +35,26 @@ export type GetIdentityResult = {
 }
 
 export type IssueKycClaim = {
-    claimIssuer: Signer;
-    issuerContract: string;
-    identity: string;
+    claimIssuerSigner: Signer;
+    claimIssuerContract: string;
+    subjectIdentity: string;
     name: string;
     lastName: string;
     dateOfBirth: string;
     placeOfBirth: string;
-    uri: string | null; // should peaq ever hold a store of URIs?
+    uri: string | null;
 }
 
-export type KycClaimResult = {
+export type IssueKycClaimResult = {
     claim: IClaim;
     signature: string;
 }
 
 export type AddClaimToIdentity = {
-    identity: string;
-    identityOwner: Signer;
+    identityController: Signer;
+    subjectIdentity: string;
     claim: IClaim;
-    kycSignature: string;
+    claimSignature: string;
 }
 
 export type AddClaimToIdentityResult = {
@@ -62,7 +62,7 @@ export type AddClaimToIdentityResult = {
 }
 
 export type GetClaim = {
-    identity: string;
+    subjectIdentity: string;
     claimId: string
 }
 
@@ -71,8 +71,8 @@ export type GetClaimResult = {
 }
 
 export type RemoveClaimFromIdentity = {
-    identity: string;
-    identityOwner: Signer;
+    identityController: Signer;
+    subjectIdentity: string;
     claimId: string
 }
 

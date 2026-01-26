@@ -1,15 +1,15 @@
 import type { Signer, TransactionReceipt } from "ethers";
 
 export type CreateVault = {
-    recipient: string;
-    tokenName: string;
-    tokenSymbol: string;
+    vaultDeployer: Signer
+    vaultController: string;
     vaultFactory: string;
     infoDesk: string;
     trustedClaimIssuers: string[];
-    owner: Signer;
-    erc20Address: string;
-}   
+    tokenName: string;
+    tokenSymbol: string;
+    payoutToken: string;
+}
 
 export type CreateVaultResult = {
     vault: string;
@@ -17,59 +17,49 @@ export type CreateVaultResult = {
     distributor: string;
 }
 
-export type CreateVaultAndToken = {
-    admin: Signer;
-    name: string;
-    symbol: string;
-    irs: string;
-    tokenIdentity: string;
-    claimIssuers: string[];
-    claimTopics: number[];
-}
+// export type CreateVaultAndToken = {
+//     admin: Signer;
+//     name: string;
+//     symbol: string;
+//     irs: string;
+//     tokenIdentity: string;
+//     claimIssuers: string[];
+//     claimTopics: number[];
+// }
 
-export type CreateVaultAndTokenResult = {
-    vault: string;
-    token: string;
-    receipt: TransactionReceipt;
-}
+// export type CreateVaultAndTokenResult = {
+//     vault: string;
+//     token: string;
+//     receipt: TransactionReceipt;
+// }
 
-export type RegisterIdentity = {
-    admin: Signer;
-    vault: string;
-    eoa: string;
-    identity: string;
-    country: string;
-}
 
-export type RegisterIdentityResult = {
-    result: string;
-}
 
-export type ApproveVaultAsOperator = {
-    machineNFT: string;
-    tokenOwner: Signer;
-    vault: string;
-}
+// export type ApproveVaultAsOperator = {
+//     machineNFT: string;
+//     tokenOwner: Signer;
+//     vault: string;
+// }
 
-export type ApproveVaultAsOperatorResult = {
-    result: string;
-    receipt: TransactionReceipt;
-}
+// export type ApproveVaultAsOperatorResult = {
+//     result: string;
+//     receipt: TransactionReceipt;
+// }
 
-export type MintSecurityTokens = {
-    tokenOwner: Signer;
-    vault: string;
-    machineNFTs: string[];
-    tokenIds: number[];
-    amount: number;
-}
+// export type MintSecurityTokens = {
+//     tokenOwner: Signer;
+//     vault: string;
+//     machineNFTs: string[];
+//     tokenIds: number[];
+//     amount: number;
+// }
 
-export type MintSecurityTokensResult = {
-    result: string;
-}
+// export type MintSecurityTokensResult = {
+//     result: string;
+// }
 
 export type UnpauseToken = {
-    admin: Signer;
+    vaultDeployer: Signer;
     vaultFactory: string;
     vault: string;
 }
@@ -80,30 +70,19 @@ export type UnpauseTokenResult = {
 }
 
 
-export type Transfer = {
-    token: string;
-    sender: Signer;
-    recipientAddr: string;
-    amount: string | number;
-}
+// export type BatchTransfer = {
+//     token: string;
+//     sender: Signer;
+//     recipients: string[];
+//     amounts: Array<string | number>;
+// }
 
-export type TransferResult = {
-    result: string;
-}
-
-export type BatchTransfer = {
-    token: string;
-    sender: Signer;
-    recipients: string[];
-    amounts: Array<string | number>;
-}
-
-export type BatchTransferResult = {
-    result: string;
-}
+// export type BatchTransferResult = {
+//     result: string;
+// }
 
 export type PauseToken = {
-    admin: Signer;
+    vaultDeployer: Signer;
     vaultFactory: string;
     vault: string;
 }
@@ -113,9 +92,21 @@ export type PauseTokenResult = {
     receipt: TransactionReceipt;
 }
 
+export type RegisterIdentity = {
+    vaultDeployer: Signer;
+    vault: string;
+    subject: string;
+    subjectIdentity: string;
+    country: string;
+}
+
+export type RegisterIdentityResult = {
+    result: string;
+}
+
 export type MnftApprovalForAll = {
-    owner: Signer;
-    mnft: string;
+    machineController: Signer;
+    machineNft: string;
     vault: string;
     approved: boolean;
 }
@@ -125,8 +116,8 @@ export type MnftApprovalForAllResult = {
 }
 
 export type CnftApprovalForAll = {
-    owner: Signer;
-    cnft: string;
+    contractController: Signer;
+    contractNft: string;
     vault: string;
     approved: boolean;
 }
@@ -136,7 +127,7 @@ export type CnftApprovalForAllResult = {
 }
 
 export type DepositAndMint = {
-    owner: Signer;
+    vaultController: Signer;
     vault: string;
     rwaNfts: string[];
     tokenIds: string[];
@@ -148,23 +139,34 @@ export type DepositAndMintResult = {
 }
 
 export type EnsureTransferFeeAllowance = {
-    sender: Signer;
+    allowanceSigner: Signer;
     vault: string
-    erc20: string;
     token: string;
-    amount: string | number;
+    erc20: string;
+    transferAmountHuman: string;
 }
 
 export type EnsureTransferFeeAllowanceResult = {
     result: string;
 }
 
+export type Transfer = {
+    from: Signer;
+    to: string;
+    token: string;
+    transferAmountHuman: string;
+}
+
+export type TransferResult = {
+    result: string;
+}
+
 export type DepositYield = {
-    sender: Signer;
+    depositorSigner: Signer;
     vault: string;
-    assetErc20: string;
+    erc20: string;
     decimals: number;
-    amount: string | number;
+    humanReadableAmount: string;
 }
 
 export type DepositYieldResult = {
@@ -172,7 +174,7 @@ export type DepositYieldResult = {
 }
 
 export type ClaimYield = {
-    sender: Signer;
+    claimerSigner: Signer;
     vault: string;
 }
 
@@ -181,7 +183,7 @@ export type ClaimYieldResult = {
 }
 
 export type ClaimYieldTo = {
-    sender: Signer;
+    claimerSigner: Signer;
     vault: string;
     to: string;
 }

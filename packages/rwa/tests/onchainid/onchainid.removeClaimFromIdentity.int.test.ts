@@ -7,17 +7,9 @@ import { JsonRpcProvider, Wallet, AbiCoder, keccak256 } from 'ethers';
 import { RWA } from '../../src/rwa';
 import { Chain } from '../../src/enums/core';
 
-// This is a smoke test that requires env vars and a live endpoint.
-// It will be skipped automatically if env vars are missing.
 
-const HTTPS_BASE_URL = process.env.HTTPS_BASE_URL;
-const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY;
-const ALICE_PUBLIC_ADDRESS = process.env.ALICE_PUBLIC_ADDRESS;
-
-const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_ADDRESS);
-
-// Integration test that creates or returns an existing identity
-(shouldRun ? describe.sequential : describe.skip)('OnchainID.removeClaimFromIdentity [integration]', () => {
+// Integration test that removes a KYC claim from an identity
+describe.sequential('OnchainID.removeClaimFromIdentity [integration]', () => { 
   it.skip('Creates and then removes a KYC claim', async () => {
     // 0. Create rwa_sdk instance and get provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
@@ -27,13 +19,13 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
     const claimIssuer = new Wallet(process.env.CLAIM_ISSUER_PRIVATE_KEY!, provider);
 
     // 2. Get User to KYC
-    const alice = await rwa_sdk.onchainid.getIdentity({ eoa: process.env.ALICE_PUBLIC_ADDRESS! });
+    const alice = await rwa_sdk.onchainid.getIdentity({ subject: process.env.ALICE_PUBLIC_ADDRESS! });
 
     // 3. Create claim + signature
     const { claim, signature } = await rwa_sdk.onchainid.issueKycClaim({
-        claimIssuer: claimIssuer,
-        issuerContract: process.env.CLAIM_ISSUER_CONTRACT_ADDRESS!,
-        identity: alice.identity,
+        claimIssuerSigner: claimIssuer,
+        claimIssuerContract: process.env.CLAIM_ISSUER_CONTRACT_ADDRESS!,
+        subjectIdentity: alice.identity,
         name: 'Alice',
         lastName: 'Doe',
         dateOfBirth: '1990-01-01',
@@ -44,10 +36,10 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
     // 4. Identity owner signs and submits addClaim
     const aliceSigner = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
     const { receipt } = await rwa_sdk.onchainid.addClaimToIdentity({
-        identity: alice.identity,
-        identityOwner: aliceSigner,
+        identityController: aliceSigner,
+        subjectIdentity: alice.identity,
         claim: claim,
-        kycSignature: signature,
+        claimSignature: signature,
     });
     expect(receipt.status).toBe(1);
 
@@ -59,12 +51,19 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
 
     // 6. Remove claim from identity
     const result = await rwa_sdk.onchainid.removeClaimFromIdentity({
-      identity: alice.identity,
-      identityOwner: aliceSigner,
+      identityController: aliceSigner,
+      subjectIdentity: alice.identity,
       claimId: claimId
     });
     expect(result.receipt.status).toBe(1);
     expect(result.result).toBe(`Successfully removed claim for Identity ${alice.identity}`);
+
+    // 7. Expected failure - claim should not be found in identity contract and throw an error
+    await expect(rwa_sdk.onchainid.getClaim({
+        subjectIdentity: alice.identity,
+        claimId: claimId
+      })
+    ).rejects.toThrow(/Claim not found/i);
 
   }, 60_000);
 });

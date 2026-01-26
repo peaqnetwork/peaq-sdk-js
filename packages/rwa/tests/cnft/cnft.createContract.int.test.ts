@@ -2,34 +2,25 @@
 
 import 'dotenv/config';
 import { describe, it, expect } from 'vitest';
-import { JsonRpcProvider, Wallet, AbiCoder, keccak256, toUtf8Bytes } from 'ethers';
+import { JsonRpcProvider, Wallet, keccak256, toUtf8Bytes } from 'ethers';
 
 import { RWA } from '../../src/rwa';
 import { Chain } from '../../src/enums/core';
 import { contractId as computeContractId } from '../../src/utils/nft';
 
-// This is a smoke test that requires env vars and a live endpoint.
-// It will be skipped automatically if env vars are missing.
 
-const HTTPS_BASE_URL = process.env.HTTPS_BASE_URL;
-const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY;
-const ALICE_PUBLIC_ADDRESS = process.env.ALICE_PUBLIC_ADDRESS;
-
-const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_ADDRESS);
-
-(shouldRun ? describe.sequential : describe.skip)('cnft.createContract [integration]', () => {
+describe.sequential('cnft.createContract [integration]', () => {
   it.skip('creates a Contract NFT', async () => {
     // 0. Create RWA instance and get provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
 
-    // 1. Contract initiator wallet (submits tx and pays native deposit)
+    // 1. Contract controller wallet (submits tx and pays native deposit)
     const alice = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
 
     // 2. Counterparty wallets (co-signs the contract)
     const bob = new Wallet(process.env.BOB_PRIVATE_KEY!, provider);
     const charlie = new Wallet(process.env.CHARLIE_PRIVATE_KEY!, provider);
-
 
     // 3. Get a known Contract NFT address
     const contractNft = "0xA00ee5b948E3E1cb293f57F7008721353416Aa2E";
@@ -39,10 +30,12 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
 
     // 4. Create MachineNFT(s) for Alice
     const result = await rwa_sdk.cnft.createContract({
-        contractInitiator: alice,
+        contractController: alice,
+        erc20: rwa_sdk.getAddresses().erc20.peaq,
+        tokenDecimals: 18,
         counterparties: [bob.address, charlie.address],
         contractNft: contractNft,
-        hashDigest: hashDigest,
+        contractHash: hashDigest,
         url: url
     });
     expect(result).toBeDefined();
@@ -97,6 +90,7 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
       url: dContent[3],
     });
     expect(idFromDraft).toBe(result.contractId);
+
 
     
     // 6. Have Bob sign the contract

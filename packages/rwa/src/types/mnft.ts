@@ -1,16 +1,31 @@
 import type { Signer, TransactionReceipt } from 'ethers';
 
-export type IssueMachineNFT = {
-    machineValue: bigint;
+export type EnsureMachineNftAllowance = {
+    machineController: Signer;
+    machineNft: string;
+    machineValueHuman: string;
+    erc20: string;
+    tokenDecimals: number;
+    machineCount: number;
+  }
+
+export type EnsureMachineNftAllowanceResult = {
+    result: string;
+}
+
+export type IssueMachineNft = {
     machineIssuer: Signer;
-    machineOwner: Signer;
-    machineNFT: string;
-    runSeed: number;
-    count?: number;
+    machineNft: string;
+    machineValueHuman: string;
+    erc20: string;
+    tokenDecimals: number;
+    machineControllerAddr: string;
+    salt: number;
+    count: number;
 }
 
 // TODO improve return type
-export type IssueMachineNFTResult = {
+export type IssueMachineNftResult = {
     result: string;
 }
 export interface IMachineMetadata {
@@ -22,7 +37,7 @@ export interface IMachineMetadata {
   }
 
 export type GetMachineDid = {
-    machineNFT: string;
+    machineNft: string;
     tokenId: string;
 }
 

@@ -19,7 +19,7 @@ import { keccak256, AbiCoder, getBytes } from 'ethers';
  * 
  */
 export async function generateKycClaim(opts: GenerateKycClaim): Promise<IClaim> {
-    const { issuerContract, kyc, uri } = opts;
+    const { claimIssuerContract, kyc, uri } = opts;
     const abiCoder = AbiCoder.defaultAbiCoder();
     const data = keccak256(abiCoder.encode(
       ['string', 'string', 'string', 'string'],
@@ -27,7 +27,7 @@ export async function generateKycClaim(opts: GenerateKycClaim): Promise<IClaim> 
     ));
     return {
       identity: kyc.identity,
-      issuer: issuerContract,
+      issuer: claimIssuerContract,
       topic: ClaimTopics.CT_KYC_APPROVED,
       scheme: ClaimScheme.ECDSA,
       data: data,

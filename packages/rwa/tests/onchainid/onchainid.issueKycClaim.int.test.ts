@@ -6,33 +6,25 @@ import { RWA } from '../../src/rwa';
 import { Chain } from '../../src/enums/core';
 import { ClaimTopics } from '../../src/enums/claimTopics';
 
-// This is a smoke test that requires env vars and a live endpoint.
-// It will be skipped automatically if env vars are missing.
 
-const HTTPS_BASE_URL = process.env.HTTPS_BASE_URL;
-const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY;
-const ALICE_PUBLIC_ADDRESS = process.env.ALICE_PUBLIC_ADDRESS;
-
-const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_ADDRESS);
-
-// Integration test that creates or returns an existing identity
-(shouldRun ? describe.sequential : describe.skip)('OnchainID.issueKycClaim [integration]', () => {
+// Integration test that issues a KYC claim
+describe.sequential('OnchainID.issueKycClaim [integration]', () => {
   it.skip('issues a KYC claim', async () => {
     // 0. Create RWA instance and provider
-    const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
+    const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL!);
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
 
     // 1. Claim Issuer admin wallet
     const claimIssuer = new Wallet(process.env.CLAIM_ISSUER_PRIVATE_KEY!, provider);
 
     // 2. Get User to KYC
-    const alice = await rwa_sdk.onchainid.getIdentity({ eoa: process.env.ALICE_PUBLIC_ADDRESS! });
+    const alice = await rwa_sdk.onchainid.getIdentity({ subject: process.env.ALICE_PUBLIC_ADDRESS! });
 
     // 3. Create claim + signature
     const { claim, signature } = await rwa_sdk.onchainid.issueKycClaim({
-        claimIssuer: claimIssuer,
-        issuerContract: process.env.CLAIM_ISSUER_CONTRACT_ADDRESS!,
-        identity: alice.identity,
+        claimIssuerSigner: claimIssuer,
+        claimIssuerContract: process.env.CLAIM_ISSUER_CONTRACT_ADDRESS!,
+        subjectIdentity: alice.identity,
         name: 'Alice',
         lastName: 'Doe',
         dateOfBirth: '1990-01-01',

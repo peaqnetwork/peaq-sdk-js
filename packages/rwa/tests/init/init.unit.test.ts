@@ -16,14 +16,6 @@ vi.mock('../../src/config/addresses', () => ({
   getAddresses: (...args: any[]) => getAddressesMock(...args),
 }));
 
-// Mock each module class that `RWA` instantiates
-vi.mock('../../src/modules/trex', () => ({
-  TREX: class TREX {
-    constructor(...args: any[]) {
-      ctorCalls.trex.push(args);
-    }
-  },
-}));
 
 vi.mock('../../src/modules/vault', () => ({
   Vault: class Vault {
@@ -34,7 +26,7 @@ vi.mock('../../src/modules/vault', () => ({
 }));
 
 vi.mock('../../src/modules/mnft', () => ({
-  MachineNFT: class MachineNFT {
+  MachineNft: class MachineNft {
     constructor(...args: any[]) {
       ctorCalls.mnft.push(args);
     }
@@ -42,7 +34,7 @@ vi.mock('../../src/modules/mnft', () => ({
 }));
 
 vi.mock('../../src/modules/cnft', () => ({
-  ContractNFT: class ContractNFT {
+  ContractNft: class ContractNft {
     constructor(...args: any[]) {
       ctorCalls.cnft.push(args);
     }
@@ -60,7 +52,6 @@ vi.mock('../../src/modules/onchainid', () => ({
 describe('RWA SDK initialization (unit)', () => {
   beforeEach(() => {
     getAddressesMock.mockReset();
-    ctorCalls.trex.length = 0;
     ctorCalls.vault.length = 0;
     ctorCalls.mnft.length = 0;
     ctorCalls.cnft.length = 0;
@@ -83,7 +74,6 @@ describe('RWA SDK initialization (unit)', () => {
     expect(sdk.addresses).toBe(addressesA);
 
     // Each module should be instantiated with (addresses, provider)
-    expect(ctorCalls.trex).toEqual([[addressesA, providerA]]);
     expect(ctorCalls.vault).toEqual([[addressesA, providerA]]);
     expect(ctorCalls.mnft).toEqual([[addressesA, providerA]]);
     expect(ctorCalls.cnft).toEqual([[addressesA, providerA]]);

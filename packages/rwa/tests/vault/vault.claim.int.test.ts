@@ -2,20 +2,12 @@
 
 import 'dotenv/config';
 import { describe, it, expect } from 'vitest';
-import { JsonRpcProvider, Wallet, AbiCoder, keccak256, toUtf8Bytes } from 'ethers';
+import { JsonRpcProvider, Wallet } from 'ethers';
 
 import { RWA } from '../../src/rwa';
 import { Chain } from '../../src/enums/core';
-import { contractId as computeContractId } from '../../src/utils/nft';
 
-
-const HTTPS_BASE_URL = process.env.HTTPS_BASE_URL;
-const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY;
-const ALICE_PUBLIC_ADDRESS = process.env.ALICE_PUBLIC_ADDRESS;
-
-const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_ADDRESS);
-
-(shouldRun ? describe.sequential : describe.skip)('vault.claimYield [integration]', () => {    
+describe.sequential('vault.claimYield [integration]', () => {    
   it.skip('claims yield from a vault', async () => {
     // 0. Create RWA instance and get provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
@@ -25,14 +17,14 @@ const shouldRun = Boolean(HTTPS_BASE_URL && ADMIN_PRIVATE_KEY && ALICE_PUBLIC_AD
     const alice = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
 
     // 2. Get known vault address
-    const vault = "0x1B6c40647589dfF2172F0Cfa4C37cbC8a78aE955";
+    const vault = "0x807C971828bfc2CcfF326e86e9C4c8787DcC46Af";
 
     // 3. Claim Yield
     const result = await rwa_sdk.vault.claimYield({
-        sender: alice,
+        claimerSigner: alice,
         vault: vault
     });
-    console.log(result);
+    // console.log(result);  
     expect(result).toBeDefined();
     expect(result).toHaveProperty('result');
     expect(typeof result.result).toBe('string');

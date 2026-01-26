@@ -1,7 +1,22 @@
 import type { NetworkAddresses } from '../types/core';
-import type { CreateContract, 
+import type { 
+  CreateContract, 
   CreateContractResult, 
-  GetDraft, GetDraftResult, GetContract, GetContractResult, SignContract, SignContractResult, CancelContract, CancelContractResult, SetBlocked, SetBlockedResult, IsBlocked, IsBlockedResult, IsContractIdAvailable, IsContractIdAvailableResult   } from '../types/cnft';
+  GetDraft, 
+  GetDraftResult, 
+  GetContract, 
+  GetContractResult, 
+  SignContract, 
+  SignContractResult, 
+  CancelContract, 
+  CancelContractResult, 
+  SetBlocked, 
+  SetBlockedResult, 
+  IsBlocked, 
+  IsBlockedResult, 
+  IsContractIdAvailable, 
+  IsContractIdAvailableResult
+ } from '../types/cnft';
 
 import type { Signer, Provider } from 'ethers';
 import { getAddress, formatUnits } from 'ethers';
@@ -13,13 +28,13 @@ import { waitForTx } from '../utils/txs';
 
 
 /**
- * ContractNFTs module provides functionality for issuing Contract NFTs for the PEAQ network.
+ * ContractNfts module provides functionality for issuing Contract NFTs for the PEAQ network.
  * 
- * @class ContractNFT
+ * @class ContractNft
  * @param {NetworkAddresses} addresses - The network addresses for the ContractNFTs module
  * @param {Provider} provider - The provider for the ContractNFTs module
  */
-export class ContractNFT {
+export class ContractNft {
   constructor(
     private readonly addresses: NetworkAddresses,
     private readonly provider: Provider
@@ -43,54 +58,55 @@ export class ContractNFT {
    * @returns {CreateContractResult} The result of creating a Contract NFT
    */
   public async createContract(opts: CreateContract): Promise<CreateContractResult> {
-    const { contractInitiator, counterparties, contractNft, hashDigest, url } = parseOptions<CreateContract>(opts, {
-        contractInitiator: { required: true, validator: validators.signerWithProvider, expected: 'Signer' },
+    const { contractController, erc20, tokenDecimals, counterparties, contractNft, contractHash, url } = parseOptions<CreateContract>(opts, {
+        contractController: { required: true, validator: validators.signerWithProvider, expected: 'Signer' },
+        erc20: { required: true, validator: validators.address, expected: 'EVM address string' },
+        tokenDecimals: { required: true, validator: validators.number, expected: 'number' },
         counterparties: { required: true, validator: validators.arrayOf(validators.address), expected: 'array of EVM address strings' },
         contractNft: { required: true, validator: validators.address, expected: 'EVM address string' },
-        hashDigest: { required: true, validator: validators.string, expected: 'string' },
+        contractHash: { required: true, validator: validators.string, expected: 'string' },
         url: { required: true, validator: validators.string, expected: 'string' },
       }, 'createContract');
 
-    const cnft = this._cnft(contractInitiator, contractNft);
+    const cnft = this._cnft(contractController, contractNft);
 
     const [fee, account] = await cnft.setupFeeAndAccount();
 
     // 2) Approve ERC20
-    const ownerAddr = await contractInitiator.getAddress();
-    const erc20 = this._erc20(contractInitiator, this.addresses.erc20.peaq);
-    const startingBalance = await erc20.balanceOf(ownerAddr);
-    const allowance = await erc20.allowance(ownerAddr, account);
+    const ownerAddr = await contractController.getAddress();
+    const erc20Contract = this._erc20(contractController, erc20);
+    const startingBalance = await erc20Contract.balanceOf(ownerAddr);
+    const allowance = await erc20Contract.allowance(ownerAddr, account);
     if (allowance < fee) {
         try {
-            await erc20.approve.staticCall(account, fee);
+            await erc20Contract.approve.staticCall(account, fee);
         } catch (cause: any) {
             throw new SDKError('SIMULATE/APPROVE_ERC20', 'ERC20 callStatic failed; approval would revert', { cause });
         }
-        const approveTx = await erc20.approve.populateTransaction(account, fee);
-        await waitForTx(contractInitiator, approveTx);
+        const approveTx = await erc20Contract.approve.populateTransaction(account, fee);
+        await waitForTx(contractController, approveTx);
     }
 
     // 3) Initialize contract and sign by initiator
     try {
-        await cnft.initContractAndSign.staticCall(counterparties, hashDigest, url);
+        await cnft.initContractAndSign.staticCall(counterparties, contractHash, url);
     } catch (cause: any) {
-        console.log(cause) // TODO: Improve error handling in the SDKError class; for now just log the cause
+        console.log(cause)
         throw new SDKError('SIMULATE/INIT_CONTRACT', 'ContractNFTs callStatic failed; initialization would revert', { cause });
     }
-    const initContractTx = await cnft.initContractAndSign.populateTransaction(counterparties, hashDigest, url);
-    const result = await waitForTx(contractInitiator, initContractTx);
+    const initContractTx = await cnft.initContractAndSign.populateTransaction(counterparties, contractHash, url);
+    const result = await waitForTx(contractController, initContractTx);
 
     // Get emitted event for contract ID
     const iface = IContractNft__factory.createInterface();
     const args = await getArgsFromTxEvent(result, 'ContractInitiated', iface);
     const contractId = args[0].toString();
-    const emittedContractInitiator = args[1].toString();
 
-    const endingBalance = await erc20.balanceOf(ownerAddr);
+    const endingBalance = await erc20Contract.balanceOf(ownerAddr);
     const tokenDelta = startingBalance - endingBalance;
 
 
-    return { message: `Contract setup fees paid: ${ formatUnits(tokenDelta.toString(), DECIMALS.PEAQ)} PEAQ`, contractId: contractId };
+    return { message: `Contract setup fees paid: ${ formatUnits(tokenDelta.toString(), tokenDecimals)} PEAQ`, contractId: contractId };
   }
 
   /**
@@ -173,12 +189,12 @@ export class ContractNFT {
    * @returns {CancelContractResult} The result of cancelling a Contract NFT
    */
   public async cancelContract(opts: CancelContract): Promise<CancelContractResult> {
-    const { contractInitiator, contractNft, contractId } = parseOptions<CancelContract>(opts, {
-        contractInitiator: { required: true, validator: validators.signerWithProvider, expected: 'Signer' },
+    const { contractController, contractNft, contractId } = parseOptions<CancelContract>(opts, {
+      contractController: { required: true, validator: validators.signerWithProvider, expected: 'Signer' },
         contractNft: { required: true, validator: validators.address, expected: 'EVM address string' },
         contractId: { required: true, validator: validators.string, expected: 'string' },
       }, 'cancelContract');
-    const cnft = this._cnft(contractInitiator, contractNft);
+    const cnft = this._cnft(contractController, contractNft);
 
     try {
       await cnft.cancelContract.staticCall(contractId);
@@ -188,7 +204,7 @@ export class ContractNFT {
     }
 
     const cancelContractTx = await cnft.cancelContract.populateTransaction(contractId);
-    const result = await waitForTx(contractInitiator, cancelContractTx);
+    const result = await waitForTx(contractController, cancelContractTx);
 
     const iface = IContractNft__factory.createInterface();
     const args = await getArgsFromTxEvent(result, 'ContractCancelled', iface);
@@ -197,14 +213,21 @@ export class ContractNFT {
     return { message: `Contract ${contractCancelledId} cancelled.` };
   }
 
+  /**
+   * 
+   * Sets a Contract NFT to blocked.
+   * 
+   * @param {SetBlocked} opts - The options for setting a Contract NFT to blocked
+   * @returns {SetBlockedResult} The result of setting a Contract NFT to blocked
+   */
   public async setBlocked(opts: SetBlocked): Promise<SetBlockedResult> {
-    const { contractNftOwner, contractNft, blocked } = parseOptions<SetBlocked>(opts, {
-      contractNftOwner: { required: true, validator: validators.signerWithProvider, expected: 'Signer' },
+    const { contractNftSigner, contractNft, blocked } = parseOptions<SetBlocked>(opts, {
+      contractNftSigner: { required: true, validator: validators.signerWithProvider, expected: 'Signer' },
       contractNft: { required: true, validator: validators.address, expected: 'EVM address string' },
       blocked: { required: true, validator: validators.boolean, expected: 'boolean' },
     }, 'setBlocked');
 
-    const cnft = this._cnft(contractNftOwner, contractNft);
+    const cnft = this._cnft(contractNftSigner, contractNft);
 
     try {
       await cnft.setBlocked.staticCall(blocked);
@@ -214,7 +237,7 @@ export class ContractNFT {
     }
 
     const setBlockedTx = await cnft.setBlocked.populateTransaction(blocked);
-    await waitForTx(contractNftOwner, setBlockedTx);
+    await waitForTx(contractNftSigner, setBlockedTx);
 
     return { message: `Contract set blocked to ${blocked}.` };
   }
