@@ -4,5 +4,8 @@ export { Chain } from './enums/core';
 
 export type * from './types/core';
 export type * from './types/onchainid';
+export type * from './types/rwa';
 export type * from './types/mnft';
+export type * from './types/cnft';
+export type * from './types/claims';
 export type * from './types/vault';

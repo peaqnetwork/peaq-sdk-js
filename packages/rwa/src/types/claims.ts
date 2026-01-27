@@ -16,13 +16,20 @@ export interface IClaim {
     issuer: string;
     identity: string;
     data: string;
-    uri: string;
+    uri?: string;
 }
 
 export type GenerateKycClaim = {
     claimIssuerContract: string;
     kyc: KYC;
     uri: string | null;
+}
+
+export type GenerateRoleClaim = {
+    subjectIdentity: string;
+    claimIssuerContract: string;
+    roleTopic: number;
+    roleDescription: string;
 }
 
 export type SignClaim = {

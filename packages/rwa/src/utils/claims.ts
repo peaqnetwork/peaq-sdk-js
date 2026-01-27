@@ -1,5 +1,5 @@
 // types
-import type { GenerateKycClaim, SignClaim } from '../types/claims';
+import type { GenerateKycClaim, GenerateRoleClaim, SignClaim } from '../types/claims';
 import type { IClaim } from '../types/claims';
 
 // claim topics and schemes
@@ -33,6 +33,30 @@ export async function generateKycClaim(opts: GenerateKycClaim): Promise<IClaim> 
       data: data,
       uri: uri ?? 'https://kyc-provider.com/user/verification'
     }
+}
+
+/**
+ * Role claim is used to add a role to an identity. Either a Machine Regulator or a Machine Issuer.
+ * 
+ * @type {GenerateRoleClaim} - The parameter type options for generating a Role claim
+ * @returns {IClaim} The result of generating a KYC claim
+ * 
+ */
+export async function generateRoleClaim(opts: GenerateRoleClaim): Promise<IClaim> {
+  const { claimIssuerContract, subjectIdentity, roleTopic, roleDescription } = opts;
+  if (roleTopic !== ClaimTopics.CT_MNFT_ISSUER && roleTopic !== ClaimTopics.CT_MNFT_REGULATOR) {
+    throw new Error('Invalid role topic');
+  }
+  const abiCoder = AbiCoder.defaultAbiCoder();
+  const data = abiCoder.encode(['string'], [roleDescription]);
+  return {
+    identity: subjectIdentity,
+    issuer: claimIssuerContract,
+    topic: roleTopic,
+    scheme: ClaimScheme.ECDSA,
+    data: data,
+    uri: 'https://issuer-regulator-provider.com/user/verification'
+  }
 }
 
 /**

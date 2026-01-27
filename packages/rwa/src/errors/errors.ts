@@ -30,6 +30,9 @@ export type SDKErrorCode =
   | 'SIMULATE/DEPOSIT_YIELD'
   | 'SIMULATE/CLAIM_YIELD'
   | 'SIMULATE/CLAIM_YIELD_TO'
+  | 'SIMULATE/ADD_MACHINE_ISSUER'
+  | 'SIMULATE/REMOVE_MACHINE_ISSUER'
+  | 'SIMULATE/SET_MACHINE_NFT_BLOCK_STATE'
 
 // 2) Public shape (safe to serialize)
 export interface SDKErrorShape {

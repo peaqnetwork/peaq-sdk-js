@@ -4,6 +4,7 @@ import type {
   CreateIdentity, CreateIdentityResult,
   GetIdentity, GetIdentityResult,
   IssueKycClaim, IssueKycClaimResult,
+  IssueRoleClaim, IssueRoleClaimResult,
   AddClaimToIdentity, AddClaimToIdentityResult,
   GetClaim, GetClaimResult,
   RemoveClaimFromIdentity, RemoveClaimFromIdentityResult
@@ -13,7 +14,7 @@ import type {
 // utils
 import { waitForTx } from '../utils/txs';
 import { parseOptions, validators } from '../utils/helpers';
-import { generateKycClaim, signClaim } from '../utils/claims';
+import { generateKycClaim, generateRoleClaim, signClaim } from '../utils/claims';
 
 // errors
 import { SDKError } from '../errors/errors';
@@ -138,6 +139,27 @@ export class OnChainID {
     return { claim, signature };
   }
 
+  /**
+  * Generates and signs a Role claim (Machine Regulator or Machine Issuer) for an ONCHAINID identity.
+  * 
+  * @type {IssueRoleClaim} - The parameter type options for issuing a Role claim
+  * @returns {IssueRoleClaimResult} The result of issuing a Role claim
+  */
+  public async issueRoleClaim(opts: IssueRoleClaim): Promise<IssueRoleClaimResult> {
+    const { claimIssuerSigner, claimIssuerContract, subjectIdentity, roleTopic, roleDescription } = parseOptions<IssueRoleClaim>(opts, {
+      claimIssuerSigner: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      claimIssuerContract: { required: true, validator: validators.address, expected: 'EVM address string' },
+      subjectIdentity: { required: true, validator: validators.address, expected: 'EVM address string' },
+      roleTopic: { required: true, validator: validators.number, expected: 'number' },
+      roleDescription: { required: true, validator: validators.string, expected: 'string' },
+  }   , 'issueRoleClaim');
+
+    const claim = await generateRoleClaim({claimIssuerContract, subjectIdentity, roleTopic, roleDescription });
+    const signature = await signClaim({ claim, claimIssuer: claimIssuerSigner });
+
+    return { claim, signature };
+  }
+
 
   /**
   * Adds a signed claim to an ONCHAINID identity by calling the identity contract's addClaim.
@@ -157,7 +179,7 @@ export class OnChainID {
 
     // preflight check
     try {
-      const claimId = await identityContract.addClaim.staticCall(claim.topic, claim.scheme, claim.issuer, claimSignature, claim.data, claim.uri); 
+      const claimId = await identityContract.addClaim.staticCall(claim.topic, claim.scheme, claim.issuer, claimSignature, claim.data, claim.uri!); 
     } catch (cause: any) {
       console.log(cause);
       throw new SDKError('SIMULATE/ADD_CLAIM', 'Identity callStatic failed; addition would revert', { cause });
@@ -169,7 +191,7 @@ export class OnChainID {
       claim.issuer,
       claimSignature,
       claim.data,
-      claim.uri
+      claim.uri!
     );
     const receipt = await waitForTx(identityController, tx);
     return { receipt: receipt };

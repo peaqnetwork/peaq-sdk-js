@@ -50,6 +50,19 @@ export type IssueKycClaimResult = {
     signature: string;
 }
 
+export type IssueRoleClaim = {
+    claimIssuerSigner: Signer;
+    claimIssuerContract: string;
+    subjectIdentity: string;
+    roleTopic: number;
+    roleDescription: string;
+}
+
+export type IssueRoleClaimResult = {
+    claim: IClaim;
+    signature: string;
+}
+
 export type AddClaimToIdentity = {
     identityController: Signer;
     subjectIdentity: string;
