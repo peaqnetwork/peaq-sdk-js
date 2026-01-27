@@ -46,11 +46,13 @@ describe.sequential('rwa.addMachineIssuer [integration]', () => {
         machineRegulatorSigner: machineRegulator,
         newMachineIssuer: aliceMachineIssuer.address
     });
+    console.log('Add Machine Issuer result:', result);
     expect(result).toBeDefined();
     expect(result).toHaveProperty('result');
     expect(typeof result.result).toBe('string');
     expect(result.result).toContain('Machine issuer at address');
     expect(result.result).toContain(aliceMachineIssuer.address);
+    expect(result.result).toContain('machine NFT at address');
 
     // 7. Get updated machine issuers, and make sure machine issuer in list and length is incremented by 1
     const updatedMachineIssuers = await rwa_sdk.rwa.getMachineIssuers();

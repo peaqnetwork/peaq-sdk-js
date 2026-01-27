@@ -73,8 +73,14 @@ export class PeaqRwaNft {
     }
 
     const tx = await peaqRwaNftContract.addMachineIssuer.populateTransaction(newMachineIssuer);  
-    await waitForTx(machineRegulatorSigner, tx);
-    return { result: `Machine issuer at address ${newMachineIssuer} added` };
+    const result = await waitForTx(machineRegulatorSigner, tx);
+
+    const iface = IPeaqRwaNft__factory.createInterface();
+    const args = await getArgsFromTxEvent(result, 'MachineIssuerAdded', iface);
+    const machineIssuer = args[0].toString();
+    const machineNft = args[1].toString();
+
+    return { result: `Machine issuer at address ${machineIssuer} added to the PeaqRwaNft contract with machine NFT at address ${machineNft}` };
   }
 
   /**

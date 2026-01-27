@@ -13,9 +13,19 @@ describe.sequential('rwa.findContractNft [integration]', () => {
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
 
-    const contractId = "100029413485835746184994811893588555499363699086818240224380117841719712643928";
+    const contractId = "1234567890";
     const contractNft = await rwa_sdk.rwa.findContractNft({ contractId: contractId });
-    console.log(contractNft);
-    // confused on why this is failing
+    console.log('Find Contract NFT result:', contractNft);
+    expect(contractNft).toBeDefined();
+    expect(contractNft).toHaveProperty('contractNft');
+    expect(typeof contractNft.contractNft).toBe('string');
+    expect(contractNft.contractNft).toBe('0xA00ee5b948E3E1cb293f57F7008721353416Aa2E');
+
+    const usedContractId = "100029413485835746184994811893588555499363699086818240224380117841719712643928";
+    await expect(
+      rwa_sdk.rwa.findContractNft({
+        contractId: usedContractId,
+      })
+    ).rejects.toThrow(/Not available, please contact owner/i); 
   }, 60_000);
 });
