@@ -29,8 +29,8 @@ describe.sequential('vault.createVault [integration]', () => {
       vaultFactory: "0x5C5Db5CcF63ed6C11063385070C8FD2C990BFd53",
       infoDesk: "0x3F2c72Ba389632079DA68Ee13E8b955d69D1B5c1",
       trustedClaimIssuers: [claimIssuerContract],
-      tokenName: "Test Token J",
-      tokenSymbol: "JGG",
+      tokenName: "Test Token Q",
+      tokenSymbol: "TTQ",
       payoutToken: rwa_sdk.getAddresses().erc20.peaq,
     });
     console.log(result);
@@ -46,9 +46,9 @@ describe.sequential('vault.createVault [integration]', () => {
 
 
     // {
-    //   vault: '0x807C971828bfc2CcfF326e86e9C4c8787DcC46Af',
-    //   token: '0x9dEA19d20F504678593118C4FCaed839A4b91770',
-    //   distributor: '0x5d4d74445B7c9CD0ADE6A97667904a63403BD01d'
+    //   vault: '0x4dBF70cD5407F8b1014c238387ce8EEf85Cc2656',
+    //   token: '0x9E23427EA607DFE224DA6DF9b75E2f50B8e7AFE5',
+    //   distributor: '0x9AD7737A380253283a447C86cE650A7ABC515945'
     // }
   }, 60_000);
 });

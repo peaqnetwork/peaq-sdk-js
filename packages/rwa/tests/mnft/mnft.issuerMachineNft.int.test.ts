@@ -44,7 +44,6 @@ describe.sequential('mnft.issueMachineNFT [integration]', () => {
         salt: Math.floor(Math.random() * 10000),
         count: 2
     });
-
     expect(result2).toBeDefined();
     expect(result2.result).toContain('Machine registration fees paid');
   }, 60_000);

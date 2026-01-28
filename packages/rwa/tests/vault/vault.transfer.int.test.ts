@@ -20,16 +20,16 @@ describe.sequential('vault.transfer [integration]', () => {
     // 3. Get Charlie wallet to receive tokens
     const charlie = new Wallet(process.env.CHARLIE_PRIVATE_KEY!, provider);
 
-    // 4. Get token
-    const token = "0x9dEA19d20F504678593118C4FCaed839A4b91770";
+    // 4. Get security token address
+    const token = "0x9E23427EA607DFE224DA6DF9b75E2f50B8e7AFE5";
 
     // 5. Ensure transfer fee allowance is set
     const result = await rwa_sdk.vault.ensureTransferFeeAllowance({
       allowanceSigner: alice,
-      vault: "0x807C971828bfc2CcfF326e86e9C4c8787DcC46Af",
+      vault: "0x4dBF70cD5407F8b1014c238387ce8EEf85Cc2656",
       token: token,
       erc20: rwa_sdk.getAddresses().erc20.peaq,
-      transferAmountHuman: "1"
+      transferAmountHuman: "2"
     });
 
     expect(result).toBeDefined();

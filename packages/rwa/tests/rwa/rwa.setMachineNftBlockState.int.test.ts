@@ -21,7 +21,7 @@ describe.sequential('rwa.setMachineNftBlockState [integration]', () => {
     // const contractNft = "0xA00ee5b948E3E1cb293f57F7008721353416Aa2E";
 
     // 3. Set the block state of the machine issuer
-    const result = await rwa_sdk.rwa.setMachineNftBlockState({
+    const result = await rwa_sdk.rwanft.setMachineNftBlockState({
         machineRegulatorSigner: machineRegulator,
         issuerOrContractNft: aliceMachineIssuer.address,
         blocked: true
@@ -34,7 +34,7 @@ describe.sequential('rwa.setMachineNftBlockState [integration]', () => {
     expect(result.result).toContain('blocked to true');
 
     // 4. Set the block state of the machine issuer to false
-    const result2 = await rwa_sdk.rwa.setMachineNftBlockState({
+    const result2 = await rwa_sdk.rwanft.setMachineNftBlockState({
         machineRegulatorSigner: machineRegulator,
         issuerOrContractNft: aliceMachineIssuer.address,
         blocked: false

@@ -13,23 +13,26 @@ describe.sequential('vault.mnftApproval [integration]', () => {
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
 
-    // 1. Get alice wallet to approve vault as operator for MNFT
-    const alice = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
+    // 1. Get Machine Controller
+    const machineController = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
 
-    // 2. Approve MNFT for vault
-    const resp = await rwa_sdk.vault.mnftApprovalForAll({
-      machineController: alice,
-      machineNft: "0xaBB3961281123C336596153C4dfE83E11498fc54",
-      vault: "0x807C971828bfc2CcfF326e86e9C4c8787DcC46Af",
-      approved: true
+    // 2. Call cnft approval for tokenIds
+    const mnft = "0xaBB3961281123C336596153C4dfE83E11498fc54";
+    const mnftTokenIds = ["264584815634051302201818132358169219281326857171", "1175434611957131102776221217067939161297023915810"]
+    const mnftApprovalResult = await rwa_sdk.vault.mnftApproval({
+      machineController: machineController,
+      machineNft: mnft,
+      vault: "0x4dBF70cD5407F8b1014c238387ce8EEf85Cc2656",
+      tokenIds: mnftTokenIds
     });
-    expect(resp).toBeDefined();
-    expect(resp).toHaveProperty('result');
-    expect(typeof resp.result).toBe('string');
-    expect(resp.result).toContain('Set approval of vault');
-    expect(resp.result).toContain("0xaBB3961281123C336596153C4dfE83E11498fc54");
-    expect(resp.result).toContain("0x807C971828bfc2CcfF326e86e9C4c8787DcC46Af");
-    expect(resp.result).toContain("true");
+    console.log(mnftApprovalResult);
+    expect(mnftApprovalResult).toBeDefined();
+    expect(mnftApprovalResult).toHaveProperty('result');
+    expect(typeof mnftApprovalResult.result).toBe('string');
+    expect(mnftApprovalResult.result).toContain('Set approval of vault');
+    expect(mnftApprovalResult.result).toContain(mnft);
+    expect(mnftApprovalResult.result).toContain("0x4dBF70cD5407F8b1014c238387ce8EEf85Cc2656");
+    expect(mnftApprovalResult.result).toContain(mnftTokenIds.join(','));
 
   }, 60_000);
 });

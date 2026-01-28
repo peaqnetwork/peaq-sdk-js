@@ -11,23 +11,26 @@ describe.sequential('vault.cnftApproval [integration]', () => {
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
 
-    // 1. Get alice wallet to approve vault as operator for CNFT
-    const alice = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
+    // 1. Get Contract Controller
+    const contractController = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
 
-    // 2. Approve CNFT for vault
-    const resp = await rwa_sdk.vault.cnftApprovalForAll({
-      contractController: alice,
-      contractNft: "0xA00ee5b948E3E1cb293f57F7008721353416Aa2E",
-      vault: "0x807C971828bfc2CcfF326e86e9C4c8787DcC46Af",
-      approved: true
+    // 2. Call cnft approval for tokenIds
+    const cnft = "0xA00ee5b948E3E1cb293f57F7008721353416Aa2E";
+    const cnftTokenIds = ["107806479518792391728058199253344978782040793924169118583220839015139915080183"]
+    const cnftApprovalResult = await rwa_sdk.vault.cnftApproval({
+      contractController: contractController,
+      contractNft: cnft,
+      vault: "0x4dBF70cD5407F8b1014c238387ce8EEf85Cc2656",
+      tokenIds: cnftTokenIds
     });
-    expect(resp).toBeDefined();
-    expect(resp).toHaveProperty('result');
-    expect(typeof resp.result).toBe('string');
-    expect(resp.result).toContain('Set approval of vault');
-    expect(resp.result).toContain("0xA00ee5b948E3E1cb293f57F7008721353416Aa2E");
-    expect(resp.result).toContain("0x807C971828bfc2CcfF326e86e9C4c8787DcC46Af");
-    expect(resp.result).toContain("true");
+    console.log(cnftApprovalResult);
+    expect(cnftApprovalResult).toBeDefined();
+    expect(cnftApprovalResult).toHaveProperty('result');
+    expect(typeof cnftApprovalResult.result).toBe('string');
+    expect(cnftApprovalResult.result).toContain('Set approval of vault');
+    expect(cnftApprovalResult.result).toContain(cnft);
+    expect(cnftApprovalResult.result).toContain("0x4dBF70cD5407F8b1014c238387ce8EEf85Cc2656");
+    expect(cnftApprovalResult.result).toContain(cnftTokenIds.join(','));
 
   }, 60_000);
 });

@@ -2,7 +2,7 @@ import type { SDKInit, NetworkAddresses } from './types/core';
 import { getAddresses } from './config/addresses';
 
 import { OnChainID } from './modules/onchainid';
-import { PeaqRwaNft } from './modules/rwa';
+import { PeaqRwaNft } from './modules/rwanft';
 import { MachineNft } from './modules/mnft';
 import { ContractNft } from './modules/cnft';
 import { Vault } from './modules/vault';
@@ -24,7 +24,7 @@ export class RWA {
   readonly provider: Provider;
 
   readonly onchainid: OnChainID;
-  readonly rwa: PeaqRwaNft;
+  readonly rwanft: PeaqRwaNft;
   readonly mnft: MachineNft;
   readonly cnft: ContractNft;
   readonly vault: Vault;
@@ -41,7 +41,7 @@ export class RWA {
 
     // modules: pass provider for reads; writes accept a Signer per method
     this.onchainid = new OnChainID(this.addresses, this.provider);
-    this.rwa = new PeaqRwaNft(this.addresses, this.provider);
+    this.rwanft = new PeaqRwaNft(this.addresses, this.provider);
     this.mnft = new MachineNft(this.addresses, this.provider);
     this.cnft = new ContractNft(this.addresses, this.provider);
     this.vault = new Vault(this.addresses, this.provider);

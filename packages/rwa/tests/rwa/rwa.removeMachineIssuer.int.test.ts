@@ -20,10 +20,10 @@ describe.sequential('rwa.removeMachineIssuer [integration]', () => {
     const aliceMachineIssuer = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
 
     // 3. Get existing machine issuers
-    const existingMachineIssuers = await rwa_sdk.rwa.getMachineIssuers();
+    const existingMachineIssuers = await rwa_sdk.rwanft.getMachineIssuers();
 
     // 4. Remove Machine Issuer
-    const result = await rwa_sdk.rwa.removeMachineIssuer({
+    const result = await rwa_sdk.rwanft.removeMachineIssuer({
         machineRegulatorSigner: machineRegulator,
         machineIssuer: aliceMachineIssuer.address
     });
@@ -34,7 +34,7 @@ describe.sequential('rwa.removeMachineIssuer [integration]', () => {
     expect(result.result).toContain(aliceMachineIssuer.address);
 
     // 7. Get updated machine issuers, and make sure machine issuer in list and length is incremented by 1
-    const updatedMachineIssuers = await rwa_sdk.rwa.getMachineIssuers();
+    const updatedMachineIssuers = await rwa_sdk.rwanft.getMachineIssuers();
     expect(updatedMachineIssuers).toBeDefined();
     expect(updatedMachineIssuers).toHaveProperty('machineIssuers');
     expect(updatedMachineIssuers.machineIssuers).toBeDefined();

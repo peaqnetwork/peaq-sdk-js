@@ -1,5 +1,4 @@
 import type { Signer } from "ethers";
-import type { Contract } from "../utils/nft";
 
 
 export type GetMachineRegulatorsResult = {

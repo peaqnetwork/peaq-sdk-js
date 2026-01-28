@@ -17,7 +17,7 @@ describe.sequential('vault.claimYield [integration]', () => {
     const alice = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
 
     // 2. Get known vault address
-    const vault = "0x807C971828bfc2CcfF326e86e9C4c8787DcC46Af";
+    const vault = "0x4dBF70cD5407F8b1014c238387ce8EEf85Cc2656";
 
     // 3. Claim Yield
     const result = await rwa_sdk.vault.claimYield({

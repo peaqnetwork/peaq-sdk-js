@@ -14,7 +14,7 @@ describe.sequential('rwa.findContractNft [integration]', () => {
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
 
     const contractId = "1234567890";
-    const contractNft = await rwa_sdk.rwa.findContractNft({ contractId: contractId });
+    const contractNft = await rwa_sdk.rwanft.findContractNft({ contractId: contractId });
     console.log('Find Contract NFT result:', contractNft);
     expect(contractNft).toBeDefined();
     expect(contractNft).toHaveProperty('contractNft');
@@ -23,7 +23,7 @@ describe.sequential('rwa.findContractNft [integration]', () => {
 
     const usedContractId = "100029413485835746184994811893588555499363699086818240224380117841719712643928";
     await expect(
-      rwa_sdk.rwa.findContractNft({
+      rwa_sdk.rwanft.findContractNft({
         contractId: usedContractId,
       })
     ).rejects.toThrow(/Not available, please contact owner/i); 

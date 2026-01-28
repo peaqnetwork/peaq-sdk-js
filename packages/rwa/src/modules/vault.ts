@@ -9,10 +9,10 @@ import type {
   PauseTokenResult,
   RegisterIdentity,
   RegisterIdentityResult,
-  MnftApprovalForAll,
-  MnftApprovalForAllResult,
-  CnftApprovalForAll,
-  CnftApprovalForAllResult,
+  MnftApproval,
+  MnftApprovalResult,
+  CnftApproval,
+  CnftApprovalResult,
   DepositAndMint,
   DepositAndMintResult,
   EnsureTransferFeeAllowance,
@@ -228,59 +228,64 @@ export class Vault {
   }
 
   /**
-   * Approves a vault as an operator for a given machine NFT.
+   * Approves a vault as an operator for a given machine NFT at the given token IDs.
    * 
-   * @type {MnftApprovalForAll} - The parameter type options for approving a vault as an operator for a machine NFT
-   * @returns {MnftApprovalForAllResult} The result of approving a vault as an operator for a machine NFT
+   * @type {MnftApproval} - The parameter type options for approving a vault as an operator for a machine NFT
+   * @returns {MnftApprovalResult} The result of approving a vault as an operator for a machine NFT
    */
-  public async mnftApprovalForAll(opts: MnftApprovalForAll): Promise<MnftApprovalForAllResult> {
-    const { machineController, machineNft, vault, approved } = parseOptions<MnftApprovalForAll>(opts, {
+  public async mnftApproval(opts: MnftApproval): Promise<MnftApprovalResult> {
+    const { machineController, machineNft, vault, tokenIds } = parseOptions<MnftApproval>(opts, {
       machineController: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
       machineNft: { required: true, validator: validators.address, expected: 'EVM address string' },
       vault: { required: true, validator: validators.address, expected: 'EVM address string' },
-      approved: { required: true, validator: validators.boolean, expected: 'boolean' },
-    }, 'mnftApprovalForAll');
-    
+      tokenIds: { required: true, validator: validators.arrayOf(validators.string), expected: 'array of numbers' },
+    }, 'mnftApproval');
+    const tokenIdsBigInt = tokenIds.map((id) => BigInt(id));
     const mnftContract = this._mnft(machineController, machineNft);
 
-    try {
-      await mnftContract.setApprovalForAll.staticCall(vault, approved);
-    } catch (cause: any) {
-        console.log(cause)
-      throw new SDKError('SIMULATE/MNFT_APPROVAL_FOR_ALL', 'MachineNFT callStatic failed; approval would revert', { cause });
-    }
-    const approvalTx = await mnftContract.setApprovalForAll.populateTransaction(vault, approved);
-    const result = await waitForTx(machineController, approvalTx);
+    for (const tokenId of tokenIdsBigInt) {
+      try {
+          await mnftContract.approve.staticCall(vault, tokenId);
+      } catch (cause: any) {
+          console.log(cause)
+        throw new SDKError('SIMULATE/MNFT_APPROVAL', 'MachineNFT callStatic failed; approval would revert', { cause });
+      }
+      const approvalTx = await mnftContract.approve.populateTransaction(vault, tokenId);
+      await waitForTx(machineController, approvalTx);
+  }
 
-    return {result: `Set approval of vault ${vault} as operator for MNFT ${machineNft} to ${approved}.`};
+    return {result: `Set approval of vault ${vault} as operator for MNFT ${machineNft} to ${tokenIds}.`};
   }
 
     /**
-   * Approves a vault as an operator for a given contract NFT.
+   * Approves a vault as an operator for a given contract NFT at the given token IDs. 
    * 
-   * @type {CnftApprovalForAll} - The parameter type options for approving a vault as an operator for a contract NFT
-   * @returns {CnftApprovalForAllResult} The result of approving a vault as an operator for a contract NFT
+   * @type {CnftApproval} - The parameter type options for approving a vault as an operator for a contract NFT
+   * @returns {CnftApprovalResult} The result of approving a vault as an operator for a contract NFT
    */
-    public async cnftApprovalForAll(opts: CnftApprovalForAll): Promise<CnftApprovalForAllResult> {
-      const { contractController, contractNft, vault, approved } = parseOptions<CnftApprovalForAll>(opts, {
+    public async cnftApproval(opts: CnftApproval): Promise<CnftApprovalResult> {
+      const { contractController, contractNft, vault, tokenIds } = parseOptions<CnftApproval>(opts, {
         contractController: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
         contractNft: { required: true, validator: validators.address, expected: 'EVM address string' },
         vault: { required: true, validator: validators.address, expected: 'EVM address string' },
-        approved: { required: true, validator: validators.boolean, expected: 'boolean' },
-      }, 'cnftApprovalForAll');
-      
+        tokenIds: { required: true, validator: validators.arrayOf(validators.string), expected: 'array of numbers' },
+      }, 'cnftApproval');
+
+      const tokenIdsBigInt = tokenIds.map((id) => BigInt(id));
       const cnftContract = this._cnft(contractController, contractNft);
   
-      try {
-        await cnftContract.setApprovalForAll.staticCall(vault, approved);
-      } catch (cause: any) {
-          console.log(cause)
-        throw new SDKError('SIMULATE/CNFT_APPROVAL_FOR_ALL', 'ContractNFT callStatic failed; approval would revert', { cause });
-      }
-      const approvalTx = await cnftContract.setApprovalForAll.populateTransaction(vault, approved);
-      const result = await waitForTx(contractController, approvalTx);
+      for (const tokenId of tokenIdsBigInt) {
+        try {
+          await cnftContract.approve.staticCall(vault, tokenId);
+        } catch (cause: any) {
+            console.log(cause)
+          throw new SDKError('SIMULATE/CNFT_APPROVAL', 'ContractNFT callStatic failed; approval would revert', { cause });
+        }
+        const approvalTx = await cnftContract.approve.populateTransaction(vault, tokenId);
+        await waitForTx(contractController, approvalTx);
+    }
   
-      return {result: `Set approval of vault ${vault} as operator for CNFT ${contractNft} to ${approved}.`};
+      return {result: `Set approval of vault ${vault} as operator for CNFT ${contractNft} to ${tokenIds}.`};
     }
 
   /**

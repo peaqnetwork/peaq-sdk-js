@@ -104,25 +104,25 @@ export type RegisterIdentityResult = {
     result: string;
 }
 
-export type MnftApprovalForAll = {
+export type MnftApproval = {
     machineController: Signer;
     machineNft: string;
     vault: string;
-    approved: boolean;
+    tokenIds: string[];
 }
 
-export type MnftApprovalForAllResult = {
+export type MnftApprovalResult = {
     result: string;
 }
 
-export type CnftApprovalForAll = {
+export type CnftApproval = {
     contractController: Signer;
     contractNft: string;
     vault: string;
-    approved: boolean;
+    tokenIds: string[];
 }
 
-export type CnftApprovalForAllResult = {
+export type CnftApprovalResult = {
     result: string;
 }
 

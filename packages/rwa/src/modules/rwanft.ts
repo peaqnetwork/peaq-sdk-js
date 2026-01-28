@@ -10,7 +10,7 @@ import type {
   SetMachineNftBlockStateResult,
   FindContractNft,
   FindContractNftResult,
- } from '../types/rwa';
+ } from '../types/rwanft';
 
 import type { Signer, Provider } from 'ethers';
 import { getAddress, formatUnits } from 'ethers';

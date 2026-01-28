@@ -18,7 +18,7 @@ describe.sequential('vault.unpauseToken [integration]', () => {
     const vaultDeployer = new Wallet(process.env.ADMIN_PRIVATE_KEY!, provider);
 
     // 2. Get known vault address
-    const vault = "0xc5233ACEe90e6f756D506f3a79179401ae4B3977";
+    const vault = "0x4dBF70cD5407F8b1014c238387ce8EEf85Cc2656";
 
     // 3. Unpause Token
     const result = await rwa_sdk.vault.unpauseToken({

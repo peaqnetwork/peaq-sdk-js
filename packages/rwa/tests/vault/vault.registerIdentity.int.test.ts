@@ -9,7 +9,7 @@ import { Chain } from '../../src/enums/core';
 
 
 describe.sequential('vault.registerIdentity [integration]', () => {
-  it.skip('registers an identity', async () => {
+  it.skip('registers 3 identities', async () => {
     // 0. Create RWA instance and get provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
@@ -17,24 +17,25 @@ describe.sequential('vault.registerIdentity [integration]', () => {
     // 1. Get admin wallet to register identity
     const vaultDeployer = new Wallet(process.env.ADMIN_PRIVATE_KEY!, provider);
 
-    // 2. Get alice wallet to register identity
-    const alice = await rwa_sdk.onchainid.getIdentity({ subject: process.env.CHARLIE_PUBLIC_ADDRESS! });
-
-    // 3. Create Vault
-    const result = await rwa_sdk.vault.registerIdentity({
-      vaultDeployer: vaultDeployer,
-      vault: "0x807C971828bfc2CcfF326e86e9C4c8787DcC46Af",
-      subject: process.env.CHARLIE_PUBLIC_ADDRESS!,
-      subjectIdentity: alice.identity,
-      country: "0"
-    });
-
-    expect(result).toBeDefined();
-    expect(result).toHaveProperty('result');
-    expect(typeof result.result).toBe('string');
-    expect(result.result).toContain('Registered eoa');
-    expect(result.result).toContain(process.env.CHARLIE_PUBLIC_ADDRESS!);
-    expect(result.result).toContain(alice.identity);
+    // 2. Iterate through 3 wallets and register the identities
+    for (const wallet of [process.env.ALICE_PUBLIC_ADDRESS!, process.env.BOB_PUBLIC_ADDRESS!, process.env.CHARLIE_PUBLIC_ADDRESS!]) {
+      const identity = await rwa_sdk.onchainid.getIdentity({ subject: wallet });
+      console.log(identity.identity);
+      console.log(wallet);
+      const result = await rwa_sdk.vault.registerIdentity({
+        vaultDeployer: vaultDeployer,
+        vault: "0x4dBF70cD5407F8b1014c238387ce8EEf85Cc2656",
+        subject: wallet,
+        subjectIdentity: identity.identity,
+        country: "0"
+      });
+      expect(result).toBeDefined();
+      expect(result).toHaveProperty('result');
+      expect(typeof result.result).toBe('string');
+      expect(result.result).toContain('Registered eoa');
+      expect(result.result).toContain(wallet);
+      expect(result.result).toContain(identity.identity);
+    }
 
   }, 60_000);
 });

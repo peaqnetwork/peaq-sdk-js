@@ -39,10 +39,10 @@ describe.sequential('rwa.addMachineIssuer [integration]', () => {
     // });
 
     // 5. Get existing machine issuers
-    const existingMachineIssuers = await rwa_sdk.rwa.getMachineIssuers();
+    const existingMachineIssuers = await rwa_sdk.rwanft.getMachineIssuers();
 
     // 6. Add Machine Issuer
-    const result = await rwa_sdk.rwa.addMachineIssuer({
+    const result = await rwa_sdk.rwanft.addMachineIssuer({
         machineRegulatorSigner: machineRegulator,
         newMachineIssuer: aliceMachineIssuer.address
     });
@@ -55,7 +55,7 @@ describe.sequential('rwa.addMachineIssuer [integration]', () => {
     expect(result.result).toContain('machine NFT at address');
 
     // 7. Get updated machine issuers, and make sure machine issuer in list and length is incremented by 1
-    const updatedMachineIssuers = await rwa_sdk.rwa.getMachineIssuers();
+    const updatedMachineIssuers = await rwa_sdk.rwanft.getMachineIssuers();
     console.log('Updated machine issuers:', updatedMachineIssuers);
     expect(updatedMachineIssuers).toBeDefined();
     expect(updatedMachineIssuers).toHaveProperty('machineIssuers');
