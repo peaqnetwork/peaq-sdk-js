@@ -24,6 +24,10 @@ CLAIM_ISSUER_PRIVATE_KEY=""
 CLAIM_ISSUER_CONTRACT_ADDRESS=""
 CLAIM_ISSUER_IDENTITY_ADDRESS=""
 
+# Machine Issuer
+MACHINE_ISSUER_PUBLIC_ADDRESS=""
+MACHINE_ISSUER_PRIVATE_KEY=""
+
 # Alice
 ALICE_PUBLIC_ADDRESS=""
 ALICE_PRIVATE_KEY=""
@@ -44,6 +48,8 @@ CHARLIE_PRIVATE_KEY=""
 - **CLAIM_ISSUER_PRIVATE_KEY**: The private key for CLAIM_ISSUER_PUBLIC_ADDRESS. Used to sign claim-issuer transactions in tests.
 - **CLAIM_ISSUER_CONTRACT_ADDRESS**: The EVM contract address of the deployed Claim Issuer contract (the on-chain contract that records/validates claims).
 - **CLAIM_ISSUER_IDENTITY_ADDRESS**: The OnChainID Identity contract address that represents the Claim Issuer as an identity (i.e., the issuer’s Identity on-chain, not their EOA).
+- **MACHINE_ISSUER_PUBLIC_ADDRESS**: Machine Issuer that who has the authority to issuer new MachineNfts
+- **MACHINE_ISSUER_PRIVATE_KEY**: Private key for MACHINE_ISSUER_PUBLIC_ADDRESS.
 - **ALICE_PUBLIC_ADDRESS**: Test user EOA address for “Alice” (typically a subject/holder/participant in flows).
 - **ALICE_PRIVATE_KEY**: Private key for ALICE_PUBLIC_ADDRESS.
 - **BOB_PUBLIC_ADDRESS**: Test user EOA address for “Bob”.
@@ -53,10 +59,9 @@ CHARLIE_PRIVATE_KEY=""
 
 
 ## 4. Run tests
-After following all of the steps above you can checkout the tests found inside the [tests directory](../../../tests/). Please note that the majority of these tests are integration that interact with a live network. Therefore, you may need to manually test one-by-one as some are dependent on future actions. For a common example, please checkout the functions executed on the [common flow](../../../sdk_reference/workflows/common_flow.md) walkthrough. 
+After following all of the steps above you can checkout the tests found inside the [tests directory](../../../tests/). Please note that the majority of these tests are integration that interact with a live network. Therefore, you may need to manually test one-by-one as some are dependent on future actions. For a common flow example, to see how tests can be executed back to back, please checkout the [full flow test](../../../tests/full_flow/rwa.fullFlow.int.test.ts).
 
-Each test has a `it` to describe the test. To skip a particular test you may add `it.skip()`, else it will execute with the following cmd:
+Each test has an `it` to describe the test. To skip a particular test you may add `it.skip()`, else it will execute with the following cmd:
 ```
 npm test
 ```
-It will run through module execution
