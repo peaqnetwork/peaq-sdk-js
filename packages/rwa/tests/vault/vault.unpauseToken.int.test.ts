@@ -27,11 +27,13 @@ describe.sequential('vault.unpauseToken [integration]', () => {
       vault: vault
     });
     expect(result).toBeDefined();
-    expect(result).toHaveProperty('result');
+    expect(result).toHaveProperty('status');
     expect(result).toHaveProperty('receipt');
-    expect(typeof result.result).toBe('string');
-    expect(result.result).toContain('Unpaused token for vault:');
-    expect(result.result).toContain(vault);
+    expect(typeof result.status).toBe('string');
+    expect(result.status).toBe('unpaused');
+    expect(result.vault).toBe(vault);
+    expect(result.vaultFactory).toBe('0x5C5Db5CcF63ed6C11063385070C8FD2C990BFd53');
+    expect(result.unpausedBy).toBe(vaultDeployer.address);
     expect(result.receipt).toBeDefined();
     expect(result.receipt.status).toBe(1);
 

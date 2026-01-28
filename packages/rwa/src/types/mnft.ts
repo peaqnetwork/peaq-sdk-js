@@ -10,7 +10,13 @@ export type EnsureMachineNftAllowance = {
   }
 
 export type EnsureMachineNftAllowanceResult = {
-    result: string;
+    status: 'approved' | 'already_sufficient';
+    machineNft: string;
+    feeToken: string;
+    feePerMachine: bigint;
+    requiredAllowance: bigint;
+    currentAllowance: bigint;
+    receipt?: TransactionReceipt;
 }
 
 export type IssueMachineNft = {
@@ -26,8 +32,28 @@ export type IssueMachineNft = {
 
 // TODO improve return type
 export type IssueMachineNftResult = {
-    result: string;
+    status: 'issued';
+    machineNft: string;
+    machineIssuer: string;
+    machineController: string
+    machineValue: {
+        human: string;
+        units: bigint;
+        tokenDecimals: number;
+        feeToken: string;
+    }
+    count: number;
+    machines: Array<{
+        machineId: string;
+        did?: string;
+        receipt?: TransactionReceipt;
+    }>;
+    feesPaid: bigint;
+    startingBalance: bigint;
+    endingBalance: bigint;
+    humanTokenDelta: string;
 }
+
 export interface IMachineMetadata {
     brand: string;
     model: string;

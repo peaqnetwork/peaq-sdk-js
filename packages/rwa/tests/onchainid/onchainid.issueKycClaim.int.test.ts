@@ -24,7 +24,7 @@ describe.sequential('OnchainID.issueKycClaim [integration]', () => {
     const { claim, signature } = await rwa_sdk.onchainid.issueKycClaim({
         claimIssuerSigner: claimIssuer,
         claimIssuerContract: process.env.CLAIM_ISSUER_CONTRACT_ADDRESS!,
-        subjectIdentity: alice.identity,
+        subjectIdentity: alice.identity!,
         name: 'Alice',
         lastName: 'Doe',
         dateOfBirth: '1990-01-01',

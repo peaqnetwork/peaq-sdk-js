@@ -12,9 +12,11 @@ export type CreateVault = {
 }
 
 export type CreateVaultResult = {
+    status: 'created';
     vault: string;
     token: string;
     distributor: string;
+    receipt: TransactionReceipt;
 }
 
 // export type CreateVaultAndToken = {
@@ -65,7 +67,10 @@ export type UnpauseToken = {
 }
 
 export type UnpauseTokenResult = {
-    result: string;
+    status: 'unpaused';
+    vault: string;
+    vaultFactory: string;
+    unpausedBy: string;
     receipt: TransactionReceipt;
 }
 
@@ -88,7 +93,10 @@ export type PauseToken = {
 }
 
 export type PauseTokenResult = {
-    result: string;
+    status: 'paused';
+    vault: string;
+    vaultFactory: string;
+    pausedBy: string;
     receipt: TransactionReceipt;
 }
 
@@ -101,7 +109,14 @@ export type RegisterIdentity = {
 }
 
 export type RegisterIdentityResult = {
-    result: string;
+    status: 'registered';
+    vault: string;
+    identityRegistry: string;
+    subject: string;
+    subjectIdentity: string;
+    country: string;
+    registeredBy: string;
+    receipt: TransactionReceipt;
 }
 
 export type MnftApproval = {
@@ -112,7 +127,11 @@ export type MnftApproval = {
 }
 
 export type MnftApprovalResult = {
-    result: string;
+    status: 'approved';
+    machineNft: string;
+    vault: string;
+    newlyApprovedTokenIds: string[];
+    receipts: TransactionReceipt[];
 }
 
 export type CnftApproval = {
@@ -123,7 +142,11 @@ export type CnftApproval = {
 }
 
 export type CnftApprovalResult = {
-    result: string;
+    status: 'approved';
+    contractNft: string;
+    vault: string;
+    newlyApprovedTokenIds: string[];
+    receipts: TransactionReceipt[];
 }
 
 export type DepositAndMint = {
@@ -135,7 +158,13 @@ export type DepositAndMint = {
 }
 
 export type DepositAndMintResult = {
-    result: string;
+    status: 'deposited_and_minted';
+    vault: string;
+    controller: string;
+    rwaNfts: string[];
+    tokenIds: string[];
+    amount: number;
+    receipt: TransactionReceipt;
 }
 
 export type EnsureTransferFeeAllowance = {
@@ -147,7 +176,24 @@ export type EnsureTransferFeeAllowance = {
 }
 
 export type EnsureTransferFeeAllowanceResult = {
-    result: string;
+    status: 'already_sufficient' | 'approved';
+    vault: string;
+    feeToken: string;
+    transfer: {
+        token: string;
+        amountHuman: string;
+        amountUnits: bigint;
+        tokenDecimals: number;
+      };
+    fee: {
+        feeAmount: bigint;
+        multiplier: bigint;
+        requiredAllowance: bigint;
+        allowanceBefore: bigint;
+        allowanceAfter: bigint;
+    };
+    approvedBy: string;
+    receipt?: TransactionReceipt;
 }
 
 export type Transfer = {
@@ -158,7 +204,16 @@ export type Transfer = {
 }
 
 export type TransferResult = {
-    result: string;
+    status: 'transferred';
+    token: string;
+    sender: string;
+    recipient: string;
+    amount: {
+        human: string;
+        units: bigint;
+        decimals: number;
+      };
+    receipt: TransactionReceipt;
 }
 
 export type DepositYield = {
@@ -170,7 +225,26 @@ export type DepositYield = {
 }
 
 export type DepositYieldResult = {
-    result: string;
+    status: 'deposited';
+    vault: string;
+    rewardDistributor: string;
+    depositor: string;
+    token: {
+        address: string;          // erc20
+        decimals: number;
+      };
+    amount: {
+        human: string;
+        units: bigint;
+    };
+    approval: {
+        status: 'skipped' | 'approved';
+        spender: string;          // rewardDistributorAddr
+        allowanceBefore?: bigint;
+        allowanceAfter?: bigint;
+    };
+    receipt: TransactionReceipt;
+    
 }
 
 export type ClaimYield = {
@@ -179,7 +253,11 @@ export type ClaimYield = {
 }
 
 export type ClaimYieldResult = {
-    result: string;
+    status: 'claimed';
+    vault: string;
+    rewardDistributor: string;
+    claimer: string;
+    receipt: TransactionReceipt;
 }
 
 export type ClaimYieldTo = {
@@ -189,5 +267,10 @@ export type ClaimYieldTo = {
 }
 
 export type ClaimYieldToResult = {
-    result: string;
+    status: 'claimed';
+    vault: string;
+    rewardDistributor: string;
+    claimer: string;
+    recipient: string;
+    receipt: TransactionReceipt;
 }

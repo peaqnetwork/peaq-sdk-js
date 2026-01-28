@@ -13,7 +13,7 @@ import type {
 
 // utils
 import { waitForTx } from '../utils/txs';
-import { parseOptions, validators } from '../utils/helpers';
+import { getArgsFromTxEvent, parseOptions, validators } from '../utils/helpers';
 import { generateKycClaim, generateRoleClaim, signClaim } from '../utils/claims';
 
 // errors
@@ -107,7 +107,7 @@ export class OnChainID {
     if (existing && existing !== ZeroAddress) {  
       return { status: 'found', identity: existing };
     }
-    return { status: 'not_found', identity: '' };
+    return { status: 'not_found'};
   }
 
 
@@ -179,7 +179,7 @@ export class OnChainID {
 
     // preflight check
     try {
-      const claimId = await identityContract.addClaim.staticCall(claim.topic, claim.scheme, claim.issuer, claimSignature, claim.data, claim.uri!); 
+      await identityContract.addClaim.staticCall(claim.topic, claim.scheme, claim.issuer, claimSignature, claim.data, claim.uri!); 
     } catch (cause: any) {
       console.log(cause);
       throw new SDKError('SIMULATE/ADD_CLAIM', 'Identity callStatic failed; addition would revert', { cause });
@@ -194,7 +194,25 @@ export class OnChainID {
       claim.uri!
     );
     const receipt = await waitForTx(identityController, tx);
-    return { receipt: receipt };
+
+    // Get Claim ID from receipt
+    const iface = IIdentity__factory.createInterface();
+    let args;
+    let status;
+    let claimId;
+    try {
+      args = await getArgsFromTxEvent(receipt, 'ClaimAdded', iface);
+      status = 'added';
+    } catch {}
+    try {
+      args = await getArgsFromTxEvent(receipt, 'ClaimChanged', iface);
+      status = 'updated';
+    } catch {}
+    if(args) {
+      claimId = args[0].toString();
+    }
+
+    return { status: status as 'added' | 'updated', claimId: claimId, receipt: receipt };
   }
 
   /**
@@ -247,7 +265,7 @@ export class OnChainID {
       claimId
     );
     const receipt = await waitForTx(identityController, tx);
-    return { receipt: receipt, result: `Successfully removed claim for Identity ${subjectIdentity}` };
+    return { status: 'removed', claimId: claimId, receipt: receipt };
   }
   
 }

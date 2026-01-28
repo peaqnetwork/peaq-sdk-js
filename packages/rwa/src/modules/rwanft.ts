@@ -74,13 +74,14 @@ export class PeaqRwaNft {
 
     const tx = await peaqRwaNftContract.addMachineIssuer.populateTransaction(newMachineIssuer);  
     const result = await waitForTx(machineRegulatorSigner, tx);
+    const machineRegulatorAddr = await machineRegulatorSigner.getAddress();
 
     const iface = IPeaqRwaNft__factory.createInterface();
     const args = await getArgsFromTxEvent(result, 'MachineIssuerAdded', iface);
     const machineIssuer = args[0].toString();
     const machineNft = args[1].toString();
 
-    return { result: `Machine issuer at address ${machineIssuer} added to the PeaqRwaNft contract with machine NFT at address ${machineNft}` };
+    return { status: 'added', peaqRwaNft: this.addresses.nft.peaqRwaNft, machineIssuer: machineIssuer, machineNft: machineNft, addedBy:machineRegulatorAddr, receipt: result };
   }
 
   /**
@@ -106,8 +107,9 @@ export class PeaqRwaNft {
     }
 
     const tx = await peaqRwaNftContract.removeMachineIssuer.populateTransaction(machineIssuer);
-    await waitForTx(machineRegulatorSigner, tx);
-    return { result: `Machine issuer at address ${machineIssuer} removed` };
+    const result = await waitForTx(machineRegulatorSigner, tx);
+    const machineRegulatorAddr = await machineRegulatorSigner.getAddress();
+    return { status: 'removed', peaqRwaNft: this.addresses.nft.peaqRwaNft, machineIssuer: machineIssuer, removedBy: machineRegulatorAddr, receipt: result };
   }
 
   /**
@@ -145,9 +147,10 @@ export class PeaqRwaNft {
       throw new SDKError('SIMULATE/SET_MACHINE_NFT_BLOCK_STATE', 'PeaqRwaNft callStatic failed; setting block state would revert', { cause });
     }
 
-    const tx = await peaqRwaNftContract.setMachineNftBlockState.populateTransaction(issuerOrContractNft, blocked);
-    await waitForTx(machineRegulatorSigner, tx);
-    return { result: `Machine issuer or contract NFT at address ${issuerOrContractNft} set blocked to ${blocked}` };
+    const tx = await peaqRwaNftContract.setMachineNftBlockState.populateTransaction(issuerOrContractNft, blocked);  
+    const result = await waitForTx(machineRegulatorSigner, tx);
+    const machineRegulatorAddr = await machineRegulatorSigner.getAddress();
+    return { status: 'updated', peaqRwaNft: this.addresses.nft.peaqRwaNft, target: issuerOrContractNft, blocked: blocked, updatedBy: machineRegulatorAddr, receipt: result };
   }
 
   /**

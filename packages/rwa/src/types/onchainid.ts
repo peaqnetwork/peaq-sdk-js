@@ -31,7 +31,7 @@ export type GetIdentity = {
 
 export type GetIdentityResult = {
     status: 'found' | 'not_found';
-    identity: string;
+    identity?: string;
 }
 
 export type IssueKycClaim = {
@@ -71,6 +71,8 @@ export type AddClaimToIdentity = {
 }
 
 export type AddClaimToIdentityResult = {
+    status: 'added' | 'updated';
+    claimId: string
     receipt: TransactionReceipt;
 }
 
@@ -90,6 +92,7 @@ export type RemoveClaimFromIdentity = {
 }
 
 export type RemoveClaimFromIdentityResult = {
+    status: 'removed';
+    claimId: string;
     receipt: TransactionReceipt;
-    result: string;
 }

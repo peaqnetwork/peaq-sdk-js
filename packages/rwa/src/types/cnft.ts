@@ -1,5 +1,6 @@
 import type { Signer } from "ethers";
 import type { Contract, ContractDraft } from "../utils/nft";
+import type { TransactionReceipt } from "ethers";
 
 export type CreateContract = {
     contractController: Signer;
@@ -12,8 +13,24 @@ export type CreateContract = {
 }
 
 export type CreateContractResult = {
-    message: string;
+    status: 'created';
+    contractNft: string;
     contractId: string;
+    contractController: string;
+    counterparties: string[];
+    content: {
+        hash: string;
+        url: string;
+    }
+    fee: {
+        token: string;
+        tokenDecimals: number;
+        setupAmount: bigint;
+        balanceBefore: bigint;
+        balanceAfter: bigint;
+        humanTokenDelta: string;
+    }
+    receipt: TransactionReceipt;
 }
 
 export type SignContract = {
@@ -23,7 +40,14 @@ export type SignContract = {
 }
 
 export type SignContractResult = {
-    message: string;
+    status: 'completed' | 'signed' | 'mined_unknown';
+    contractId: string;
+    counterpartySigner: string;
+    receipt: TransactionReceipt;
+    progress?: {
+        collected: number;
+        total: number;
+    }
 }
 
 export type GetDraft = {
@@ -50,7 +74,11 @@ export type CancelContract = {
 }
 
 export type CancelContractResult = {
-    message: string;
+    status: 'cancelled';
+    contractNft: string;
+    contractId: string;
+    cancelledBy: string;
+    receipt: TransactionReceipt;
 }
 
 export type SetBlocked = {
@@ -60,7 +88,11 @@ export type SetBlocked = {
 }
 
 export type SetBlockedResult = {
-    message: string;
+    status: 'set';
+    contractNft: string;
+    blocked: boolean;
+    setBy: string;
+    receipt: TransactionReceipt;
 }
 
 export type IsBlocked = {

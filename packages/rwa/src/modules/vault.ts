@@ -133,7 +133,7 @@ export class Vault {
     const tokenAddr = args[1];
     const distributorAddr = args[2];
   
-    return { vault: vaultAddr, token: tokenAddr, distributor: distributorAddr };
+    return { status: 'created', vault: vaultAddr, token: tokenAddr, distributor: distributorAddr, receipt: receipt };
   }
 
   /**
@@ -150,7 +150,7 @@ export class Vault {
     }, 'unpauseToken');
 
     const vaultFactoryContract = this._vaultFactory(vaultDeployer, vaultFactory);
-
+    const deployerAddr = await vaultDeployer.getAddress();
     // preflight check
     try {
       await vaultFactoryContract.unpauseVaultToken.staticCall(vault);
@@ -162,7 +162,7 @@ export class Vault {
     const tx = await vaultFactoryContract.unpauseVaultToken.populateTransaction(vault);
     const result = await waitForTx(vaultDeployer, tx);
 
-    return {result: "Unpaused token for vault: " + vault, receipt: result};
+    return {status: 'unpaused', vault: vault, vaultFactory: vaultFactory, unpausedBy: deployerAddr, receipt: result};
   }
 
   /**
@@ -181,7 +181,7 @@ export class Vault {
 
     // NOTE: `vault` is the vault address to be unpaused. The tx must be sent to the VaultFactory.
     const vaultFactoryContract = this._vaultFactory(vaultDeployer, vaultFactory);
-
+    const deployerAddr = await vaultDeployer.getAddress();
     // preflight check
     try {
       await vaultFactoryContract.pauseVaultToken.staticCall(vault);
@@ -193,7 +193,7 @@ export class Vault {
     const tx = await vaultFactoryContract.pauseVaultToken.populateTransaction(vault);
     const result = await waitForTx(vaultDeployer, tx);
 
-    return {result: "Paused token for vault: " + vault, receipt: result};
+    return {status: 'paused', vault: vault, vaultFactory: vaultFactory, pausedBy: deployerAddr, receipt: result};
   }
 
   /**
@@ -214,7 +214,7 @@ export class Vault {
     const peaqVault = this._peaqVault(this.provider, vault);
     const irAddr = await peaqVault.identityRegistry();
     const identityRegistry = this._vaultIdentityRegistry(vaultDeployer, irAddr);
-
+    const deployerAddr = await vaultDeployer.getAddress();
     try {
       await identityRegistry.registerIdentity.staticCall(subject, subjectIdentity, country);
     } catch (cause: any) {
@@ -224,7 +224,15 @@ export class Vault {
     // if it doesn't revert, send the transaction
     const tx = await identityRegistry.registerIdentity.populateTransaction(subject, subjectIdentity, country);
     const result = await waitForTx(vaultDeployer, tx);
-    return {result: `Registered eoa ${subject} with identity ${subjectIdentity} in vault ${vault}.`};
+    return {
+      status: 'registered',
+      vault: vault, 
+      identityRegistry: irAddr, 
+      subject: subject, 
+      subjectIdentity: subjectIdentity, 
+      country: country, 
+      registeredBy: deployerAddr, 
+      receipt: result };
   }
 
   /**
@@ -242,7 +250,7 @@ export class Vault {
     }, 'mnftApproval');
     const tokenIdsBigInt = tokenIds.map((id) => BigInt(id));
     const mnftContract = this._mnft(machineController, machineNft);
-
+    const receipts = [];
     for (const tokenId of tokenIdsBigInt) {
       try {
           await mnftContract.approve.staticCall(vault, tokenId);
@@ -251,10 +259,11 @@ export class Vault {
         throw new SDKError('SIMULATE/MNFT_APPROVAL', 'MachineNFT callStatic failed; approval would revert', { cause });
       }
       const approvalTx = await mnftContract.approve.populateTransaction(vault, tokenId);
-      await waitForTx(machineController, approvalTx);
+      const receipt = await waitForTx(machineController, approvalTx);
+      receipts.push(receipt);
   }
 
-    return {result: `Set approval of vault ${vault} as operator for MNFT ${machineNft} to ${tokenIds}.`};
+    return {status: 'approved', machineNft: machineNft, vault: vault, newlyApprovedTokenIds: tokenIds, receipts: receipts};
   }
 
     /**
@@ -273,7 +282,7 @@ export class Vault {
 
       const tokenIdsBigInt = tokenIds.map((id) => BigInt(id));
       const cnftContract = this._cnft(contractController, contractNft);
-  
+      const receipts = [];
       for (const tokenId of tokenIdsBigInt) {
         try {
           await cnftContract.approve.staticCall(vault, tokenId);
@@ -282,10 +291,11 @@ export class Vault {
           throw new SDKError('SIMULATE/CNFT_APPROVAL', 'ContractNFT callStatic failed; approval would revert', { cause });
         }
         const approvalTx = await cnftContract.approve.populateTransaction(vault, tokenId);
-        await waitForTx(contractController, approvalTx);
+        const receipt = await waitForTx(contractController, approvalTx);
+        receipts.push(receipt);
     }
   
-      return {result: `Set approval of vault ${vault} as operator for CNFT ${contractNft} to ${tokenIds}.`};
+      return {status: 'approved', contractNft: contractNft, vault: vault, newlyApprovedTokenIds: tokenIds, receipts: receipts};
     }
 
   /**
@@ -305,7 +315,7 @@ export class Vault {
 
     // Normalize tokenIds to bigint
     const tokenIdsBigInt = tokenIds.map((id) => BigInt(id));
-
+    const deployerAddr = await vaultController.getAddress();
     const peaqVault = this._peaqVault(vaultController, vault);
 
     try {
@@ -317,7 +327,7 @@ export class Vault {
     const depositAndMintTx = await peaqVault.depositAndMint.populateTransaction(rwaNfts, tokenIdsBigInt, amount);  
     const result = await waitForTx(vaultController, depositAndMintTx);
 
-    return {result: `Deposited and minted tokens for vault ${vault}.`}; 
+    return {status: 'deposited_and_minted', vault: vault, controller: deployerAddr, rwaNfts: rwaNfts, tokenIds: tokenIds, amount: amount, receipt: result}; 
   }
 
 
@@ -345,7 +355,14 @@ export class Vault {
     const [fee, account] = await peaqVault.transactionFeeAndAccount(scaledAmount);
 
     const erc20Contract = this._erc20(allowanceSigner, erc20);
+    const allowanceAddr = await allowanceSigner.getAddress();
+    const allowance = await erc20Contract.allowance(allowanceAddr, account);
+    const deployerAddr = await allowanceSigner.getAddress();
 
+
+    if (allowance >= fee * 2n) {
+      return {status: 'already_sufficient', vault: vault, feeToken: erc20, transfer: {token: token, amountHuman: transferAmountHuman, amountUnits: scaledAmount, tokenDecimals: tokenDecimals}, fee: {feeAmount: fee, multiplier: 2n, requiredAllowance: fee * 2n, allowanceBefore: allowance, allowanceAfter: fee * 2n}, approvedBy: deployerAddr};
+    }
     // preflight check
     try {
       await erc20Contract.approve.staticCall(account, fee * 2n);
@@ -354,9 +371,24 @@ export class Vault {
       throw new SDKError('SIMULATE/APPROVE_ERC20', 'ERC20 callStatic failed; approval would revert', { cause });
     }
     const approveTx = await erc20Contract.approve.populateTransaction(account, fee * 2n);
-    await waitForTx(allowanceSigner, approveTx);
-
-    return {result: "Transfer fee allowance set for token " + token + " in vault " + vault};
+    const receipt = await waitForTx(allowanceSigner, approveTx);
+    return {
+      status: 'approved', 
+      vault: vault, 
+      feeToken: erc20, 
+      transfer: {
+        token: token, 
+        amountHuman: transferAmountHuman,
+        amountUnits: scaledAmount, 
+        tokenDecimals: tokenDecimals }, 
+      fee: {
+        feeAmount: fee, 
+        multiplier: 2n,
+        requiredAllowance: fee * 2n,
+        allowanceBefore: 0n,
+        allowanceAfter: fee * 2n},
+      approvedBy: deployerAddr, 
+      receipt: receipt};  
   }
 
   /**
@@ -379,6 +411,7 @@ export class Vault {
       // Scale amount according to token decimals. If decimals not provided, fetch from token.
       const tokenDecimals = Number(await tokenContract.decimals());
       const scaledAmount = parseUnits(transferAmountHuman, tokenDecimals);
+      const senderAddr = await from.getAddress();
       // preflight check
       try {
         await tokenContract.transfer.staticCall(to, scaledAmount);
@@ -390,7 +423,7 @@ export class Vault {
       const tx2 = await tokenContract.transfer.populateTransaction(to, scaledAmount);
       const result = await waitForTx(from, tx2);
   
-      return {result: "Transferred " + transferAmountHuman + " tokens (scaled by " + tokenDecimals + " decimals) from one address to another"};
+      return {status: 'transferred', token: token, sender: senderAddr, recipient: to, amount: {human: transferAmountHuman, units: scaledAmount, decimals: tokenDecimals}, receipt: result};
     }
 
 
@@ -415,6 +448,8 @@ export class Vault {
       const erc20Contract = this._erc20(depositorSigner, erc20);
       const scaledAmount = parseUnits(humanReadableAmount, decimals);
 
+      const depositorAddr = await depositorSigner.getAddress();
+      const allowance = await erc20Contract.allowance(depositorAddr, rewardDistributorAddr);
 
       // TODO maybe split up again...
       try {
@@ -433,9 +468,18 @@ export class Vault {
         throw new SDKError('SIMULATE/DEPOSIT_YIELD', 'RewardDistributor callStatic failed; deposit yield would revert', { cause });
       }
       const depositYieldTx = await rewardDistributor.depositYield.populateTransaction(scaledAmount);
-      await waitForTx(depositorSigner, depositYieldTx);
+      const receipt = await waitForTx(depositorSigner, depositYieldTx);
 
-      return {result: "Yield deposited for vault " + vault + " with amount " + humanReadableAmount}; 
+      return {
+        status: 'deposited', 
+        vault: vault,
+        rewardDistributor: rewardDistributorAddr,
+        depositor: depositorAddr,
+        token: {address: erc20, decimals: decimals}, 
+        amount: {human: humanReadableAmount, units: scaledAmount}, 
+        approval: {status: 'approved', spender: rewardDistributorAddr, allowanceBefore: allowance, allowanceAfter: scaledAmount}, 
+        receipt: receipt
+      }; 
     }
 
   /**
@@ -452,7 +496,7 @@ export class Vault {
 
       const rewardDistributorAddr = await this._getRewardDistributor(vault);
       const rewardDistributor = this._rewardDistributor(claimerSigner, rewardDistributorAddr);
-
+      const claimerAddr = await claimerSigner.getAddress();
       try {
         await rewardDistributor.claim.staticCall();
       } catch (cause: any) { 
@@ -460,9 +504,9 @@ export class Vault {
         throw new SDKError('SIMULATE/CLAIM_YIELD', 'RewardDistributor callStatic failed; claim yield would revert', { cause });
       }
       const depositYieldTx = await rewardDistributor.claim.populateTransaction();
-      await waitForTx(claimerSigner, depositYieldTx);
+      const receipt = await waitForTx(claimerSigner, depositYieldTx);
 
-      return {result: "Yield claimed for vault " + vault};
+      return {status: 'claimed', vault: vault, rewardDistributor: rewardDistributorAddr, claimer: claimerAddr, receipt: receipt};
     }
 
   /**
@@ -480,7 +524,7 @@ export class Vault {
 
       const rewardDistributorAddr = await this._getRewardDistributor(vault);
       const rewardDistributor = this._rewardDistributor(claimerSigner, rewardDistributorAddr);
-
+      const claimerAddr = await claimerSigner.getAddress();
       try {
         await rewardDistributor.claimTo.staticCall(to);
       } catch (cause: any) { 
@@ -488,9 +532,9 @@ export class Vault {
         throw new SDKError('SIMULATE/CLAIM_YIELD_TO', 'RewardDistributor callStatic failed; claim yield would revert', { cause });
       }
       const depositYieldTx = await rewardDistributor.claimTo.populateTransaction(to);
-      await waitForTx(claimerSigner, depositYieldTx);  
+      const receipt = await waitForTx(claimerSigner, depositYieldTx);  
 
-      return  {result: "Yield claimed for vault " + vault};
+      return  {status: 'claimed', vault: vault, rewardDistributor: rewardDistributorAddr, claimer: claimerAddr, recipient: to, receipt: receipt};
     }
 
 

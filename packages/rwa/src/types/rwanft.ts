@@ -1,4 +1,4 @@
-import type { Signer } from "ethers";
+import type { Signer, TransactionReceipt } from "ethers";
 
 
 export type GetMachineRegulatorsResult = {
@@ -11,7 +11,12 @@ export type AddMachineIssuer = {
 }
 
 export type AddMachineIssuerResult = {
-    result: string;
+    status: 'added';
+    peaqRwaNft: string;
+    machineIssuer: string;
+    machineNft: string;
+    addedBy: string;
+    receipt: TransactionReceipt;
 }
 
 export type GetMachineIssuersResult = {
@@ -24,7 +29,11 @@ export type RemoveMachineIssuer = {
 }
 
 export type RemoveMachineIssuerResult = {
-    result: string;
+    status: 'removed';
+    peaqRwaNft: string;
+    machineIssuer: string;
+    removedBy: string;
+    receipt: TransactionReceipt;
 }
 
 export type SetMachineNftBlockState = {
@@ -34,7 +43,12 @@ export type SetMachineNftBlockState = {
 }
 
 export type SetMachineNftBlockStateResult = {
-    result: string;
+    status: 'updated';
+    peaqRwaNft: string;
+    target: string;
+    blocked: boolean;
+    updatedBy: string;
+    receipt: TransactionReceipt;
 }
 
 export type FindContractNft = {

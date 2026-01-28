@@ -22,7 +22,7 @@ describe.sequential('OnchainID.addClaimToIdentity [integration]', () => {
     const { claim, signature } = await rwa_sdk.onchainid.issueKycClaim({
         claimIssuerSigner: claimIssuer,
         claimIssuerContract: process.env.CLAIM_ISSUER_CONTRACT_ADDRESS!,
-        subjectIdentity: alice.identity,
+        subjectIdentity: alice.identity!,
         name: 'Alice',
         lastName: 'Doe',
         dateOfBirth: '1990-01-01',
@@ -32,13 +32,16 @@ describe.sequential('OnchainID.addClaimToIdentity [integration]', () => {
 
       // 4. Identity owner signs and submits addClaim
     const aliceSigner = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
-    const { receipt } = await rwa_sdk.onchainid.addClaimToIdentity({
+    const result = await rwa_sdk.onchainid.addClaimToIdentity({
         identityController: aliceSigner,
-        subjectIdentity: alice.identity,
+        subjectIdentity: alice.identity!,
         claim: claim,
         claimSignature: signature,
     });
-    expect(receipt.status).toBe(1);
+    expect(result.receipt.status).toBe(1);
+    expect(result.claimId).toBeDefined();
+    expect(result.claimId).toMatch(/^0x[a-fA-F0-9]{64}$/);
+    expect(['added', 'updated']).toContain(result.status);
 
     // get claim to check it has been added to alice's identity contract
     const claimIssuerContract = process.env.CLAIM_ISSUER_CONTRACT_ADDRESS;
@@ -46,9 +49,11 @@ describe.sequential('OnchainID.addClaimToIdentity [integration]', () => {
     const abiCoder = new AbiCoder();
     const claimId = keccak256(abiCoder.encode(["address", "uint256"], [claimIssuerContract, topic]));
 
+    expect(claimId).toBe(result.claimId);
+
     // 5. Fetch claim
     const fetchedClaim = await rwa_sdk.onchainid.getClaim({
-      subjectIdentity: alice.identity,
+      subjectIdentity: alice.identity!,
       claimId: claimId
     });
 

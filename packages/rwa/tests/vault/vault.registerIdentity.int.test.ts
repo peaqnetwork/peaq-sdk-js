@@ -26,7 +26,7 @@ describe.sequential('vault.registerIdentity [integration]', () => {
         vaultDeployer: vaultDeployer,
         vault: "0x4dBF70cD5407F8b1014c238387ce8EEf85Cc2656",
         subject: wallet,
-        subjectIdentity: identity.identity,
+        subjectIdentity: identity.identity!,
         country: "0"
       });
       expect(result).toBeDefined();

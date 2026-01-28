@@ -39,7 +39,7 @@ export async function waitForTx(
     const result = await executeEvmTransaction(
         signer,
         tx,
-        (status) => console.log('Status update:', status),
+        undefined,//(status) => console.log('Status update:', status),
         { mode: ConfirmationMode.FAST }
     );
     return result.receipt;

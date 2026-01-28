@@ -20,7 +20,6 @@ import type {
 
 import type { Signer, Provider } from 'ethers';
 import { getAddress, formatUnits } from 'ethers';
-import { DECIMALS } from '../enums/core';
 import { IContractNft__factory, IERC20__factory } from '../typechain';
 import { getArgsFromTxEvent, parseOptions, validators } from '../utils/helpers';
 import { SDKError } from '../errors/errors';
@@ -106,7 +105,22 @@ export class ContractNft {
     const tokenDelta = startingBalance - endingBalance;
 
 
-    return { message: `Contract setup fees paid: ${ formatUnits(tokenDelta.toString(), tokenDecimals)} PEAQ`, contractId: contractId };
+    return { 
+      status: 'created', 
+      contractNft: contractNft, 
+      contractId: contractId, 
+      contractController: ownerAddr,
+      counterparties: counterparties,
+      content: { hash: contractHash, url: url },
+      fee: { 
+        token: erc20, 
+        tokenDecimals: tokenDecimals, 
+        setupAmount: fee,
+        balanceBefore: startingBalance, 
+        balanceAfter: endingBalance, 
+        humanTokenDelta: formatUnits(tokenDelta.toString(), tokenDecimals) },
+      receipt: result
+    };
   }
 
   /**
@@ -149,7 +163,10 @@ export class ContractNft {
       const emittedContractId = completedArgs?.[0]?.toString?.() ?? String(completedArgs?.[0] ?? contractId);
       const signer = completedArgs?.[1]?.toString?.() ?? 'unknown';
       return {
-        message: `Contract ${emittedContractId} completed; signed by ${signer}. Draft removed and NFT minted to initiator.`,
+        status: 'completed',
+        contractId: emittedContractId,
+        counterpartySigner: signer,
+        receipt: result
       };
     }
 
@@ -159,7 +176,6 @@ export class ContractNft {
 
       // Pull draft to report signature progress.
       let progressSuffix = '';
-      try {
         const draftAny: any = await cnft.getDraft(contractId);
         const content: any = draftAny?.[0];
         const signatures: any = draftAny?.[1];
@@ -167,16 +183,25 @@ export class ContractNft {
         const total = (Array.isArray(counterparties) ? counterparties.length : 0) + 1; // +1 initiator
         const signedCount = Array.isArray(signatures) ? signatures.length : 0;
         if (total > 0) progressSuffix = ` (${signedCount}/${total} signatures collected)`;
-      } catch {}
 
       return {
-        message: `Contract ${emittedContractId} signed by ${signer}${progressSuffix}.`,
+        status: 'signed',
+        contractId: emittedContractId,
+        counterpartySigner: signer,
+        receipt: result,
+        progress: {
+          collected: signedCount,
+          total: total
+        }
       };
     }
 
     // Fallback: tx mined, but ABI parsing didn't find expected events (or contract changed).
     return {
-      message: `Contract signature transaction mined (tx: ${result.hash}), but no ContractSigned/ContractCompleted event was found in logs.`,
+      status: 'mined_unknown',
+      contractId: contractId,
+      counterpartySigner: 'unknown',
+      receipt: result
     };
   }
 
@@ -195,6 +220,7 @@ export class ContractNft {
         contractId: { required: true, validator: validators.string, expected: 'string' },
       }, 'cancelContract');
     const cnft = this._cnft(contractController, contractNft);
+    const controllerAddr = await contractController.getAddress();
 
     try {
       await cnft.cancelContract.staticCall(contractId);
@@ -210,7 +236,12 @@ export class ContractNft {
     const args = await getArgsFromTxEvent(result, 'ContractCancelled', iface);
     const contractCancelledId = args[0].toString();
 
-    return { message: `Contract ${contractCancelledId} cancelled.` };
+    return { 
+      status: 'cancelled',
+      contractNft: contractNft,
+      contractId: contractCancelledId,
+      cancelledBy: controllerAddr,
+      receipt: result };
   }
 
   /**
@@ -228,7 +259,7 @@ export class ContractNft {
     }, 'setBlocked');
 
     const cnft = this._cnft(contractNftSigner, contractNft);
-
+    const signerAddr = await contractNftSigner.getAddress();
     try {
       await cnft.setBlocked.staticCall(blocked);
     } catch (cause: any) {
@@ -237,9 +268,14 @@ export class ContractNft {
     }
 
     const setBlockedTx = await cnft.setBlocked.populateTransaction(blocked);
-    await waitForTx(contractNftSigner, setBlockedTx);
+    const result = await waitForTx(contractNftSigner, setBlockedTx);
 
-    return { message: `Contract set blocked to ${blocked}.` };
+    return { 
+      status: 'set',
+      contractNft: contractNft,
+      blocked: blocked,
+      setBy: signerAddr,
+      receipt: result };
   }
 
   /**

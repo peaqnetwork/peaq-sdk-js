@@ -10,7 +10,6 @@ import type {
 
 // utils
 import { getArgsFromTxEvent, parseOptions, validators } from '../utils/helpers';
-import { DECIMALS } from '../enums/core';
 import { waitForTx } from '../utils/txs';
 import { setupDidDocument,  } from '../utils/did/functions';
 import { deserializeDidFromNft, machineId, serializeDidForNft } from '../utils/nft';
@@ -75,11 +74,14 @@ export class MachineNft {
         throw new SDKError('SIMULATE/APPROVE_ERC20', 'ERC20 callStatic failed; approval would revert', { cause });
       }
       const approveTx = await erc20Contract.approve.populateTransaction(account, fee * BigInt(machineCount));
-      await waitForTx(machineController, approveTx);
-    }
+      const receipt = await waitForTx(machineController, approveTx);
+      const postTxAllowance = await erc20Contract.allowance(ownerAddr, account);
 
-    // approve ERC20 allowance
-    return { result: `Machine registration fees approved: ${ formatUnits(fee.toString(), tokenDecimals)} PEAQ for token at address ${erc20}` };
+      return { status: 'approved', machineNft: machineNft, feeToken: erc20, feePerMachine: fee, requiredAllowance: fee * BigInt(machineCount), currentAllowance: postTxAllowance, receipt: receipt };
+
+    }
+    return { status: 'already_sufficient', machineNft: machineNft, feeToken: erc20, feePerMachine: fee, requiredAllowance: fee * BigInt(machineCount), currentAllowance: allowance };
+
   }
 
   /**
@@ -110,6 +112,7 @@ export class MachineNft {
     const startingBalance = await erc20Contract.balanceOf(machineControllerAddr);
   
     // 2) Mint loop
+    let machines;
     let didX;
     let machineIdX;
     let serializedDidX;
@@ -143,17 +146,32 @@ export class MachineNft {
       const emittedTokenId = args[2].toString();
 
       // What is the best way to log to user of SDK?
-      console.log(`Registered Machine ${i + 1} of ${count}:`, {
-        machineNft: machineNft,
-        machineIssuer: emittedMachineIssuer,
-        machineOwner: emittedMachineOwner,
-        tokenId: emittedTokenId,
-      });
+      // add to machines array
+      machines = [...(machines || []), { machineId: emittedTokenId!, did: didX!.toString(), receipt: result! }];
+      // machines = machines.push({ tokenId: emittedTokenId!, machineId: machineIdX, did: didX!, receipt: result! });
+      // console.log(`Registered Machine ${i + 1} of ${count}:`, {
+      //   machineNft: machineNft,
+      //   machineIssuer: emittedMachineIssuer,
+      //   machineOwner: emittedMachineOwner,
+      //   tokenId: emittedTokenId,
+      // });
     }
     
     const endingBalance = await erc20Contract.balanceOf(machineControllerAddr);
     const tokenDelta = startingBalance - endingBalance
-    return { result: `Machine registration fees paid: ${ formatUnits(tokenDelta.toString(), DECIMALS.PEAQ)} PEAQ` };
+    return { 
+      status: 'issued', 
+      machineNft: machineNft, 
+      machineIssuer: machineIssuerAddress, 
+      machineController: machineControllerAddr, 
+      machineValue: { human: machineValueHuman, units: machineValueInUnits, tokenDecimals: tokenDecimals, feeToken: erc20 }, 
+      count: count, 
+      machines: machines || [],
+      feesPaid: tokenDelta, 
+      startingBalance: startingBalance, 
+      endingBalance: endingBalance,
+      humanTokenDelta: formatUnits(tokenDelta.toString(), tokenDecimals)
+    };
   }
 
 

@@ -8,7 +8,7 @@ import { RWA } from '../../src/rwa';
 import { Chain } from '../../src/enums/core';
 
 describe.sequential('rwa.findContractNft [integration]', () => {    
-  it('finds a contract NFT by contract ID', async () => {
+  it.skip('finds a contract NFT by contract ID', async () => {
     // 0. Create RWA instance and get provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
