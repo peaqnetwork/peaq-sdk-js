@@ -27,11 +27,12 @@ describe.sequential('rwa.removeMachineIssuer [integration]', () => {
         machineRegulatorSigner: machineRegulator,
         machineIssuer: aliceMachineIssuer.address
     });
+    expect(['removed']).toContain(result.status);
     expect(result).toBeDefined();
-    expect(result).toHaveProperty('result');
-    expect(typeof result.result).toBe('string');
-    expect(result.result).toContain('Machine issuer at address');
-    expect(result.result).toContain(aliceMachineIssuer.address);
+    expect(result.machineIssuer).toBe(aliceMachineIssuer.address);
+    expect(result.removedBy).toBe(machineRegulator.address);
+    expect(result.receipt).toBeDefined();
+    expect(result.receipt.status).toBe(1);
 
     // 7. Get updated machine issuers, and make sure machine issuer in list and length is incremented by 1
     const updatedMachineIssuers = await rwa_sdk.rwanft.getMachineIssuers();

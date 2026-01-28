@@ -5,7 +5,7 @@ import { JsonRpcProvider, Wallet } from 'ethers';
 import { RWA } from '../../src/rwa';
 import { Chain } from '../../src/enums/core';
 import { ClaimTopics } from '../../src/enums/claimTopics';
-
+import { ClaimScheme } from '../../src/enums/claimSchemes';
 
 // Integration test that issues a KYC claim
 describe.sequential('OnchainID.issueKycClaim [integration]', () => {
@@ -42,7 +42,7 @@ describe.sequential('OnchainID.issueKycClaim [integration]', () => {
     expect(claim.topic).toBe(ClaimTopics.CT_KYC_APPROVED);
     
     expect(typeof claim.scheme).toBe('number');
-    expect(claim.scheme).toBe(1); // expected for ECDSA
+    expect(claim.scheme).toBe(ClaimScheme.ECDSA); // expected for ECDSA
     
     expect(typeof claim.data).toBe('string');
     expect(claim.data.startsWith('0x')).toBe(true);

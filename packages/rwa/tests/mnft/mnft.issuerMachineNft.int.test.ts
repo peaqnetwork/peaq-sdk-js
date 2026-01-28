@@ -22,29 +22,44 @@ describe.sequential('mnft.issueMachineNFT [integration]', () => {
     const alice = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
 
     // 3. Ensure Machine NFT allowance is set for a given machine value
+    const machineNft = "0xaBB3961281123C336596153C4dfE83E11498fc54";
+    const count = 2;
     const result = await rwa_sdk.mnft.ensureMachineNftAllowance({
         machineController: alice,
-        machineNft: "0xaBB3961281123C336596153C4dfE83E11498fc54",
+        machineNft: machineNft,
         machineValueHuman: "10",
         erc20: rwa_sdk.getAddresses().erc20.peaq,
         tokenDecimals: 18,
-        machineCount: 2
+        machineCount: count
     });
-    expect(result).toBeDefined();
-    expect(result.result).toContain('Machine registration fees approved');
+    expect(['approved', 'already_sufficient']).toContain(result.status);
+    expect(result.machineNft).toBe(machineNft);
+    expect(result.feeToken).toBe(rwa_sdk.getAddresses().erc20.peaq);
+    expect(result.feePerMachine).toBe(10000000000000000000n);
 
     // 4. Create MachineNFT(s) for Alice
     const result2 = await rwa_sdk.mnft.issueMachineNft({
         machineIssuer: machineIssuer,
-        machineNft: "0xaBB3961281123C336596153C4dfE83E11498fc54",
+        machineNft: machineNft,
         machineValueHuman: "10",
         machineControllerAddr: alice.address,
         erc20: rwa_sdk.getAddresses().erc20.peaq,
         tokenDecimals: 18,
         salt: Math.floor(Math.random() * 10000),
-        count: 2
+        count: count
     });
-    expect(result2).toBeDefined();
-    expect(result2.result).toContain('Machine registration fees paid');
+    console.log(result2);
+    expect(['issued']).toContain(result2.status);
+    expect(result2.machineNft).toBe(machineNft);
+    expect(result2.machineIssuer).toBe(machineIssuer.address);
+    expect(result2.machineController).toBe(alice.address);
+    expect(result2.machineValue.human).toBe('10');
+    expect(result2.machineValue.units).toBe(10000000000000000000n);
+    expect(result2.machineValue.tokenDecimals).toBe(18);
+    expect(result2.machineValue.feeToken).toBe(rwa_sdk.getAddresses().erc20.peaq);
+    expect(result2.count).toBe(count);
+    expect(result2.machines).toBeDefined();
+    expect(result2.machines.length).toBe(count);
+    
   }, 60_000);
 });

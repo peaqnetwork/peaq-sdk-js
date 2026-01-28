@@ -20,21 +20,22 @@ describe.sequential('vault.registerIdentity [integration]', () => {
     // 2. Iterate through 3 wallets and register the identities
     for (const wallet of [process.env.ALICE_PUBLIC_ADDRESS!, process.env.BOB_PUBLIC_ADDRESS!, process.env.CHARLIE_PUBLIC_ADDRESS!]) {
       const identity = await rwa_sdk.onchainid.getIdentity({ subject: wallet });
-      console.log(identity.identity);
-      console.log(wallet);
       const result = await rwa_sdk.vault.registerIdentity({
         vaultDeployer: vaultDeployer,
-        vault: "0x4dBF70cD5407F8b1014c238387ce8EEf85Cc2656",
+        vault: "0x4b76a8F7cdB68a9353c83e18077E6bbC760243B3",
         subject: wallet,
         subjectIdentity: identity.identity!,
         country: "0"
       });
-      expect(result).toBeDefined();
-      expect(result).toHaveProperty('result');
-      expect(typeof result.result).toBe('string');
-      expect(result.result).toContain('Registered eoa');
-      expect(result.result).toContain(wallet);
-      expect(result.result).toContain(identity.identity);
+      expect(['registered']).toContain(result.status);
+      expect(result.status).toBe('registered');
+      expect(result.vault).toBe('0x4b76a8F7cdB68a9353c83e18077E6bbC760243B3');
+      expect(result.subject).toBe(wallet);
+      expect(result.subjectIdentity).toBe(identity.identity!);
+      expect(result.country).toBe('0');
+      expect(result.registeredBy).toBe(vaultDeployer.address);
+      expect(result.receipt).toBeDefined();
+      expect(result.receipt.status).toBe(1);
     }
 
   }, 60_000);

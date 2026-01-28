@@ -18,21 +18,21 @@ describe.sequential('vault.mnftApproval [integration]', () => {
 
     // 2. Call cnft approval for tokenIds
     const mnft = "0xaBB3961281123C336596153C4dfE83E11498fc54";
-    const mnftTokenIds = ["264584815634051302201818132358169219281326857171", "1175434611957131102776221217067939161297023915810"]
+    const mnftTokenIds = ["1262843802665614120367007478296348432923457422026", "880598419457374294774049460835571533031091411284"]
     const mnftApprovalResult = await rwa_sdk.vault.mnftApproval({
       machineController: machineController,
       machineNft: mnft,
-      vault: "0x4dBF70cD5407F8b1014c238387ce8EEf85Cc2656",
+      vault: "0x4b76a8F7cdB68a9353c83e18077E6bbC760243B3",
       tokenIds: mnftTokenIds
     });
-    console.log(mnftApprovalResult);
+    expect(['approved']).toContain(mnftApprovalResult.status);
     expect(mnftApprovalResult).toBeDefined();
-    expect(mnftApprovalResult).toHaveProperty('result');
-    expect(typeof mnftApprovalResult.result).toBe('string');
-    expect(mnftApprovalResult.result).toContain('Set approval of vault');
-    expect(mnftApprovalResult.result).toContain(mnft);
-    expect(mnftApprovalResult.result).toContain("0x4dBF70cD5407F8b1014c238387ce8EEf85Cc2656");
-    expect(mnftApprovalResult.result).toContain(mnftTokenIds.join(','));
+    expect(mnftApprovalResult.machineNft).toBe(mnft);
+    expect(mnftApprovalResult.vault).toBe("0x4b76a8F7cdB68a9353c83e18077E6bbC760243B3");
+    expect(mnftApprovalResult.newlyApprovedTokenIds).toBe(mnftTokenIds);
+    expect(mnftApprovalResult.receipts).toBeDefined();
+    expect(mnftApprovalResult.receipts.length).toBe(mnftTokenIds.length);
+    expect(mnftApprovalResult.receipts[0].status).toBe(1);
 
   }, 60_000);
 });

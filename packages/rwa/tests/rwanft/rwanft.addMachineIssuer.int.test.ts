@@ -21,22 +21,22 @@ describe.sequential('rwa.addMachineIssuer [integration]', () => {
     const aliceMachineIssuer = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
     const aliceIdentity = await rwa_sdk.onchainid.getIdentity({ subject: aliceMachineIssuer.address });
 
-    // // 3. Issue role claim for alice to be a machine issuer (only needs to be done once per identity)
-    // const { claim, signature } = await rwa_sdk.onchainid.issueRoleClaim({
-    //     claimIssuerSigner: machineRegulator,
-    //     claimIssuerContract: process.env.CLAIM_ISSUER_CONTRACT_ADDRESS!,
-    //     subjectIdentity: aliceIdentity.identity,
-    //     roleTopic: ClaimTopics.CT_MNFT_ISSUER,
-    //     roleDescription: 'Machine Issuer'
-    // });
+    // 3. Issue role claim for alice to be a machine issuer (only needs to be done once per identity)
+    const { claim, signature } = await rwa_sdk.onchainid.issueRoleClaim({
+        claimIssuerSigner: machineRegulator,
+        claimIssuerContract: process.env.CLAIM_ISSUER_CONTRACT_ADDRESS!,
+        subjectIdentity: aliceIdentity.identity!,
+        roleTopic: ClaimTopics.CT_MNFT_ISSUER,
+        roleDescription: 'Machine Issuer'
+    });
 
-    // // 4. Add claim to alice's identity
-    // await rwa_sdk.onchainid.addClaimToIdentity({
-    //     identityController: aliceMachineIssuer,
-    //     subjectIdentity: aliceIdentity.identity,
-    //     claim: claim,
-    //     claimSignature: signature,
-    // });
+    // 4. Add claim to alice's identity
+    await rwa_sdk.onchainid.addClaimToIdentity({
+        identityController: aliceMachineIssuer,
+        subjectIdentity: aliceIdentity.identity!,
+        claim: claim,
+        claimSignature: signature,
+    });
 
     // 5. Get existing machine issuers
     const existingMachineIssuers = await rwa_sdk.rwanft.getMachineIssuers();
@@ -46,17 +46,17 @@ describe.sequential('rwa.addMachineIssuer [integration]', () => {
         machineRegulatorSigner: machineRegulator,
         newMachineIssuer: aliceMachineIssuer.address
     });
-    console.log('Add Machine Issuer result:', result);
+    expect(['added']).toContain(result.status);
     expect(result).toBeDefined();
-    expect(result).toHaveProperty('result');
-    expect(typeof result.result).toBe('string');
-    expect(result.result).toContain('Machine issuer at address');
-    expect(result.result).toContain(aliceMachineIssuer.address);
-    expect(result.result).toContain('machine NFT at address');
+    expect(result.machineIssuer).toBe(aliceMachineIssuer.address);
+    expect(result.machineNft).toBeDefined();
+    expect(result.machineNft).toMatch(/^0x[a-fA-F0-9]{40}$/);
+    expect(result.addedBy).toBe(machineRegulator.address);
+    expect(result.receipt).toBeDefined();
+    expect(result.receipt.status).toBe(1);
 
     // 7. Get updated machine issuers, and make sure machine issuer in list and length is incremented by 1
     const updatedMachineIssuers = await rwa_sdk.rwanft.getMachineIssuers();
-    console.log('Updated machine issuers:', updatedMachineIssuers);
     expect(updatedMachineIssuers).toBeDefined();
     expect(updatedMachineIssuers).toHaveProperty('machineIssuers');
     expect(updatedMachineIssuers.machineIssuers).toBeDefined();

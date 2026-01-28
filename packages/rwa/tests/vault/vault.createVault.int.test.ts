@@ -29,26 +29,24 @@ describe.sequential('vault.createVault [integration]', () => {
       vaultFactory: "0x5C5Db5CcF63ed6C11063385070C8FD2C990BFd53",
       infoDesk: "0x3F2c72Ba389632079DA68Ee13E8b955d69D1B5c1",
       trustedClaimIssuers: [claimIssuerContract],
-      tokenName: "Test Token Q",
-      tokenSymbol: "TTQ",
+      tokenName: "Test Token JJJ",
+      tokenSymbol: "JJJ",
       payoutToken: rwa_sdk.getAddresses().erc20.peaq,
     });
     console.log(result);
+    expect(['created']).toContain(result.status);
     expect(result).toBeDefined();
-    expect(result).toHaveProperty('vault');
-    expect(result).toHaveProperty('token');
-    expect(result).toHaveProperty('distributor');
-    expect(typeof result.vault).toBe('string');
-    expect(typeof result.token).toBe('string');
-    expect(typeof result.distributor).toBe('string');
+    expect(result.vault).toBeDefined();
     expect(result.vault).toMatch(/^0x[a-fA-F0-9]{40}$/);
+    expect(result.token).toBeDefined();
     expect(result.token).toMatch(/^0x[a-fA-F0-9]{40}$/);
+    expect(result.distributor).toBeDefined();
+    expect(result.distributor).toMatch(/^0x[a-fA-F0-9]{40}$/);
+    expect(result.receipt.status).toBe(1);
 
 
-    // {
-    //   vault: '0x4dBF70cD5407F8b1014c238387ce8EEf85Cc2656',
-    //   token: '0x9E23427EA607DFE224DA6DF9b75E2f50B8e7AFE5',
-    //   distributor: '0x9AD7737A380253283a447C86cE650A7ABC515945'
-    // }
+    // vault: '0x4b76a8F7cdB68a9353c83e18077E6bbC760243B3',
+    // token: '0x811247945f5fcBD9068F71298a69e71B2A4Ba66f',
+    // distributor: '0x4210D83E736789e361DC96CC07756cb573e23CEd',
   }, 60_000);
 });

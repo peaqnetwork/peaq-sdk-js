@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { describe, it, expect } from 'vitest';
-import { JsonRpcProvider, Wallet } from 'ethers';
+import { JsonRpcProvider, parseUnits, Wallet } from 'ethers';
 
 import { RWA } from '../../src/rwa';
 import { Chain } from '../../src/enums/core';
@@ -21,22 +21,24 @@ describe.sequential('vault.transfer [integration]', () => {
     const charlie = new Wallet(process.env.CHARLIE_PRIVATE_KEY!, provider);
 
     // 4. Get security token address
-    const token = "0x9E23427EA607DFE224DA6DF9b75E2f50B8e7AFE5";
+    const token = "0x811247945f5fcBD9068F71298a69e71B2A4Ba66f";
 
     // 5. Ensure transfer fee allowance is set
     const result = await rwa_sdk.vault.ensureTransferFeeAllowance({
       allowanceSigner: alice,
-      vault: "0x4dBF70cD5407F8b1014c238387ce8EEf85Cc2656",
+      vault: "0x4b76a8F7cdB68a9353c83e18077E6bbC760243B3",
       token: token,
       erc20: rwa_sdk.getAddresses().erc20.peaq,
       transferAmountHuman: "2"
     });
-
-    expect(result).toBeDefined();
-    expect(result).toHaveProperty('result');
-    expect(typeof result.result).toBe('string');
-    expect(result.result).toContain('Transfer fee allowance set for token');
-    expect(result.result).toContain('in vault');
+    expect(['approved']).toContain(result.status);
+    expect(result.vault).toBe("0x4b76a8F7cdB68a9353c83e18077E6bbC760243B3");
+    expect(result.feeToken).toBe(rwa_sdk.getAddresses().erc20.peaq);
+    expect(result.transfer.token).toBe(token);
+    expect(result.transfer.amountHuman).toBe("2");
+    expect(result.transfer.amountUnits).toBe(parseUnits("2", 18));
+    expect(result.transfer.tokenDecimals).toBe(18);
+    expect(result.fee.feeAmount).toBe(1000000000000000000n);
 
     // 6. Transfer tokens to Bob
     const resp = await rwa_sdk.vault.transfer({
@@ -45,12 +47,16 @@ describe.sequential('vault.transfer [integration]', () => {
       token: token,
       transferAmountHuman: "1"
     });
-
-    console.log(resp);
+    expect(['transferred']).toContain(resp.status);
     expect(resp).toBeDefined();
-    expect(resp).toHaveProperty('result');
-    expect(typeof resp.result).toBe('string');
-    expect(resp.result).toContain('Transferred 1 tokens (scaled by 18 decimals) from one address to another');
+    expect(resp.token).toBe(token);
+    expect(resp.sender).toBe(alice.address);
+    expect(resp.recipient).toBe(bob.address);
+    expect(resp.amount.human).toBe("1");
+    expect(resp.amount.units).toBe(parseUnits("1", 18));
+    expect(resp.amount.decimals).toBe(18);
+    expect(resp.receipt).toBeDefined();
+    expect(resp.receipt.status).toBe(1);
 
     // 7. Transfer tokens to Charlie
     const resp2 = await rwa_sdk.vault.transfer({
@@ -59,12 +65,15 @@ describe.sequential('vault.transfer [integration]', () => {
       token: token,
       transferAmountHuman: "1"
     });
+    expect(['transferred']).toContain(resp2.status);
     expect(resp2).toBeDefined();
-    expect(resp2).toHaveProperty('result');
-    expect(typeof resp2.result).toBe('string');
-    expect(resp2.result).toContain('Transferred 1 tokens (scaled by 18 decimals) from one address to another');
-
-
-
+    expect(resp2.token).toBe(token);
+    expect(resp2.sender).toBe(alice.address);
+    expect(resp2.recipient).toBe(charlie.address);
+    expect(resp2.amount.human).toBe("1");
+    expect(resp2.amount.units).toBe(parseUnits("1", 18));
+    expect(resp2.amount.decimals).toBe(18);
+    expect(resp2.receipt).toBeDefined();
+    expect(resp2.receipt.status).toBe(1);
   }, 60_000);
 });

@@ -6,6 +6,7 @@ import { JsonRpcProvider, Wallet, AbiCoder, keccak256 } from 'ethers';
 
 import { RWA } from '../../src/rwa';
 import { Chain } from '../../src/enums/core';
+import { ClaimTopics } from '../../src/enums/claimTopics';
 
 
 // Integration test that removes a KYC claim from an identity
@@ -48,7 +49,7 @@ describe.sequential('OnchainID.removeClaimFromIdentity [integration]', () => {
 
     // 5. Compute claimId = keccak256(abi.encode(issuer, topic))
     const issuerContract = process.env.CLAIM_ISSUER_CONTRACT_ADDRESS;
-    const topic = 777;
+    const topic = ClaimTopics.CT_KYC_APPROVED;
     const abiCoder = new AbiCoder();
     const claimId = keccak256(abiCoder.encode(["address", "uint256"], [issuerContract, topic]));
     expect(claimId).toBe(result.claimId);
@@ -59,6 +60,7 @@ describe.sequential('OnchainID.removeClaimFromIdentity [integration]', () => {
       subjectIdentity: alice.identity!,
       claimId: claimId
     });
+    expect(result2.status).toBe('removed');
     expect(result2.receipt.status).toBe(1);
     expect(result2.claimId).toBeDefined();
     expect(result2.claimId).toMatch(/^0x[a-fA-F0-9]{64}$/);

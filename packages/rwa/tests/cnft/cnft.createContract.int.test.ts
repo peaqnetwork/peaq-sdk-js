@@ -38,13 +38,22 @@ describe.sequential('cnft.createContract [integration]', () => {
         contractHash: hashDigest,
         url: url
     });
-    expect(result).toBeDefined();
-    expect(result).toHaveProperty('message');
-    expect(result).toHaveProperty('contractId');
-    expect(typeof result.message).toBe('string');
-    expect(result.message).toContain('Contract setup fees paid:');
-    expect(typeof result.contractId).toBe('string');
+    expect(['created']).toContain(result.status);
+    expect(result.contractNft).toBe(contractNft);
+    expect(result.contractId).toBeDefined();
     expect(result.contractId).toMatch(/^\d+$/);
+    expect(result.contractController).toBe(alice.address);
+    expect(result.counterparties).toBeDefined();
+    expect(result.counterparties.length).toBe(2);
+    expect(result.counterparties).toContain(bob.address);
+    expect(result.counterparties).toContain(charlie.address);
+    expect(result.content.hash).toBe(hashDigest);
+    expect(result.content.url).toBe(url);
+    expect(result.fee.token).toBe(rwa_sdk.getAddresses().erc20.peaq);
+    expect(result.fee.tokenDecimals).toBe(18);
+    expect(result.fee.setupAmount).toBe(1000000000000000000n);
+    expect(result.receipt).toBeDefined();
+    expect(result.receipt.status).toBe(1);
 
     // contractId should match deterministic hash
     const expectedId = computeContractId({
@@ -91,21 +100,17 @@ describe.sequential('cnft.createContract [integration]', () => {
     });
     expect(idFromDraft).toBe(result.contractId);
 
-
-    
     // 6. Have Bob sign the contract
     const signResult = await rwa_sdk.cnft.signContract({
       counterpartySigner: bob,
       contractNft: contractNft,
       contractId: result.contractId
     });
-    expect(signResult).toBeDefined();
-    expect(signResult).toHaveProperty('message');
-    expect(typeof signResult.message).toBe('string');
-    expect(signResult.message).toContain(result.contractId);
-    expect(signResult.message).toContain('signed by');
-    expect(signResult.message).toContain(bob.address);
-    expect(signResult.message).toContain('(2/3 signatures collected)');
+    expect(['signed']).toContain(signResult.status);
+    expect(signResult.contractId).toBe(result.contractId);
+    expect(signResult.counterpartySigner).toBe(bob.address);
+    expect(signResult.receipt).toBeDefined();
+    expect(signResult.receipt.status).toBe(1);
 
     // 7. Have Charlie sign the contract
     const signResult2 = await rwa_sdk.cnft.signContract({
@@ -113,13 +118,11 @@ describe.sequential('cnft.createContract [integration]', () => {
       contractNft: contractNft,
       contractId: result.contractId
     });
-    expect(signResult2).toBeDefined();
-    expect(signResult2).toHaveProperty('message');
-    expect(typeof signResult2.message).toBe('string');
-    expect(signResult2.message).toContain(result.contractId);
-    expect(signResult2.message).toContain('completed');
-    expect(signResult2.message).toContain(charlie.address);
-    expect(signResult2.message).toContain('NFT minted');
+    expect(['completed']).toContain(signResult2.status);
+    expect(signResult2.contractId).toBe(result.contractId);
+    expect(signResult2.counterpartySigner).toBe(charlie.address);
+    expect(signResult2.receipt).toBeDefined();
+    expect(signResult2.receipt.status).toBe(1);
 
     // 8. Get the contract
     const contract = await rwa_sdk.cnft.getContract({
@@ -137,6 +140,8 @@ describe.sequential('cnft.createContract [integration]', () => {
     expect(c[1]).toContain(charlie.address);
     expect(c[2]).toBe(BigInt(hashDigest));
     expect(c[3]).toBe(url);
+
+    console.log(result.contractId);
 
   }, 60_000);
 });

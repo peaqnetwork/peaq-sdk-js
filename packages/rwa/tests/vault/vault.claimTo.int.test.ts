@@ -21,7 +21,7 @@ describe.sequential('vault.claimYieldTo [integration]', () => {
     const bob = new Wallet(process.env.BOB_PRIVATE_KEY!, provider);
 
     // 3. Get known vault address
-    const vault = "0x4dBF70cD5407F8b1014c238387ce8EEf85Cc2656";   
+    const vault = "0x4b76a8F7cdB68a9353c83e18077E6bbC760243B3";   
 
     // 3. Claim Yield
     const result = await rwa_sdk.vault.claimYieldTo({
@@ -29,11 +29,14 @@ describe.sequential('vault.claimYieldTo [integration]', () => {
         vault: vault,
         to: bob.address
     });
-    // console.log(result);
+    expect(['claimed']).toContain(result.status);
     expect(result).toBeDefined();
-    expect(result).toHaveProperty('result');
-    expect(typeof result.result).toBe('string');
-    expect(result.result).toContain('Yield claimed for vault');
-    expect(result.result).toContain(vault);
+    expect(result.vault).toBe(vault);
+    expect(result.rewardDistributor).toBeDefined();
+    expect(result.rewardDistributor).toMatch(/^0x[a-fA-F0-9]{40}$/);
+    expect(result.claimer).toBe(await alice.getAddress());
+    expect(result.recipient).toBe(bob.address);
+    expect(result.receipt).toBeDefined();
+    expect(result.receipt.status).toBe(1);
   }, 60_000);
 });

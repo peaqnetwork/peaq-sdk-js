@@ -15,7 +15,6 @@ describe.sequential('rwa.findContractNft [integration]', () => {
 
     const contractId = "1234567890";
     const contractNft = await rwa_sdk.rwanft.findContractNft({ contractId: contractId });
-    console.log('Find Contract NFT result:', contractNft);
     expect(contractNft).toBeDefined();
     expect(contractNft).toHaveProperty('contractNft');
     expect(typeof contractNft.contractNft).toBe('string');

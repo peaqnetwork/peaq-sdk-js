@@ -19,7 +19,6 @@ describe.sequential('OnchainID.createIdentity [integration]', () => {
     // 2. Create identity
     const salt = 'identity-' + Date.now().toString();
     const result = await rwa.onchainid.createIdentity({ idFactoryAdmin: admin, subject: process.env.ALICE_PUBLIC_ADDRESS!, deploymentSalt: salt });
-
     expect(['created', 'exists']).toContain(result.status);
     expect(result.identity).toMatch(/^0x[a-fA-F0-9]{40}$/);
 

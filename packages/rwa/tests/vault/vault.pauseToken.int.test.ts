@@ -18,7 +18,7 @@ describe.sequential('vault.pauseToken [integration]', () => {
     const vaultDeployer = new Wallet(process.env.ADMIN_PRIVATE_KEY!, provider);
 
     // 2. Get known vault address
-    const vault = "0x4dBF70cD5407F8b1014c238387ce8EEf85Cc2656";
+    const vault = "0x4b76a8F7cdB68a9353c83e18077E6bbC760243B3";
 
     // 3. Pause Token
     const result = await rwa_sdk.vault.pauseToken({
@@ -26,16 +26,12 @@ describe.sequential('vault.pauseToken [integration]', () => {
       vaultFactory: "0x5C5Db5CcF63ed6C11063385070C8FD2C990BFd53",
       vault: vault
     });
-    console.log(result);
-
-    expect(result).toBeDefined();
-    expect(result).toHaveProperty('result');
-    expect(result).toHaveProperty('receipt');
-    expect(typeof result.result).toBe('string');
-    expect(result.result).toContain('Paused token for vault:');
-    expect(result.result).toContain(vault);
+    expect(['paused']).toContain(result.status);
+    expect(result.vault).toBe(vault);
+    expect(result.vaultFactory).toBe('0x5C5Db5CcF63ed6C11063385070C8FD2C990BFd53');
+    expect(result.pausedBy).toBe(vaultDeployer.address);
     expect(result.receipt).toBeDefined();
-    expect(result.receipt.status).toBe(1);
+    expect(result.receipt?.status).toBe(1);
 
   }, 60_000);
 });

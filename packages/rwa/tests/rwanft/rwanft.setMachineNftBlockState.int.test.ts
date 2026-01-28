@@ -26,12 +26,14 @@ describe.sequential('rwa.setMachineNftBlockState [integration]', () => {
         issuerOrContractNft: aliceMachineIssuer.address,
         blocked: true
     });
+    expect(['updated']).toContain(result.status);
     expect(result).toBeDefined();
-    expect(result).toHaveProperty('result');
-    expect(typeof result.result).toBe('string');
-    expect(result.result).toContain('Machine issuer or contract NFT at address');
-    expect(result.result).toContain(aliceMachineIssuer.address);
-    expect(result.result).toContain('blocked to true');
+    expect(result.peaqRwaNft).toBe(rwa_sdk.getAddresses().nft.peaqRwaNft);
+    expect(result.target).toBe(aliceMachineIssuer.address);
+    expect(result.blocked).toBe(true);
+    expect(result.updatedBy).toBe(machineRegulator.address);
+    expect(result.receipt).toBeDefined();
+    expect(result.receipt.status).toBe(1);
 
     // 4. Set the block state of the machine issuer to false
     const result2 = await rwa_sdk.rwanft.setMachineNftBlockState({
@@ -39,12 +41,14 @@ describe.sequential('rwa.setMachineNftBlockState [integration]', () => {
         issuerOrContractNft: aliceMachineIssuer.address,
         blocked: false
     });
+    expect(['updated']).toContain(result2.status);
     expect(result2).toBeDefined();
-    expect(result2).toHaveProperty('result');
-    expect(typeof result2.result).toBe('string');
-    expect(result2.result).toContain('Machine issuer or contract NFT at address');
-    expect(result2.result).toContain(aliceMachineIssuer.address);
-    expect(result2.result).toContain('blocked to false');
+    expect(result2.peaqRwaNft).toBe(rwa_sdk.getAddresses().nft.peaqRwaNft);
+    expect(result2.target).toBe(aliceMachineIssuer.address);
+    expect(result2.blocked).toBe(false);
+    expect(result2.updatedBy).toBe(machineRegulator.address);
+    expect(result2.receipt).toBeDefined();
+    expect(result2.receipt.status).toBe(1);
 
   }, 60_000);
 });

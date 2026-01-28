@@ -39,13 +39,22 @@ describe.sequential('cnft.cancelContract [integration]', () => {
         contractHash: hashDigest,
         url: url
     });
-    expect(result).toBeDefined();
-    expect(result).toHaveProperty('message');
-    expect(result).toHaveProperty('contractId');
-    expect(typeof result.message).toBe('string');
-    expect(result.message).toContain('Contract setup fees paid:');
-    expect(typeof result.contractId).toBe('string');
+    expect(['created']).toContain(result.status);
+    expect(result.contractNft).toBe(contractNft);
+    expect(result.contractId).toBeDefined();
     expect(result.contractId).toMatch(/^\d+$/);
+    expect(result.contractController).toBe(alice.address);
+    expect(result.counterparties).toBeDefined();
+    expect(result.counterparties.length).toBe(2);
+    expect(result.counterparties).toContain(bob.address);
+    expect(result.counterparties).toContain(charlie.address);
+    expect(result.content.hash).toBe(hashDigest);
+    expect(result.content.url).toBe(url);
+    expect(result.fee.token).toBe(rwa_sdk.getAddresses().erc20.peaq);
+    expect(result.fee.tokenDecimals).toBe(18);
+    expect(result.fee.setupAmount).toBe(1000000000000000000n);
+    expect(result.receipt).toBeDefined();
+    expect(result.receipt.status).toBe(1);
 
     // contractId should match deterministic hash
     const expectedId = computeContractId({
@@ -99,13 +108,12 @@ describe.sequential('cnft.cancelContract [integration]', () => {
       contractNft: contractNft,
       contractId: result.contractId
     });
-    expect(signResult).toBeDefined();
-    expect(signResult).toHaveProperty('message');
-    expect(typeof signResult.message).toBe('string');
-    expect(signResult.message).toContain(result.contractId);
-    expect(signResult.message).toContain('signed by');
-    expect(signResult.message).toContain(bob.address);
-    expect(signResult.message).toContain('(2/3 signatures collected)');
+    expect(['signed']).toContain(signResult.status);
+    expect(signResult.contractId).toBe(result.contractId);
+    expect(signResult.counterpartySigner).toBe(bob.address);
+    expect(signResult.receipt).toBeDefined();
+    expect(signResult.receipt.status).toBe(1);
+
 
     // 7. Rather than having Charlie sign the contract, cancel it from the initiator (Alice)
     const cancelResult = await rwa_sdk.cnft.cancelContract({
@@ -113,11 +121,12 @@ describe.sequential('cnft.cancelContract [integration]', () => {
       contractNft: contractNft,
       contractId: result.contractId
     });
-    expect(cancelResult).toBeDefined();
-    expect(cancelResult).toHaveProperty('message');
-    expect(typeof cancelResult.message).toBe('string');
-    expect(cancelResult.message).toContain(result.contractId);
-    expect(cancelResult.message).toContain('cancelled');
+    expect(['cancelled']).toContain(cancelResult.status);
+    expect(cancelResult.contractNft).toBe(contractNft);
+    expect(cancelResult.contractId).toBe(result.contractId);
+    expect(cancelResult.cancelledBy).toBe(alice.address);
+    expect(cancelResult.receipt).toBeDefined();
+    expect(cancelResult.receipt.status).toBe(1);
 
     // 8. Try to get the draft of the contract (expected failure)
     await expect(

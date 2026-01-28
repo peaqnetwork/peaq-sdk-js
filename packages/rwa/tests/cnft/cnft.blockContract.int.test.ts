@@ -31,9 +31,12 @@ describe.sequential('cnft.blockContract [integration]', () => {
         blocked: true
     });
     expect(blockedResult).toBeDefined();
-    expect(blockedResult).toHaveProperty('message');
-    expect(typeof blockedResult.message).toBe('string');
-    expect(blockedResult.message).toContain(`Contract set blocked to ${true}.`);
+    expect(blockedResult.status).toBe('set');
+    expect(blockedResult.contractNft).toBe(contractNft);
+    expect(blockedResult.blocked).toBe(true);
+    expect(blockedResult.setBy).toBe(admin.address);
+    expect(blockedResult.receipt).toBeDefined();
+    expect(blockedResult.receipt.status).toBe(1);
 
     // 4. Check if the contract is blocked
     const isBlockedResult = await rwa_sdk.cnft.isBlocked({
@@ -68,9 +71,12 @@ describe.sequential('cnft.blockContract [integration]', () => {
         blocked: false
     });
     expect(blockedResult2).toBeDefined();
-    expect(blockedResult2).toHaveProperty('message');
-    expect(typeof blockedResult2.message).toBe('string');
-    expect(blockedResult2.message).toContain(`Contract set blocked to ${false}.`);
+    expect(blockedResult2.status).toBe('set');
+    expect(blockedResult2.contractNft).toBe(contractNft);
+    expect(blockedResult2.blocked).toBe(false);
+    expect(blockedResult2.setBy).toBe(admin.address);
+    expect(blockedResult2.receipt).toBeDefined();
+    expect(blockedResult2.receipt.status).toBe(1);
 
 
     const isBlockedResult2 = await rwa_sdk.cnft.isBlocked({
@@ -91,13 +97,22 @@ describe.sequential('cnft.blockContract [integration]', () => {
         contractHash: hashDigest,
         url: url
     });
-    expect(result).toBeDefined();
-    expect(result).toHaveProperty('message');
-    expect(result).toHaveProperty('contractId');
-    expect(typeof result.message).toBe('string');
-    expect(result.message).toContain('Contract setup fees paid:');
-    expect(typeof result.contractId).toBe('string');
+    expect(['created']).toContain(result.status);
+    expect(result.contractNft).toBe(contractNft);
+    expect(result.contractId).toBeDefined();
     expect(result.contractId).toMatch(/^\d+$/);
+    expect(result.contractController).toBe(alice.address);
+    expect(result.counterparties).toBeDefined();
+    expect(result.counterparties.length).toBe(2);
+    expect(result.counterparties).toContain(bob.address);
+    expect(result.counterparties).toContain(charlie.address);
+    expect(result.content.hash).toBe(hashDigest);
+    expect(result.content.url).toBe(url);
+    expect(result.fee.token).toBe(rwa_sdk.getAddresses().erc20.peaq);
+    expect(result.fee.tokenDecimals).toBe(18);
+    expect(result.fee.setupAmount).toBe(1000000000000000000n);
+    expect(result.receipt).toBeDefined();
+    expect(result.receipt.status).toBe(1);
 
     // Cancel the contract for cleanup
     await rwa_sdk.cnft.cancelContract({

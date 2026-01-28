@@ -4,6 +4,8 @@ import { JsonRpcProvider, Wallet, AbiCoder, keccak256 } from 'ethers';
 
 import { RWA } from '../../src/rwa';
 import { Chain } from '../../src/enums/core';
+import { ClaimTopics } from '../../src/enums/claimTopics';
+import { ClaimScheme } from '../../src/enums/claimSchemes';
 
 // Integration test that adds a KYC claim to an identity
 describe.sequential('OnchainID.addClaimToIdentity [integration]', () => {
@@ -30,7 +32,7 @@ describe.sequential('OnchainID.addClaimToIdentity [integration]', () => {
         uri: 'https://example.com/kyc'
     });
 
-      // 4. Identity owner signs and submits addClaim
+    // 4. Identity owner signs and submits addClaim
     const aliceSigner = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
     const result = await rwa_sdk.onchainid.addClaimToIdentity({
         identityController: aliceSigner,
@@ -45,7 +47,7 @@ describe.sequential('OnchainID.addClaimToIdentity [integration]', () => {
 
     // get claim to check it has been added to alice's identity contract
     const claimIssuerContract = process.env.CLAIM_ISSUER_CONTRACT_ADDRESS;
-    const topic = 777;
+    const topic = ClaimTopics.CT_KYC_APPROVED;
     const abiCoder = new AbiCoder();
     const claimId = keccak256(abiCoder.encode(["address", "uint256"], [claimIssuerContract, topic]));
 
@@ -59,10 +61,10 @@ describe.sequential('OnchainID.addClaimToIdentity [integration]', () => {
 
     expect(fetchedClaim).toBeDefined();
     expect(typeof fetchedClaim.claim.topic).toBe('number');
-    expect(fetchedClaim.claim.topic).toBe(777);
+    expect(fetchedClaim.claim.topic).toBe(ClaimTopics.CT_KYC_APPROVED);
 
     expect(typeof fetchedClaim.claim.scheme).toBe('number');
-    expect(fetchedClaim.claim.scheme).toBe(1);
+    expect(fetchedClaim.claim.scheme).toBe(ClaimScheme.ECDSA);
 
     expect(typeof fetchedClaim.claim.issuer).toBe('string');
     expect(fetchedClaim.claim.issuer.toLowerCase()).toBe(String(claimIssuerContract).toLowerCase());

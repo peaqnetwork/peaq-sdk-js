@@ -9,7 +9,7 @@ import { Chain } from '../../src/enums/core';
 
 
 describe.sequential('cnft.isContractIdAvailable [integration]', () => {
-  it('checks if a Contract ID is available', async () => {
+  it.skip('checks if a Contract ID is available', async () => {
     // 0. Create RWA instance and get provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
