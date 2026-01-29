@@ -19,7 +19,7 @@ export type EnsureMachineNftAllowanceResult = {
     receipt?: TransactionReceipt;
 }
 
-export type IssueMachineNft = {
+export type RegisterMachine = {
     machineIssuer: Signer;
     machineNft: string;
     machineValueHuman: string;
@@ -31,7 +31,7 @@ export type IssueMachineNft = {
 }
 
 // TODO improve return type
-export type IssueMachineNftResult = {
+export type RegisterMachineResult = {
     status: 'issued';
     machineNft: string;
     machineIssuer: string;

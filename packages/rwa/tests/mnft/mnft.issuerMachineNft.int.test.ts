@@ -9,8 +9,8 @@ import { Chain } from '../../src/enums/core';
 
 
 // Integration test that ensures a Machine NFT allowance is set for a given machine value, and then issues a Machine NFT to a designated owner.
-describe.sequential('mnft.issueMachineNFT [integration]', () => {
-  it.skip('issues a Machine NFT', async () => {
+describe.sequential('mnft.registerMachine [integration]', () => {
+  it.skip('registers a Machine NFT', async () => {
     // 0. Create RWA instance and get provider
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
@@ -38,7 +38,7 @@ describe.sequential('mnft.issueMachineNFT [integration]', () => {
     expect(result.feePerMachine).toBe(10000000000000000000n);
 
     // 4. Create MachineNFT(s) for Alice
-    const result2 = await rwa_sdk.mnft.issueMachineNft({
+    const result2 = await rwa_sdk.mnft.registerMachine({
         machineIssuer: machineIssuer,
         machineNft: machineNft,
         machineValueHuman: "10",

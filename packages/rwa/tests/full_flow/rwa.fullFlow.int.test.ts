@@ -37,7 +37,7 @@ describe.sequential('rwa.fullFlow [integration]', () => {
 
     // 3. Machine Registration for Alice
     const knownMachineNft = "0xaBB3961281123C336596153C4dfE83E11498fc54"; // logged after the Machine Issuer was added to the PeaqRwaNft contract (setup)
-    const machineIds = await issueMachineNft(rwa_sdk, knownMachineNft, machineIssuer, alice);
+    const machineIds = await registerMachine(rwa_sdk, knownMachineNft, machineIssuer, alice);
     // const machineIds = ['1004354596407721988785058448123243826773126676574', '1276419267490181419884424543816884848811565363142']
 
     // 4. Create a ContractNft between Alice, Bob and Charlie
@@ -157,7 +157,7 @@ async function addClaimToIdentity(rwa_sdk: RWA, claimIssuer: Wallet, subjectSign
     expect(fetchedClaim.claim.uri).toBe('https://example.com/kyc');
 }
 
-async function issueMachineNft(rwa_sdk: RWA, knownMachineNft: string, machineIssuer: Wallet, alice: Wallet) {
+async function registerMachine(rwa_sdk: RWA, knownMachineNft: string, machineIssuer: Wallet, alice: Wallet) {
     const result = await rwa_sdk.mnft.ensureMachineNftAllowance({
         machineController: alice,
         machineNft: knownMachineNft,
@@ -175,7 +175,7 @@ async function issueMachineNft(rwa_sdk: RWA, knownMachineNft: string, machineIss
     expect(result.currentAllowance).toBe(20000000000000000000n);
 
     // 4. Create MachineNFT(s) for Alice
-    const result2 = await rwa_sdk.mnft.issueMachineNft({
+    const result2 = await rwa_sdk.mnft.registerMachine({
         machineIssuer: machineIssuer,
         machineNft: knownMachineNft,
         machineValueHuman: "10",
@@ -272,8 +272,8 @@ async function createVault(rwa_sdk: RWA, admin: Wallet, alice: Wallet, knownVaul
       vaultFactory: knownVaultFactory,
       infoDesk: knownInfoDesk,
       trustedClaimIssuers: [claimIssuerContract],
-      tokenName: "Test Token Q",
-      tokenSymbol: "TTQ",
+      tokenName: "Test Token QQQ",
+      tokenSymbol: "QQQ",
       payoutToken: rwa_sdk.getAddresses().erc20.peaq,
     });
     console.log(result);
@@ -333,36 +333,36 @@ async function registerIdentities(rwa_sdk: RWA, vaultDeployer: Wallet, vault: st
 }
 
 async function setApproval(rwa_sdk: RWA, controller: Wallet, vault: string, knownMachineNft: string, knownContractNft: string, machineIds: string[], contractId: string[]) {
-    const mnftApprovalResult = await rwa_sdk.vault.mnftApproval({
+    const nftApprovalResult = await rwa_sdk.vault.nftApproval({
         machineController: controller,
-        machineNft: knownMachineNft,
+        nft: knownMachineNft,
         vault: vault,
         tokenIds: machineIds
       });
-      console.log(mnftApprovalResult);
-      expect(['approved']).toContain(mnftApprovalResult.status);
-      expect(mnftApprovalResult.machineNft).toBe(knownMachineNft);
-      expect(mnftApprovalResult.vault).toBe(vault);
-      expect(mnftApprovalResult.newlyApprovedTokenIds).toBe(machineIds);
-      expect(mnftApprovalResult.receipts).toBeDefined();
-      expect(mnftApprovalResult.receipts.length).toBe(machineIds.length);
-      expect(mnftApprovalResult.receipts[0].status).toBe(1);
+      console.log(nftApprovalResult);
+      expect(['approved']).toContain(nftApprovalResult.status);
+      expect(nftApprovalResult.nft).toBe(knownMachineNft);
+      expect(nftApprovalResult.vault).toBe(vault);
+      expect(nftApprovalResult.newlyApprovedTokenIds).toBe(machineIds);
+      expect(nftApprovalResult.receipts).toBeDefined();
+      expect(nftApprovalResult.receipts.length).toBe(machineIds.length);
+      expect(nftApprovalResult.receipts[0].status).toBe(1);
 
 
-    const cnftApprovalResult = await rwa_sdk.vault.cnftApproval({
-        contractController: controller,
-        contractNft: knownContractNft,
+    const nftApprovalResult2 = await rwa_sdk.vault.nftApproval({
+        machineController: controller,
+        nft: knownContractNft,
         vault: vault,
         tokenIds: contractId
       });
-      console.log(cnftApprovalResult);
-      expect(['approved']).toContain(cnftApprovalResult.status);
-      expect(cnftApprovalResult.contractNft).toBe(knownContractNft);
-      expect(cnftApprovalResult.vault).toBe(vault);
-      expect(cnftApprovalResult.newlyApprovedTokenIds).toBe(contractId);
-      expect(cnftApprovalResult.receipts).toBeDefined();
-      expect(cnftApprovalResult.receipts.length).toBe(contractId.length);
-      expect(cnftApprovalResult.receipts[0].status).toBe(1);
+      console.log(nftApprovalResult2);
+      expect(['approved']).toContain(nftApprovalResult2.status);
+      expect(nftApprovalResult2.nft).toBe(knownContractNft);
+      expect(nftApprovalResult2.vault).toBe(vault);
+      expect(nftApprovalResult2.newlyApprovedTokenIds).toBe(contractId);
+      expect(nftApprovalResult2.receipts).toBeDefined();
+      expect(nftApprovalResult2.receipts.length).toBe(contractId.length);
+      expect(nftApprovalResult2.receipts[0].status).toBe(1);
 }
 
 async function depositAndMint(rwa_sdk: RWA, vaultController: Wallet, vault: string, knownMachineNft: string, knownContractNft: string, machineIds: string[], contractId: string[]) {
@@ -408,7 +408,6 @@ async function transfer(rwa_sdk: RWA, from: Wallet, to: string, vault: string, t
       expect(result.transfer.amountHuman).toBe(amount);
       expect(result.transfer.amountUnits).toBe(parseUnits(amount, 18));
       expect(result.transfer.tokenDecimals).toBe(18);
-      expect(result.fee.feeAmount).toBe(1000000000000000000n);
 
       // Transfer tokens
       const resp = await rwa_sdk.vault.transfer({

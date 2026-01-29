@@ -37,8 +37,7 @@ describe.sequential('vault.transfer [integration]', () => {
     expect(result.transfer.token).toBe(token);
     expect(result.transfer.amountHuman).toBe("2");
     expect(result.transfer.amountUnits).toBe(parseUnits("2", 18));
-    expect(result.transfer.tokenDecimals).toBe(18);
-    expect(result.fee.feeAmount).toBe(1000000000000000000n);
+    expect(result.transfer.tokenDecimals).toBe(18); 
 
     // 6. Transfer tokens to Bob
     const resp = await rwa_sdk.vault.transfer({

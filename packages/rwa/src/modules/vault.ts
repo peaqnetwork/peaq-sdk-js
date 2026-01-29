@@ -9,10 +9,8 @@ import type {
   PauseTokenResult,
   RegisterIdentity,
   RegisterIdentityResult,
-  MnftApproval,
-  MnftApprovalResult,
-  CnftApproval,
-  CnftApprovalResult,
+  NftApproval,
+  NftApprovalResult,
   DepositAndMint,
   DepositAndMintResult,
   EnsureTransferFeeAllowance,
@@ -41,8 +39,7 @@ import {
   IPeaqVaultFactory__factory,
   IIdentityRegistry__factory,
   IInfoDesk__factory,
-  IMachineNft__factory,
-  IContractNft__factory,
+  IERC721__factory,
   NativeTransferFeeModule__factory,
   ModuleProxy__factory,
   IERC20__factory,
@@ -81,12 +78,8 @@ export class Vault {
     return IIdentityRegistry__factory.connect(address, runner);
   }
 
-  private _mnft(runner: Signer | Provider, address: string) {
-    return IMachineNft__factory.connect(address, runner);
-  }
-
-  private _cnft(runner: Signer | Provider, address: string) {
-    return IContractNft__factory.connect(address, runner);
+  private _nft(runner: Signer | Provider, address: string) {
+    return IERC721__factory.connect(address, runner);
   }
 
   private _erc20(runner: Signer | Provider, address: string) {
@@ -236,67 +229,35 @@ export class Vault {
   }
 
   /**
-   * Approves a vault as an operator for a given machine NFT at the given token IDs.
+   * Approves a vault as an operator for a given machine / contract NFT at the given token IDs.
    * 
-   * @type {MnftApproval} - The parameter type options for approving a vault as an operator for a machine NFT
-   * @returns {MnftApprovalResult} The result of approving a vault as an operator for a machine NFT
+   * @type {NftApproval} - The parameter type options for approving a vault as an operator for a machine / contract NFT
+   * @returns {NftApprovalResult} The result of approving a vault as an operator for a machine / contract NFT
    */
-  public async mnftApproval(opts: MnftApproval): Promise<MnftApprovalResult> {
-    const { machineController, machineNft, vault, tokenIds } = parseOptions<MnftApproval>(opts, {
+  public async nftApproval(opts: NftApproval): Promise<NftApprovalResult> {
+    const { machineController, nft, vault, tokenIds } = parseOptions<NftApproval>(opts, {
       machineController: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
-      machineNft: { required: true, validator: validators.address, expected: 'EVM address string' },
+      nft: { required: true, validator: validators.address, expected: 'EVM address string' },
       vault: { required: true, validator: validators.address, expected: 'EVM address string' },
       tokenIds: { required: true, validator: validators.arrayOf(validators.string), expected: 'array of numbers' },
-    }, 'mnftApproval');
-    const tokenIdsBigInt = tokenIds.map((id) => BigInt(id));
-    const mnftContract = this._mnft(machineController, machineNft);
+    }, 'nftApproval');
+    const tokenIdsBigInt = tokenIds.map((id: string) => BigInt(id));
+    const nftContract = this._nft(machineController, nft);
     const receipts = [];
     for (const tokenId of tokenIdsBigInt) {
       try {
-          await mnftContract.approve.staticCall(vault, tokenId);
+          await nftContract.approve.staticCall(vault, tokenId);
       } catch (cause: any) {
           console.log(cause)
-        throw new SDKError('SIMULATE/MNFT_APPROVAL', 'MachineNFT callStatic failed; approval would revert', { cause });
+        throw new SDKError('SIMULATE/NFT_APPROVAL', 'MachineNFT callStatic failed; approval would revert', { cause });
       }
-      const approvalTx = await mnftContract.approve.populateTransaction(vault, tokenId);
+      const approvalTx = await nftContract.approve.populateTransaction(vault, tokenId);
       const receipt = await waitForTx(machineController, approvalTx);
       receipts.push(receipt);
   }
 
-    return {status: 'approved', machineNft: machineNft, vault: vault, newlyApprovedTokenIds: tokenIds, receipts: receipts};
+    return {status: 'approved', nft: nft, vault: vault, newlyApprovedTokenIds: tokenIds, receipts: receipts};
   }
-
-    /**
-   * Approves a vault as an operator for a given contract NFT at the given token IDs. 
-   * 
-   * @type {CnftApproval} - The parameter type options for approving a vault as an operator for a contract NFT
-   * @returns {CnftApprovalResult} The result of approving a vault as an operator for a contract NFT
-   */
-    public async cnftApproval(opts: CnftApproval): Promise<CnftApprovalResult> {
-      const { contractController, contractNft, vault, tokenIds } = parseOptions<CnftApproval>(opts, {
-        contractController: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
-        contractNft: { required: true, validator: validators.address, expected: 'EVM address string' },
-        vault: { required: true, validator: validators.address, expected: 'EVM address string' },
-        tokenIds: { required: true, validator: validators.arrayOf(validators.string), expected: 'array of numbers' },
-      }, 'cnftApproval');
-
-      const tokenIdsBigInt = tokenIds.map((id) => BigInt(id));
-      const cnftContract = this._cnft(contractController, contractNft);
-      const receipts = [];
-      for (const tokenId of tokenIdsBigInt) {
-        try {
-          await cnftContract.approve.staticCall(vault, tokenId);
-        } catch (cause: any) {
-            console.log(cause)
-          throw new SDKError('SIMULATE/CNFT_APPROVAL', 'ContractNFT callStatic failed; approval would revert', { cause });
-        }
-        const approvalTx = await cnftContract.approve.populateTransaction(vault, tokenId);
-        const receipt = await waitForTx(contractController, approvalTx);
-        receipts.push(receipt);
-    }
-  
-      return {status: 'approved', contractNft: contractNft, vault: vault, newlyApprovedTokenIds: tokenIds, receipts: receipts};
-    }
 
   /**
    * Deposits and mints tokens for a given vault.
@@ -360,18 +321,19 @@ export class Vault {
     const deployerAddr = await allowanceSigner.getAddress();
 
 
-    if (allowance >= fee * 2n) {
-      return {status: 'already_sufficient', vault: vault, feeToken: erc20, transfer: {token: token, amountHuman: transferAmountHuman, amountUnits: scaledAmount, tokenDecimals: tokenDecimals}, fee: {feeAmount: fee, multiplier: 2n, requiredAllowance: fee * 2n, allowanceBefore: allowance, allowanceAfter: fee * 2n}, approvedBy: deployerAddr};
+    if (allowance >= fee) {
+      return {status: 'already_sufficient', vault: vault, feeToken: erc20, transfer: {token: token, amountHuman: transferAmountHuman, amountUnits: scaledAmount, tokenDecimals: tokenDecimals}, fee: {requiredAllowance: fee, allowanceBefore: allowance, allowanceAfter: allowance}, approvedBy: deployerAddr};
     }
     // preflight check
     try {
-      await erc20Contract.approve.staticCall(account, fee * 2n);
+      await erc20Contract.approve.staticCall(account, fee);
     } catch (cause: any) {
       console.log(cause)
       throw new SDKError('SIMULATE/APPROVE_ERC20', 'ERC20 callStatic failed; approval would revert', { cause });
     }
-    const approveTx = await erc20Contract.approve.populateTransaction(account, fee * 2n);
+    const approveTx = await erc20Contract.approve.populateTransaction(account, fee);
     const receipt = await waitForTx(allowanceSigner, approveTx);
+    const allowanceAfter = await erc20Contract.allowance(allowanceAddr, account);
     return {
       status: 'approved', 
       vault: vault, 
@@ -382,11 +344,10 @@ export class Vault {
         amountUnits: scaledAmount, 
         tokenDecimals: tokenDecimals }, 
       fee: {
-        feeAmount: fee, 
-        multiplier: 2n,
-        requiredAllowance: fee * 2n,
-        allowanceBefore: 0n,
-        allowanceAfter: fee * 2n},
+        requiredAllowance: fee,
+        allowanceBefore: allowance,
+        allowanceAfter: allowanceAfter,
+      },
       approvedBy: deployerAddr, 
       receipt: receipt};  
   }

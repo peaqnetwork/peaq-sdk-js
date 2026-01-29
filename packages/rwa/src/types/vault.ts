@@ -119,31 +119,16 @@ export type RegisterIdentityResult = {
     receipt: TransactionReceipt;
 }
 
-export type MnftApproval = {
+export type NftApproval = {
     machineController: Signer;
-    machineNft: string;
+    nft: string;
     vault: string;
     tokenIds: string[];
 }
 
-export type MnftApprovalResult = {
+export type NftApprovalResult = {
     status: 'approved';
-    machineNft: string;
-    vault: string;
-    newlyApprovedTokenIds: string[];
-    receipts: TransactionReceipt[];
-}
-
-export type CnftApproval = {
-    contractController: Signer;
-    contractNft: string;
-    vault: string;
-    tokenIds: string[];
-}
-
-export type CnftApprovalResult = {
-    status: 'approved';
-    contractNft: string;
+    nft: string;
     vault: string;
     newlyApprovedTokenIds: string[];
     receipts: TransactionReceipt[];
@@ -186,8 +171,6 @@ export type EnsureTransferFeeAllowanceResult = {
         tokenDecimals: number;
       };
     fee: {
-        feeAmount: bigint;
-        multiplier: bigint;
         requiredAllowance: bigint;
         allowanceBefore: bigint;
         allowanceAfter: bigint;

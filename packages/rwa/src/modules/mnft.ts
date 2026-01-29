@@ -2,8 +2,8 @@ import type { NetworkAddresses } from '../types/core';
 import type { 
   EnsureMachineNftAllowance,
   EnsureMachineNftAllowanceResult,
-  IssueMachineNft,
-  IssueMachineNftResult,
+  RegisterMachine,
+  RegisterMachineResult,
   GetMachineDid,
   GetMachineDidResult 
 } from '../types/mnft';
@@ -88,11 +88,11 @@ export class MachineNft {
    * 
    * Issues a MachineNft to a designated owner. Make sure the MachineNft contract is funded.
    * 
-   * @param {IssueMachineNft} opts - The options for issuing a MachineNft
-   * @returns {IssueMachineNftResult} The result of issuing a MachineNft
+   * @param {RegisterMachine} opts - The options for registering a MachineNft
+   * @returns {RegisterMachineResult} The result of registering a MachineNft
    */
-  public async issueMachineNft(opts: IssueMachineNft): Promise<IssueMachineNftResult> {
-    const { machineIssuer, machineNft, machineValueHuman, machineControllerAddr, erc20, tokenDecimals, salt, count } = parseOptions<IssueMachineNft>(opts, {
+  public async registerMachine(opts: RegisterMachine): Promise<RegisterMachineResult> {
+    const { machineIssuer, machineNft, machineValueHuman, machineControllerAddr, erc20, tokenDecimals, salt, count } = parseOptions<RegisterMachine>(opts, {
       machineIssuer: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
       machineNft: { required: true, validator: validators.address, expected: 'EVM address string' },
       machineValueHuman: { required: true, validator: validators.string, expected: 'bigint' },
@@ -101,7 +101,7 @@ export class MachineNft {
       tokenDecimals: { required: true, validator: validators.number, expected: 'number' },
       salt: { required: true, validator: validators.number, expected: 'number' },
       count: { required: false, validator: validators.number, expected: 'number' },
-    }, 'issueMachineNft');
+    }, 'registerMachine');
 
     // 0) Get MachineNft contract and machine value in units
     const mnft = this._mnft(machineIssuer, machineNft);
