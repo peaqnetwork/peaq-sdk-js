@@ -66,8 +66,5 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "dependencies": {
-    "@peaq-network/sdk": "file:peaq-network-sdk-1.0.1-5.tgz"
   }
 }
