@@ -31,7 +31,7 @@ import {
 
 
 // -----------------------------------------------------------
-// Main V2 Implementation
+// Main V2 Implementation - start brainstorming ideas for interoperability with new proposed changes to DID spec
 // -----------------------------------------------------------
 export class DIDV2Implementation extends Base {
   private abiCoder = new ethers.AbiCoder();
