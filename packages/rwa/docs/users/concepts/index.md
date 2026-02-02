@@ -310,7 +310,7 @@ Creating a ContractNFT requires a fee paid by the initiator. The fee amount and 
 
 A `PeaqVault` is a smart contract that holds MachineNFTs and ContractNFTs, enabling their fractionalization into security tokens. This transforms illiquid physical assets into tradeable digital securities.
 
-![Vault Architecture](../examples/doc/images/peaq-vault.png)
+![Vault Architecture](../images/peaq-vault.png)
 
 ### The Tokenization Model
 

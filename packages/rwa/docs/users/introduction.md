@@ -4,7 +4,7 @@
 
 The **peaq Real World Asset (RWA) Framework** is a comprehensive blockchain infrastructure that enables the tokenization of physical assets (primarily machines) on the peaq network. It provides a compliant, regulated pathway for transforming real-world assets into tradeable digital securities.
 
-![Framework Overview](./examples/doc/images/overview.png)
+![Framework Overview](./images/overview.png)
 
 At its core, the framework combines three key blockchain standards:
 
@@ -86,7 +86,7 @@ Every participant in the framework-whether an investor, machine issuer, or regul
 
 The Machine NFT module handles the registration and management of tokenized physical assets.
 
-![Machine NFT Flow](./examples/doc/images/peaq-rwa-nft.png)
+![Machine NFT Flow](./images/peaq-rwa-nft.png)
 
 **Purpose:** Register real-world machines as NFTs with embedded DID documents, and manage their lifecycle.
 
@@ -105,7 +105,7 @@ Each MachineNFT contains a Decentralized Identifier (DID) document that uniquely
 
 The Vault module enables the fractionalization of assets into security tokens and manages yield distribution.
 
-![Vault Operations](./examples/doc/images/peaq-vault.png)
+![Vault Operations](./images/peaq-vault.png)
 
 **Purpose:** Create vaults that hold MachineNFTs and ContractNFTs, fractionalize them into security tokens, and distribute yield to token holders.
 
