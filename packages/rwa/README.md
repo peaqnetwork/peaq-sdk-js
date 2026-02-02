@@ -1,11 +1,84 @@
-# PEAQ RWA SDK
-This SDK connects to a deployed **TREX Framework** on the **peaq Network** to perform security-token operations representing **fractionalized machines**.
+# peaq RWA SDK
 
-Before using the SDK, it’s strongly recommended to understand the full system and its constraints:
-- [TREX Whitepaper](https://cdn.prod.website-files.com/63d7968e79bf1252d92c981f/64c0f2c72ea4fb62e1c838e6_Whitepaper%20-%20T-REX%20v4%20-%20Security%20tokens.pdf)
-- [SDK documentation](./docs/)
-- [SDK reference](./sdk_reference/)
+The **peaq Real World Asset (RWA) SDK** enables the tokenization of physical assets on the peaq network. It provides a TypeScript/JavaScript interface for creating compliant security tokens that represent fractionalized ownership of machines and equipment.
 
-**Claim Issuers**, **Machine Regulators**, and **Issuers** who want to participate should contact **peaq (the Implementation Authority)** for onboarding and to configure the relevant claim topics.
+## What This SDK Does
 
-For SDK maintainers, see the maintainer docs for how to deploy and connect to an RWA Framework: [guide](./docs/sdk_maintainers/).
+- **Tokenize machines** as NFTs with embedded DID documents
+- **Fractionalize ownership** into T-REX (ERC-3643) compliant security tokens
+- **Manage compliance** through on-chain KYC via ONCHAINID
+- **Distribute yield** automatically to token holders
+
+## Quick Start
+
+```bash
+npm install @peaq-network/rwa
+```
+
+```typescript
+import { RWA, Chain } from '@peaq-network/rwa';
+import { JsonRpcProvider } from 'ethers';
+
+const provider = new JsonRpcProvider('https://peaq.api.onfinality.io/public');
+const sdk = new RWA({ chainId: Chain.PEAQ, provider });
+```
+
+## Documentation
+
+| Section | Description | Audience |
+|---------|-------------|----------|
+| **[Learn the Framework](./docs/users/introduction.md)** | Understand the RWA ecosystem, roles, and concepts | Everyone |
+| **[SDK Reference](./sdk_reference/initialize.md)** | API documentation with code examples | Developers |
+| **[Maintainer Guide](./docs/sdk_maintainers/deployFramework.md)** | Deploy and update the framework | SDK Maintainers |
+
+### Educational Documentation
+
+New to the framework? Start here:
+
+| Guide | What You'll Learn |
+|-------|-------------------|
+| [Introduction](./docs/users/introduction.md) | Framework overview and SDK architecture |
+| [Roles & Responsibilities](./docs/users/roles/index.md) | Framework Owner, Claim Issuers, Machine Issuers, Users |
+| [Core Concepts](./docs/users/concepts/index.md) | Identity, Claims, MachineNFTs, Vaults, Security Tokens |
+| [Getting Started](./docs/users/guides/index.md) | Step-by-step guides for your specific role |
+| [End-to-End Workflows](./docs/users/workflows/index.md) | Complete scenarios from machine to yield |
+
+### SDK Reference
+
+Ready to code? Implementation details here:
+
+| Module | Purpose |
+|--------|---------|
+| [Initialization](./sdk_reference/initialize.md) | SDK setup and configuration |
+| [Identity](./sdk_reference/identity/) | Create identities, issue and manage claims |
+| [Machine NFT](./sdk_reference/mnft/) | Register machines, read DID documents |
+| [Vault](./sdk_reference/vault/) | Create vaults, mint tokens, manage yield |
+
+## Roles Overview
+
+The framework defines specific roles with different capabilities:
+
+| Role | Description | Required Claim |
+|------|-------------|----------------|
+| **Framework Owner** | Administers ecosystem, creates vaults | Admin access |
+| **Claim Issuer** | Issues KYC and role claims | Trusted by Framework Owner |
+| **Machine Regulator** | Approves machine issuers | `CT_MNFT_REGULATOR` |
+| **Machine Issuer** | Registers machines as NFTs | `CT_MNFT_ISSUER` |
+| **User / Investor** | Owns assets, holds tokens | `CT_KYC_APPROVED` |
+
+**Want to participate?** Contact **peaq (the Implementation Authority)** for onboarding.
+
+## Supported Networks
+
+| Network | Chain ID | Status |
+|---------|----------|--------|
+| PEAQ Mainnet | 3338 | Production |
+| AGUNG Testnet | 9990 | Testing |
+
+## External Resources
+
+- [T-REX Whitepaper](https://cdn.prod.website-files.com/63d7968e79bf1252d92c981f/64c0f2c72ea4fb62e1c838e6_Whitepaper%20-%20T-REX%20v4%20-%20Security%20tokens.pdf) - Security token standard
+- [ONCHAINID](https://github.com/onchain-id/solidity) - Decentralized identity protocol
+- [ERC-3643](https://github.com/ERC-3643/ERC-3643) - T-REX token standard
+- [peaq-rwa-evm](https://github.com/peaqnetwork/peaq-rwa-evm/tree/dev) - Smart contract repository
+

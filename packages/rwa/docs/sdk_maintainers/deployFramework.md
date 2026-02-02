@@ -45,28 +45,3 @@ Now we will need to create the typechain from the contract abis so we can intera
 ```
 npm run codegen
 ```
-
-## 6. Add new functionality
-For the new functionality in the RWA Framework, additional modules / functions may need to be added.
-
-## 7. Testing
-After new modules / functions has been written create test cases to ensure proper behavior. Please checkout the [tests docs](./tests/initialize.md) for more information.
-
-## 8. Build project
-Once all local tests have passed you may build the package in this repository following the instructions:
-### Build:
-```
-npm run build
-```
-This will create `dist` file that allows for `cjs`, `esm`, and `ts` interactions
-
-## 9. Create package
-Now finally, we can pack together the build project in order to test a shippable executable file:
-### Pack:
-```
-npm pack -w @peaq-network/rwa
-```
-
-
-# Updates:
-TODO - will add relevant information here when updates are needed to a previously deployed RWA framework (... info desk)

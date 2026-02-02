@@ -1,5 +1,5 @@
 # Setup Test Environment
-Before you can execute the integration tests locally, you must first download the dependencies locally.
+Before you can execute the integration tests locally, you must clone this repository download the dependencies, and deploy the framework.
 ## 1. Clone this repository
 ```
 git clone https://github.com/peaqnetwork/peaq-sdk-js.git
@@ -59,7 +59,7 @@ CHARLIE_PRIVATE_KEY=""
 
 
 ## 4. Run tests
-After following all of the steps above you can checkout the tests found inside the [tests directory](../../../tests/). Please note that the majority of these tests are integration that interact with a live network. Therefore, you may need to manually test one-by-one as some are dependent on future actions. For a common flow example, to see how tests can be executed back to back, please checkout the [full flow test](../../../tests/full_flow/rwa.fullFlow.int.test.ts).
+After following all of the steps above you can checkout the tests found inside the [tests directory](../../../tests/). Please note that the majority of these tests are integration that interact with a live network. Therefore, you may need to manually test one-by-one as some are dependent on future actions. A common flow example is given for the required dependent execution in the [full flow test](../../../tests/full_flow/rwa.fullFlow.int.test.ts).
 
 Each test has an `it` to describe the test. To skip a particular test you may add `it.skip()`, else it will execute with the following cmd:
 ```
