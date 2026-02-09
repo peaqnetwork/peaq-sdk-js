@@ -9,19 +9,6 @@ The **peaq Real World Asset (RWA) SDK** enables the tokenization of physical ass
 - **Manage compliance** through on-chain KYC via ONCHAINID
 - **Distribute yield** automatically to token holders
 
-## Quick Start
-
-```bash
-npm install @peaq-network/rwa
-```
-
-```typescript
-import { RWA, Chain } from '@peaq-network/rwa';
-import { JsonRpcProvider } from 'ethers';
-
-const provider = new JsonRpcProvider('https://peaq.api.onfinality.io/public');
-const sdk = new RWA({ chainId: Chain.PEAQ, provider });
-```
 
 ## Documentation
 

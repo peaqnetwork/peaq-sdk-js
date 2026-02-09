@@ -24,6 +24,10 @@ CLAIM_ISSUER_PRIVATE_KEY=""
 CLAIM_ISSUER_CONTRACT_ADDRESS=""
 CLAIM_ISSUER_IDENTITY_ADDRESS=""
 
+# Machine Regulator
+MACHINE_REGULATOR_PUBLIC_ADDRESS=""
+MACHINE_REGULATOR_PRIVATE_KEY=""
+
 # Machine Issuer
 MACHINE_ISSUER_PUBLIC_ADDRESS=""
 MACHINE_ISSUER_PRIVATE_KEY=""
@@ -48,6 +52,8 @@ CHARLIE_PRIVATE_KEY=""
 - **CLAIM_ISSUER_PRIVATE_KEY**: The private key for CLAIM_ISSUER_PUBLIC_ADDRESS. Used to sign claim-issuer transactions in tests.
 - **CLAIM_ISSUER_CONTRACT_ADDRESS**: The EVM contract address of the deployed Claim Issuer contract (the on-chain contract that records/validates claims).
 - **CLAIM_ISSUER_IDENTITY_ADDRESS**: The OnChainID Identity contract address that represents the Claim Issuer as an identity (i.e., the issuer’s Identity on-chain, not their EOA).
+- **MACHINE_REGULATOR_PUBLIC_ADDRESS**: Machine Regulator EOA address (authorized to add/remove issuers and update block state).
+- **MACHINE_REGULATOR_PRIVATE_KEY**: Private key for MACHINE_REGULATOR_PUBLIC_ADDRESS.
 - **MACHINE_ISSUER_PUBLIC_ADDRESS**: Machine Issuer that who has the authority to issuer new MachineNfts
 - **MACHINE_ISSUER_PRIVATE_KEY**: Private key for MACHINE_ISSUER_PUBLIC_ADDRESS.
 - **ALICE_PUBLIC_ADDRESS**: Test user EOA address for “Alice” (typically a subject/holder/participant in flows).

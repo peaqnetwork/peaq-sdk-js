@@ -80,9 +80,39 @@ touch .env
 touch .gitignore
 ```
 Add to `.env`:
+If you would like to be able to follow the full example walkthrough, please define your `.env` as:
 ```
+HTTPS_BASE_URL="https://peaq-agung.api.onfinality.io/public"
+
+# PEAQ OWNER Admin
+ADMIN_PUBLIC_ADDRESS=""
 ADMIN_PRIVATE_KEY=""
+
+# Claim Issuer
+CLAIM_ISSUER_PUBLIC_ADDRESS=""
+CLAIM_ISSUER_PRIVATE_KEY=""
+CLAIM_ISSUER_CONTRACT_ADDRESS=""
+CLAIM_ISSUER_IDENTITY_ADDRESS=""
+
+# Machine Regulator
+MACHINE_REGULATOR_PUBLIC_ADDRESS=""
+MACHINE_REGULATOR_PRIVATE_KEY=""
+
+# Machine Issuer
+MACHINE_ISSUER_PUBLIC_ADDRESS=""
+MACHINE_ISSUER_PRIVATE_KEY=""
+
+# Alice
+ALICE_PUBLIC_ADDRESS=""
 ALICE_PRIVATE_KEY=""
+
+# Bob
+BOB_PUBLIC_ADDRESS=""
+BOB_PRIVATE_KEY=""
+
+# Charlie
+CHARLIE_PUBLIC_ADDRESS=""
+CHARLIE_PRIVATE_KEY=""
 ```
 Add to `.gitignore`:
 ```

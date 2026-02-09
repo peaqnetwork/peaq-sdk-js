@@ -36,7 +36,7 @@ RWA({ chainId: Chain.PEAQ, provider })
 
 This returns an SDK instance with five modules pre-configured with the correct contract addresses for the specified chain.
 
-→ See [Project Setup / Initialization](../../sdk_reference/initialize) for implementation details.
+→ See [Project Setup / Initialization](../../sdk_reference/initialize.md) for implementation details.
 
 ### Module Architecture
 
