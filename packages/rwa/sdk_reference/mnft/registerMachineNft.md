@@ -1,32 +1,40 @@
-## `mnft.issueMachineNFT(IssueMachineNFT)`
+## `mnft.registerMachine(RegisterMachine)`
 
-TODO update
+Register one or more Machine NFTs to a designated controller. This sends transactions from the Machine Issuer and charges the ERC20 fee from the controller.
 
-Mint one or more Machine NFTs to a designated owner. Handles ERC20 fee approval from the owner and sends the required native deposit per mint with the issuer's transaction.
-
-### IssueMachineNFT Type Parameters
+### RegisterMachine Type Parameters
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| **machineValue** | `bigint` | Required | Value of the machine in PEAQ tokens in human readable format. |
-| **machineIssuer** | `Signer` | Required | Authorized issuer/operator who submits the mint transactions (pays native deposit). |
-| **machineOwner** | `Signer` | Required | Owner/recipient of the Machine NFT(s); approves ERC20 fee spending. |
-| **machineNFT** | `string` | Required | Address of the `MachineNFTs` contract. |
-| **metadata** | `IMachineMetadata` | Required | Machine details: `{ brand, model, serialNumber, uri, timestamp }`. |
-| **runSeed** | `number` | Required | Salt used for machineNFT issuance. |
-| **count** | `number` | Optional | Number of NFTs to mint. Defaults to `1`. |
-| **fees** | `{ feePerMint: bigint; machineValue: bigint; nativeDepositPerMint: bigint; }` | Optional | Fee overrides. Values are interpreted in 18-decimal units (via `parseEther`). |
+| **machineIssuer** | `Signer` | Required | Machine Issuer signer that submits the mint transactions. Must be connected to a provider. |
+| **machineNft** | `string` | Required | Machine NFT contract address. |
+| **machineValueHuman** | `string` | Required | Machine value in human-readable units (e.g., `"10"`). |
+| **machineControllerAddr** | `string` | Required | EOA address that will control/own the machines. |
+| **erc20** | `string` | Required | ERC20 token address used to pay the fee. |
+| **tokenDecimals** | `number` | Required | ERC20 token decimals. |
+| **salt** | `number` | Required | Salt used to derive the DID document. |
+| **count** | `number` | Required | Number of machines to register. |
 
 ### Returns
 | Field | Type | Description |
 |-------|------|-------------|
-| **result** | `string` | Human-readable summary of the mint operation. |
+| **status** | `issued` | Status of the operation. |
+| **machineNft** | `string` | Machine NFT contract address. |
+| **machineIssuer** | `string` | Machine Issuer address that submitted the transaction(s). |
+| **machineController** | `string` | Machine controller/owner address. |
+| **machineValue** | `{ human: string; units: bigint; tokenDecimals: number; feeToken: string }` | Machine value details. |
+| **count** | `number` | Number of machines issued. |
+| **machines** | `{ machineId: string; did?: string; receipt?: TransactionReceipt }[]` | Per-machine results and receipts. |
+| **feesPaid** | `bigint` | ERC20 fees paid by the controller. |
+| **startingBalance** | `bigint` | Controller ERC20 balance before issuance. |
+| **endingBalance** | `bigint` | Controller ERC20 balance after issuance. |
+| **humanTokenDelta** | `string` | Human-readable fee delta. |
 
 
 ### Usage
 #### TypeScript
 ```TypeScript
 import 'dotenv/config';
-import { RWA, Chain, type SDKInit, type IssueMachineNFT } from "@peaq-network/rwa";
+import { RWA, Chain, type SDKInit } from "@peaq-network/rwa";
 import { JsonRpcProvider, Wallet } from "ethers";
 
 async function main() {
@@ -35,32 +43,23 @@ async function main() {
   const init: SDKInit = { chainId: Chain.AGUNG, provider: provider };
   const rwa_sdk = new RWA(init);
 
-  // 1. Admin wallet (submits tx and pays native deposit)
-  const admin = new Wallet(process.env.ADMIN_PRIVATE_KEY!, provider);
+  // 1. Machine Issuer wallet
+  const machineIssuer = new Wallet(process.env.ADMIN_PRIVATE_KEY!, provider);
 
-  // 2. Machine owner (receives NFT and pays ERC20 fee via allowance)
+  // 2. Machine controller (receives NFT and pays ERC20 fee via allowance)
   const alice = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
 
-  // 3. Create MachineNFT(s) for Alice
-  const issueMachineNFT: IssueMachineNFT = {
-    machineIssuer: admin,
-    machineOwner: alice,
-    machineNFT: "0x1008234A9dc43A747bBe4a3100d8Ff46a7Fb6E97",
-    metadata: {
-      brand: 'Bosch1',
-      model: 'X2001',
-      serialNumber: 'SN1234567891',
-      uri: 'ipfs://Qm...xyz1',
-      timestamp: '1231231231'
-    },
-    count: 2,
-    fees: {
-      feePerMint: 20n,
-      machineValue: 1000n,
-      nativeDepositPerMint: 2n
-    }
-  }
-  const result = await rwa_sdk.mnft.issueMachineNFT(issueMachineNFT);
+  // 3. Register MachineNFT(s) for Alice
+  const result = await rwa_sdk.mnft.registerMachine({
+    machineIssuer: machineIssuer,
+    machineNft: "0xaBB3961281123C336596153C4dfE83E11498fc54",
+    machineValueHuman: "10",
+    machineControllerAddr: alice.address,
+    erc20: rwa_sdk.getAddresses().erc20.peaq,
+    tokenDecimals: 18,
+    salt: Math.floor(Math.random() * 10000),
+    count: 2
+  });
 
   console.log('Result', result);
 }
@@ -82,31 +81,22 @@ async function main() {
   const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
   const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
 
-  // 1. Admin wallet (submits tx and pays native deposit)
-  const admin = new Wallet(process.env.ADMIN_PRIVATE_KEY, provider);
+  // 1. Machine Issuer wallet
+  const machineIssuer = new Wallet(process.env.ADMIN_PRIVATE_KEY, provider);
 
-  // 2. Machine owner (receives NFT and pays ERC20 fee via allowance)
+  // 2. Machine controller (receives NFT and pays ERC20 fee via allowance)
   const alice = new Wallet(process.env.ALICE_PRIVATE_KEY, provider);
 
-  // 3. Create MachineNFT(s) for Alice
-  const result = await rwa_sdk.mnft.issueMachineNFT({
-    machineIssuer: admin,
-    machineOwner: alice,
-    machineNFT: "0x1008234A9dc43A747bBe4a3100d8Ff46a7Fb6E97",
-    metadata: {
-      brand: 'Bosch1',
-      model: 'X2001',
-      serialNumber: 'SN1234567891',
-      uri: 'ipfs://Qm...xyz1',
-      timestamp: '1231231231'
-    },
-    count: 2,
-    fees: {
-      // Interpreted as 18-decimal units (e.g., 20 -> 20 ether)
-      feePerMint: 20,
-      machineValue: 1000,
-      nativeDepositPerMint: 2
-    }
+  // 3. Register MachineNFT(s) for Alice
+  const result = await rwa_sdk.mnft.registerMachine({
+    machineIssuer: machineIssuer,
+    machineNft: "0xaBB3961281123C336596153C4dfE83E11498fc54",
+    machineValueHuman: "10",
+    machineControllerAddr: alice.address,
+    erc20: rwa_sdk.getAddresses().erc20.peaq,
+    tokenDecimals: 18,
+    salt: Math.floor(Math.random() * 10000),
+    count: 2
   });
 
   console.log('Result', result);
@@ -121,12 +111,24 @@ main().catch((err) => {
 ### Example outputs
 ```
 Result {
-  result: 'Created 2 Machine NFTs for user: 0x16cd4D21537eD8F33bE08271A9FA6DCC426709b2'
+  status: 'issued',
+  machineNft: '0xaBB3961281123C336596153C4dfE83E11498fc54',
+  machineIssuer: '0x8BCfa2e9FC4aCa66fCF36Bcf47646E5Fb8d74BA0',
+  machineController: '0x16cd4D21537eD8F33bE08271A9FA6DCC426709b2',
+  machineValue: {
+    human: '10',
+    units: 10000000000000000000n,
+    tokenDecimals: 18,
+    feeToken: '0x...'
+  },
+  count: 2,
+  machines: [
+    { machineId: '1', did: 'did:peaq:...', receipt: ContractTransactionReceipt { ... } },
+    { machineId: '2', did: 'did:peaq:...', receipt: ContractTransactionReceipt { ... } }
+  ],
+  feesPaid: 20000000000000000000n,
+  startingBalance: 100000000000000000000n,
+  endingBalance: 80000000000000000000n,
+  humanTokenDelta: '20.0'
 }
 ```
-
-Notes:
-- Ensure the `machineNFT` contract has sufficient native balance.
-- Ensure the `machineOwner` has sufficient ERC20 balance, and approves spending for the `machineNFT` contract when needed (handled automatically if allowance is insufficient).
-- Ensure the `machineIssuer` has enough native tokens to cover `nativeDepositPerMint * count` and gas.
-- The spender for ERC20 approval is the `machineNFT` contract address.
