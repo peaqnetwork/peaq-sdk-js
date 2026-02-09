@@ -1,26 +1,31 @@
 ## `vault.transfer(Transfer)`
 
-Transfer T-REX tokens between addresses, scaling the human-readable amount using the token's decimals.
+Transfer tokens between addresses, scaling the human-readable amount using the token's decimals.
 
 ### Transfer Type Parameters
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
+| **from** | `Signer` | Required | Sender wallet (must hold balance). Must be connected to a provider. |
+| **to** | `string` | Required | Recipient address. |
 | **token** | `string` | Required | Token address. |
-| **sender** | `Signer` | Required | Sender wallet (must hold balance). |
-| **recipientAddr** | `string` | Required | Recipient address. |
-| **amount** | `string` or `number` | Required | Human-readable amount; scaled by token decimals. |
+| **transferAmountHuman** | `string` | Required | Human-readable amount; scaled by token decimals. |
 
 ### Returns
 | Field | Type | Description |
 |-------|------|-------------|
-| **result** | `string` | Human-readable summary of the transfer. |
+| **status** | `transferred` | Status of the operation. |
+| **token** | `string` | Token address. |
+| **sender** | `string` | Sender address. |
+| **recipient** | `string` | Recipient address. |
+| **amount** | `{ human: string; units: bigint; decimals: number }` | Amount details. |
+| **receipt** | `TransactionReceipt` | Transaction receipt for the transfer. |
 
 
 ### Usage
 #### TypeScript
 ```TypeScript
 import 'dotenv/config';
-import { RWA, Chain, type SDKInit, type Transfer } from "@peaq-network/rwa";
+import { RWA, Chain, type SDKInit } from "@peaq-network/rwa";
 import { JsonRpcProvider, Wallet } from "ethers";
 
 async function main() {
@@ -36,13 +41,12 @@ async function main() {
   const bob = process.env.BOB_PUBLIC_ADDRESS!;
 
   // 3. Transfer
-  const transfer: Transfer = {
-    token: "0x5493Ba57D7A52583A43791183775e7EDa9c7373C",
-    sender: alice,
-    recipientAddr: bob,
-    amount: 10
-  }
-  const result = await rwa_sdk.vault.transfer(transfer);
+  const result = await rwa_sdk.vault.transfer({
+    from: alice,
+    to: bob,
+    token: "0x811247945f5fcBD9068F71298a69e71B2A4Ba66f",
+    transferAmountHuman: "1"
+  });
   console.log("Result", result);
 }
 
@@ -71,10 +75,10 @@ async function main() {
 
   // 3. Transfer
   const result = await rwa_sdk.vault.transfer({
-    token: "0xeE73efbD1D4B272E4fADe0A323feE028d9439c64",
-    sender: alice,
-    recipientAddr: bob,
-    amount: 10
+    from: alice,
+    to: bob,
+    token: "0x811247945f5fcBD9068F71298a69e71B2A4Ba66f",
+    transferAmountHuman: "1"
   });
   console.log("Result", result);
 }
@@ -88,7 +92,18 @@ main().catch((err) => {
 ### Example outputs
 ```
 Result {
-  result: 'Transfered 10 tokens (scaled by 18 decimals) from one address to another'
+  status: 'transferred',
+  token: '0x811247945f5fcBD9068F71298a69e71B2A4Ba66f',
+  sender: '0x16cd4D21537eD8F33bE08271A9FA6DCC426709b2',
+  recipient: '0xbA9274C766A5961C40bB4a3e0e107699EE9Dab9C',
+  amount: {
+    human: '1',
+    units: 1000000000000000000n,
+    decimals: 18
+  },
+  receipt: ContractTransactionReceipt {
+    ...
+  }
 }
 ```
 

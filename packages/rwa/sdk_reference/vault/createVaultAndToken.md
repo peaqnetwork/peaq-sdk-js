@@ -1,33 +1,35 @@
-## `vault.createVaultAndToken(CreateVaultAndToken)`
+## `vault.createVault(CreateVault)`
 
-Create a new MachineVault and its associated security token. You may pass existing IRS and ONCHAINID addresses or `ZeroAddress` to auto-deploy missing components.
+Create a new Vault and its associated security token using a Vault Factory. This sends a transaction from the vault deployer.
 
-### CreateVaultAndToken Type Parameters
+### CreateVault Type Parameters
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| **admin** | `Signer` | Required | Factory owner/admin who is authorized to deploy vaults and tokens. |
-| **name** | `string` | Required | Token name. |
-| **symbol** | `string` | Required | Token symbol. |
-| **irs** | `string` | Required | Address of the Identity Registry Storage, or `ZeroAddress` to auto-deploy. |
-| **tokenIdentity** | `string` | Required | ONCHAINID address for the token, or `ZeroAddress` to auto-deploy. |
-| **claimIssuers** | `string[]` | Required | Addresses of allowed claim issuers. |
-| **claimTopics** | `number[]` | Required | Allowed claim topics (e.g., `777` for KYC approved). |
+| **vaultDeployer** | `Signer` | Required | Deployer signer authorized to create vaults. Must be connected to a provider. |
+| **vaultController** | `string` | Required | EOA address that will control the vault. |
+| **vaultFactory** | `string` | Required | Vault Factory contract address. |
+| **infoDesk** | `string` | Required | InfoDesk contract address. |
+| **trustedClaimIssuers** | `string[]` | Required | Addresses of trusted Claim Issuer contracts. |
+| **tokenName** | `string` | Required | Security token name. |
+| **tokenSymbol** | `string` | Required | Security token symbol. |
+| **payoutToken** | `string` | Required | ERC20 token address used for payouts. |
 
 ### Returns
 | Field | Type | Description |
 |-------|------|-------------|
-| **vault** | `string` | Deployed MachineVault address. |
+| **status** | `created` | Status of the operation. |
+| **vault** | `string` | Deployed Vault address. |
 | **token** | `string` | Deployed security token address. |
+| **distributor** | `string` | Deployed reward distributor address. |
+| **receipt** | `TransactionReceipt` | Transaction receipt for the creation call. |
 
 
 ### Usage
 #### TypeScript
 ```TypeScript
 import 'dotenv/config';
-import { RWA, Chain, type SDKInit, type CreateVaultAndToken } from "@peaq-network/rwa";
-import { JsonRpcProvider, Wallet, ZeroAddress } from "ethers";
-
-const CT_KYC_APPROVED = 777;
+import { RWA, Chain, type SDKInit } from "@peaq-network/rwa";
+import { JsonRpcProvider, Wallet } from "ethers";
 
 async function main() {
   // 0. Create RWA instance and get provider
@@ -35,20 +37,23 @@ async function main() {
   const init: SDKInit = { chainId: Chain.AGUNG, provider: provider };
   const rwa_sdk = new RWA(init);
 
-  // 1. Admin wallet (must be factory owner)
+  // 1. Vault deployer signer
   const admin = new Wallet(process.env.ADMIN_PRIVATE_KEY!, provider);
 
-  // 2. Create Vault and Token
-  const createVaultAndToken: CreateVaultAndToken = {
-    admin: admin,
-    name: "Alice Vault",
-    symbol: "ALICE",
-    irs: ZeroAddress,              // auto-deploy IRS
-    tokenIdentity: ZeroAddress,    // auto-deploy ONCHAINID
-    claimIssuers: [process.env.CLAIM_ISSUER_CONTRACT_ADDRESS!],
-    claimTopics: [CT_KYC_APPROVED]
-  }
-  const result = await rwa_sdk.vault.createVaultAndToken(createVaultAndToken);
+  // 2. Vault controller
+  const alice = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
+
+  // 3. Create Vault
+  const result = await rwa_sdk.vault.createVault({
+    vaultDeployer: admin,
+    vaultController: alice.address,
+    vaultFactory: "0x5C5Db5CcF63ed6C11063385070C8FD2C990BFd53",
+    infoDesk: "0x3F2c72Ba389632079DA68Ee13E8b955d69D1B5c1",
+    trustedClaimIssuers: [process.env.CLAIM_ISSUER_CONTRACT_ADDRESS!],
+    tokenName: "Test Token ABC",
+    tokenSymbol: "ABC",
+    payoutToken: rwa_sdk.getAddresses().erc20.peaq
+  });
   console.log("Result", result);
 }
 
@@ -58,32 +63,33 @@ main().catch((err) => {
 });
 ```
 
-
 #### JavaScript
 ```js
 import 'dotenv/config';
 import { RWA, Chain } from "@peaq-network/rwa";
-import { JsonRpcProvider, Wallet, ZeroAddress } from "ethers";
-
-const CT_KYC_APPROVED = 777;
+import { JsonRpcProvider, Wallet } from "ethers";
 
 async function main() {
   // 0. Create RWA instance and get provider
   const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);
   const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
 
-  // 1. Admin wallet (must be factory owner)
+  // 1. Vault deployer signer
   const admin = new Wallet(process.env.ADMIN_PRIVATE_KEY, provider);
 
-  // 2. Create Vault and Token
-  const result = await rwa_sdk.vault.createVaultAndToken({
-    admin: admin,
-    name: "Alice Vault",
-    symbol: "ALICE",
-    irs: ZeroAddress,              // auto-deploy IRS
-    tokenIdentity: ZeroAddress,    // auto-deploy ONCHAINID
-    claimIssuers: [process.env.CLAIM_ISSUER_CONTRACT_ADDRESS],
-    claimTopics: [CT_KYC_APPROVED]
+  // 2. Vault controller
+  const alice = new Wallet(process.env.ALICE_PRIVATE_KEY, provider);
+
+  // 3. Create Vault
+  const result = await rwa_sdk.vault.createVault({
+    vaultDeployer: admin,
+    vaultController: alice.address,
+    vaultFactory: "0x5C5Db5CcF63ed6C11063385070C8FD2C990BFd53",
+    infoDesk: "0x3F2c72Ba389632079DA68Ee13E8b955d69D1B5c1",
+    trustedClaimIssuers: [process.env.CLAIM_ISSUER_CONTRACT_ADDRESS],
+    tokenName: "Test Token ABC",
+    tokenSymbol: "ABC",
+    payoutToken: rwa_sdk.getAddresses().erc20.peaq
   });
   console.log("Result", result);
 }
@@ -97,12 +103,16 @@ main().catch((err) => {
 ### Example outputs
 ```
 Result {
-  vault: '0x5fa42Bb51c6770034a90FB5200e37e2Ce31Ba56a',
-  token: '0xeE73efbD1D4B272E4fADe0A323feE028d9439c64'
+  status: 'created',
+  vault: '0x4b76a8F7cdB68a9353c83e18077E6bbC760243B3',
+  token: '0x811247945f5fcBD9068F71298a69e71B2A4Ba66f',
+  distributor: '0x4210D83E736789e361DC96CC07756cb573e23CEd',
+  receipt: ContractTransactionReceipt {
+    ...
+  }
 }
 ```
 
 Notes:
-- Admin must be the owner of the MachineVault factory.
-- Passing `ZeroAddress` for `irs` and/or `tokenIdentity` instructs the factory to deploy missing components.
-- Ensure provided `claimIssuers` and `claimTopics` are recognized by your compliance and registry setup.
+- The Vault deployer must be authorized in the Vault Factory.
+- `trustedClaimIssuers` should include Claim Issuer contracts required by compliance.

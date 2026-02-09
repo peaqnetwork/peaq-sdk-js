@@ -1,6 +1,27 @@
 # SDK Installation Tutorial
 Before interacting with the packaged sdk, please read the [users](../docs/users/) portion of the docs page to have proper background.
 
+The package has not been deployed on npm yet, to install please:
+## Build Package
+### 1. Clone this repository & install dependencies
+```
+git clone https://github.com/peaqnetwork/peaq-sdk-js.git
+cd packages/rwa
+npm install
+```
+### 2. Build TypeChain
+```
+npm run codegen
+```
+### 3. Build package
+```
+npm run build
+```
+### 4. Pack for local testing
+```
+npm pack -w @peaq-network/rwa
+```
+
 ## Set up TS ENV
 ### 1. New Project
 ```bash

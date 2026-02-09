@@ -18,10 +18,7 @@ Complete API documentation for the peaq RWA SDK. This reference provides functio
 ## Getting Started
 
 ### Installation
-
-```bash
-npm install @peaq-network/rwa
-```
+Not deployed yet on npm. To build package following the initialize guide.
 
 ### Initialization
 
