@@ -40,6 +40,8 @@ Ready to code? Implementation details here:
 | [Contract NFT](./sdk_reference/cnft/) | Create, sign, cancel contracts; get draft/contract; block state |
 | [Machine NFT](./sdk_reference/mnft/) | Register machines, read DID documents |
 | [Vault](./sdk_reference/vault/) | Create vaults, mint tokens, manage yield |
+| [Common Workflows](./sdk_reference/workflows/) | Common workflows for integrators |
+
 
 ## Roles Overview
 

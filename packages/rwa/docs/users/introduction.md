@@ -26,6 +26,8 @@ The framework enables asset owners to:
 
 The **RWA SDK** is a TypeScript/JavaScript library that abstracts the complexity of interacting with the framework's smart contracts. Rather than calling individual contract methods directly, developers instantiate a single SDK object that exposes purpose-built modules for each domain of the framework.
 
+![RWA SDK architecture](./images/rwa-sdk-v2.svg)
+
 ### Initialization
 
 The SDK is initialized with a `chainId` (specifying which peaq network to connect to) and a `provider` (an ethers.js provider for blockchain communication):
