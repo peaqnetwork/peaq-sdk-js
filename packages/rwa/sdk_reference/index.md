@@ -99,7 +99,6 @@ Example implementations showing complete flows:
 | Workflow | Description |
 |----------|-------------|
 | [Common Flow](./workflows/common_flow.md) | Basic SDK usage pattern |
-| [Common Flow V2](./workflows/common_flow_v2.md) | Updated workflow pattern |
 | [Machine Issuer Flow](./workflows/machine_issuer_flow.md) | Machine registration workflow |
 
 ---

@@ -570,6 +570,6 @@ The following diagram shows how all concepts interconnect:
 ## Next Steps
 
 - **[Introduction](../introduction.md)** - Return to framework overview
-- **[Roles & Responsibilities](../roles/)** - Understand who does what
-- **[Getting Started Guides](../guides/)** - Step-by-step instructions
+- **[Roles & Responsibilities](../roles/index.md)** - Understand who does what
+- **[Common Workflows](../../../sdk_reference/workflows/)** - Common Workflows for participants
 - **[SDK Reference](../../../sdk_reference/)** - Complete API documentation

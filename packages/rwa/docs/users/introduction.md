@@ -155,6 +155,8 @@ The RWA NFT factory module manages the top-level factory contract that coordinat
 
 This module is primarily used by framework administrators rather than end users.
 
+→ See [RWA NFT SDK Reference](../../sdk_reference/rwanft/) for implementation details.
+
 ---
 
 ## Roles in the Ecosystem
@@ -169,7 +171,7 @@ The RWA Framework defines several key roles, each with specific responsibilities
 | **Machine Issuer** | Registers physical machines as MachineNFTs | `CT_MNFT_ISSUER` |
 | **User / Investor** | Owns MachineNFTs, holds security tokens, and receives yield | `CT_KYC_APPROVED` |
 
-→ See [Roles & Responsibilities](./roles/) for detailed documentation on each role.
+→ See [Roles & Responsibilities](./roles/index.md) for detailed documentation on each role.
 
 ---
 
@@ -192,5 +194,4 @@ All fees must be approved (via ERC-20 `approve`) before the corresponding transa
 
 - **[Roles & Responsibilities](./roles/)** - Detailed documentation for each participant role
 - **[Core Concepts](./concepts/)** - Deep dives into claims, identities, vaults, and tokenization
-- **[Getting Started Guides](./guides/)** - Step-by-step guides for your specific role
 - **[SDK Reference](../../sdk_reference/)** - Complete API documentation with code examples

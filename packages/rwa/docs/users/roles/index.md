@@ -63,6 +63,7 @@ The Framework Owner determines which claim topics each issuer can issue:
 - `CT_KYC_APPROVED` - For user identity verification
 - `CT_MNFT_ISSUER` - For machine issuer authorization
 - `CT_MNFT_REGULATOR` - For machine regulator authorization
+These are defined in `src/enums/claimTopics.ts`. Make sure these are wired up correctly to your deployed framework.
 
 ### Vault Factory Management
 
@@ -79,19 +80,17 @@ When creating a vault, the Framework Owner specifies:
 
 ### InfoDesk Administration
 
-The InfoDesk is the central configuration hub for the framework. The Framework Owner can update:
+The InfoDesk is the central configuration hub for the framework. The sdk does not provide access. The Framework Owner can update:
 - **Contract addresses** - Locations of core framework contracts
 - **Implementation addresses** - For upgradeable proxy contracts
 - **Fee configurations** - Registration fees, transfer fees, and fee accounts
 - **Precompile addresses** - For peaq-specific functionality
 
-→ See [Framework Owner SDK Reference](../../../sdk_reference/rwanft/) for implementation details.
-
 ---
 
 ## Claim Issuers
 
-A **Claim Issuer** is an entity that issues verifiable claims about users. These claims enable the framework to enforce compliance requirements without centralized identity storage.
+A **Claim Issuer** is an entity that issues verifiable claims about users. These claims enable the framework to enforce compliance requirements without centralized identity storage. Defined in `src/enums/claimTopics.ts` of this repository.
 
 ### What Are Claims?
 
@@ -130,8 +129,6 @@ The claim issuance process:
 5. **Return the signature** to the user so they can add it to their Identity contract
 
 For role claims, the process is similar but verifies organizational authorization rather than personal identity.
-
-→ See [OnChainID SDK Reference](../../../sdk_reference/identity/) for implementation details.
 
 ---
 
@@ -182,8 +179,6 @@ When you authorize a new machine issuer:
 2. Call `addMachineIssuer` with their wallet address
 3. A new `MachineNft` contract is deployed and assigned to them
 4. The issuer can now mint MachineNFTs through their contract
-
-→ See [RWA NFT SDK Reference](../../../sdk_reference/rwanft/) for implementation details.
 
 ---
 
@@ -246,8 +241,6 @@ To register a new machine as a MachineNFT:
 - **Paid by**: The machine owner (must approve before registration)
 - **Approved to**: The fee account specified in the `MachineNft` contract
 
-→ See [Machine NFT SDK Reference](../../../sdk_reference/mnft/) for implementation details.
-
 ---
 
 ## Vault Owners
@@ -291,8 +284,6 @@ Each vault has an associated identity registry. Before an address can hold secur
 - The address must have a valid Identity contract
 - The Identity must have the required KYC claim
 - The address must be registered in the vault's identity registry
-
-→ See [Vault SDK Reference](../../../sdk_reference/vault/) for implementation details.
 
 ---
 
@@ -347,7 +338,7 @@ Once KYC approved, you can:
 |--------|-------------|
 | **Own MachineNFTs** | Receive machines registered by Machine Issuers |
 | **Transfer MachineNFTs** | Send machines to other KYC'd addresses (fee applies) |
-| **Hold Security Tokens** | Own fractional vault shares (must be registered in vault) |
+| **Hold Security Tokens** | Own fractional vault shares (**must be registered in vault**) |
 | **Transfer Security Tokens** | Trade tokens with other verified holders (fee applies) |
 | **Claim Yield** | Withdraw your share of vault revenues |
 | **Create ContractNFTs** | Initiate multi-party agreements |
@@ -366,7 +357,6 @@ As a user, you'll encounter these fees:
 
 All fees must be approved (ERC-20 `approve`) before the corresponding transaction is executed.
 
-→ See [Identity SDK Reference](../../../sdk_reference/identity/) and [SDK Reference Overview](../../../sdk_reference/) for implementation details.
 
 ---
 
@@ -398,6 +388,6 @@ The following diagram shows how roles interact in a typical flow:
 ## Next Steps
 
 - **[Introduction](../introduction.md)** - Return to framework overview
-- **[Core Concepts](../concepts/)** - Deep dive into claims, identities, and vaults
-- **[Getting Started Guides](../guides/)** - Step-by-step instructions for your role
+- **[Core Concepts](../concepts/index.md)** - Deep dive into claims, identities, and vaults
+- **[Common Workflows](../../../sdk_reference/workflows/)** - Common Workflows for participants
 - **[SDK Reference](../../../sdk_reference/)** - Complete API documentation

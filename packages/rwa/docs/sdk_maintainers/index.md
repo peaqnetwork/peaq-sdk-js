@@ -59,4 +59,4 @@ After deploying the framework:
 
 ---
 
-[← Back to Documentation Hub](../index.md)
+[← Back to README](../../README.md)

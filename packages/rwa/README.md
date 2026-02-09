@@ -15,8 +15,8 @@ The **peaq Real World Asset (RWA) SDK** enables the tokenization of physical ass
 | Section | Description | Audience |
 |---------|-------------|----------|
 | **[Learn the Framework](./docs/users/introduction.md)** | Understand the RWA ecosystem, roles, and concepts | Everyone |
-| **[SDK Reference](./sdk_reference/initialize.md)** | API documentation with code examples | Developers |
-| **[Maintainer Guide](./docs/sdk_maintainers/deployFramework.md)** | Deploy and update the framework | SDK Maintainers |
+| **[SDK Reference](./sdk_reference/)** | API documentation with code examples | Developers |
+| **[Maintainer Guide](./docs/sdk_maintainers/)** | Deploy, update, and test the framework / sdk | SDK Maintainers |
 
 ### Educational Documentation
 
@@ -27,8 +27,6 @@ New to the framework? Start here:
 | [Introduction](./docs/users/introduction.md) | Framework overview and SDK architecture |
 | [Roles & Responsibilities](./docs/users/roles/index.md) | Framework Owner, Claim Issuers, Machine Issuers, Users |
 | [Core Concepts](./docs/users/concepts/index.md) | Identity, Claims, MachineNFTs, Vaults, Security Tokens |
-| [Getting Started](./docs/users/guides/index.md) | Step-by-step guides for your specific role |
-| [End-to-End Workflows](./docs/users/workflows/index.md) | Complete scenarios from machine to yield |
 
 ### SDK Reference
 
@@ -38,6 +36,8 @@ Ready to code? Implementation details here:
 |--------|---------|
 | [Initialization](./sdk_reference/initialize.md) | SDK setup and configuration |
 | [Identity](./sdk_reference/identity/) | Create identities, issue and manage claims |
+| [RWA NFT](./sdk_reference/rwanft/) | Machine regulators, issuers, block state, find Contract NFT |
+| [Contract NFT](./sdk_reference/cnft/) | Create, sign, cancel contracts; get draft/contract; block state |
 | [Machine NFT](./sdk_reference/mnft/) | Register machines, read DID documents |
 | [Vault](./sdk_reference/vault/) | Create vaults, mint tokens, manage yield |
 
@@ -59,7 +59,6 @@ The framework defines specific roles with different capabilities:
 
 | Network | Chain ID | Status |
 |---------|----------|--------|
-| PEAQ Mainnet | 3338 | Production |
 | AGUNG Testnet | 9990 | Testing |
 
 ## External Resources
