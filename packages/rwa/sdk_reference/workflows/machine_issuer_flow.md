@@ -10,7 +10,7 @@ This workflow shows how to **add a new Machine Issuer** so that an address can c
 
 ## Prerequisites
 
-- **Machine Regulator** signer (e.g. `ADMIN_PRIVATE_KEY`) — will issue the role claim and call `addMachineIssuer`.
+- **Machine Regulator** signer (e.g. `MACHINE_REGULATOR_PRIVATE_KEY`) — will issue the role claim and call `addMachineIssuer`.
 - **Claim Issuer** contract address (`CLAIM_ISSUER_CONTRACT_ADDRESS`) — the same Claim Issuer used for KYC; its signer can issue role claims (in the test the admin is both regulator and claim issuer).
 - **Candidate Machine Issuer** — the EOA you want to turn into a Machine Issuer (e.g. Alice). They must already have an **ONCHAINID identity**. Create one first with [Create Identity](../identity/createIdentity.md) if needed.
 

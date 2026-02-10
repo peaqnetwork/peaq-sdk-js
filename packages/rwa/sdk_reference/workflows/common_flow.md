@@ -103,16 +103,16 @@ Each step links to the SDK reference for that operation. Replace placeholders (e
    [Create Identity](../identity/createIdentity.md) for Alice, Bob, and Charlie (use `idFactoryAdmin: admin`, `subject: ALICE_PUBLIC_ADDRESS` / Bob / Charlie, and a unique `deploymentSalt`).
 
 2. **Add KYC claims**  
-   [Issue KYC claim](../identity/issueKycClaim.md) then [Add claim to identity](../identity/addClaimToIdentity.md) for each of Alice, Bob, and Charlie (Claim Issuer signer + contract; each identity owner signs `addClaimToIdentity`).
+   [Add claim to identity](../identity/addClaimToIdentity.md) for each of Alice, Bob, and Charlie (Claim Issuer signer + contract; each identity owner signs `addClaimToIdentity`).
 
 3. **Register Machine NFTs for Alice**  
-   [Ensure allowance](../mnft/ensureMachineNftAllowance.md) then [Register machine](../mnft/registerMachineNft.md). Use `machineIssuer` (Machine Issuer signer), `machineControllerAddr: alice.address`, and the same `machineNft` / `erc20` as in the full flow test.
+   [Ensure allowance](../mnft/ensureMachineNftAllowance.md) then [Register machine](../mnft/registerMachineNft.md). Use `machineIssuer` (Machine Issuer signer), `machineControllerAddr: alice.address`, and the same used in your deployment. Record the `machineIds` as these will be needed later when approving and minting.
 
 4. **Create and complete a Contract NFT**  
-   [Create contract](../cnft/createContract.md) (Alice as controller, Bob and Charlie as counterparties). Then [Sign contract](../cnft/signContract.md) as Bob and as Charlie until status is `completed`.
+   [Create contract](../cnft/createContract.md) (Alice as controller, Bob and Charlie as counterparties). Then [Sign contract](../cnft/signContract.md) as Bob and as Charlie until status is `completed`. Save the `contractId` that is generated as it will be needed for signing and approval/minting later.
 
 5. **Create vault and unpause token**  
-   [Create vault](../vault/createVaultAndToken.md) (Admin as `vaultDeployer`, Alice as `vaultController`). Then [Unpause token](../vault/unpauseToken.md) for that vault.
+   [Create vault](../vault/createVaultAndToken.md) (Admin as `vaultDeployer`, Alice as `vaultController`). Set the vault factory and info desk as the same contracts in your deployed framework. Make sure to write down the addresses for the vault, token, and distributor. Then [Unpause token](../vault/unpauseToken.md) for that vault.
 
 6. **Register identities for the vault**  
    [Register identity](../vault/registerIdentity.md) for Alice, Bob, and Charlie in the vault’s Identity Registry (Admin as `vaultDeployer`).

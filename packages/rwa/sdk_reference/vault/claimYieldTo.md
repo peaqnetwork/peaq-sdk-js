@@ -34,16 +34,16 @@ async function main() {
   const rwa_sdk = new RWA(init);
 
   // 1. Claimer signer
-  const alice = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
+  const bob = new Wallet(process.env.BOB_PRIVATE_KEY!, provider);
 
   // 2. Recipient of yield
-  const bob = process.env.BOB_PUBLIC_ADDRESS!
+  const charlie = process.env.CHARLIE_PUBLIC_ADDRESS!
 
   // 3. Claim yield to Bob
   const result = await rwa_sdk.vault.claimYieldTo({
-    claimerSigner: alice,
+    claimerSigner: bob,
     vault: "0x4b76a8F7cdB68a9353c83e18077E6bbC760243B3",
-    to: bob
+    to: charlie
   });
   console.log("Result", result);
 }
@@ -66,16 +66,16 @@ async function main() {
   const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
 
   // 1. Claimer signer
-  const alice = new Wallet(process.env.ALICE_PRIVATE_KEY, provider);
+  const bob = new Wallet(process.env.BOB_PRIVATE_KEY, provider);
 
   // 2. Recipient of yield
-  const bob = process.env.BOB_PUBLIC_ADDRESS
+  const charlie = process.env.CHARLIE_PUBLIC_ADDRESS
 
   // 3. Claim yield to Bob
   const result = await rwa_sdk.vault.claimYieldTo({
-    claimerSigner: alice,
+    claimerSigner: bob,
     vault: "0x4b76a8F7cdB68a9353c83e18077E6bbC760243B3",
-    to: bob
+    to: charlie
   });
   console.log("Result", result);
 }

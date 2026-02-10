@@ -22,7 +22,7 @@ Generate and sign a Role claim (Machine Regulator or Machine Issuer) for an ONCH
 #### TypeScript
 ```TypeScript
 import 'dotenv/config';
-import { RWA, Chain, type SDKInit, type GetIdentity, type IssueRoleClaim } from "@peaq-network/rwa";
+import { RWA, Chain, ClaimTopics, type SDKInit, type GetIdentity, type IssueRoleClaim } from "@peaq-network/rwa";
 import { JsonRpcProvider, Wallet } from "ethers";
 
 async function main() {
@@ -50,7 +50,7 @@ async function main() {
         claimIssuerSigner: claimIssuer,
         claimIssuerContract: issuerContract!,
         subjectIdentity: alice.identity,
-        roleTopic: 7,
+        roleTopic: ClaimTopics.CT_MNFT_ISSUER,
         roleDescription: "Machine Issuer"
     }
     const { claim, signature } = await rwa_sdk.onchainid.issueRoleClaim(issueRoleClaim);
@@ -66,7 +66,7 @@ main().catch((err) => {
 #### JavaScript
 ```js
 import 'dotenv/config';
-import { RWA, Chain } from "@peaq-network/rwa";
+import { RWA, Chain, ClaimTopics } from "@peaq-network/rwa";
 import { JsonRpcProvider, Wallet } from "ethers";
 
 async function main() {
@@ -92,7 +92,7 @@ async function main() {
         claimIssuerSigner: claimIssuer,
         claimIssuerContract: issuerContract,
         subjectIdentity: alice.identity,
-        roleTopic: 7,
+        roleTopic: ClaimTopics.CT_MNFT_ISSUER,
         roleDescription: "Machine Issuer"
     });
     console.log("Result", result);

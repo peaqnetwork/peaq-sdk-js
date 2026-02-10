@@ -321,17 +321,17 @@ export class Vault {
     const deployerAddr = await allowanceSigner.getAddress();
 
 
-    if (allowance >= fee) {
+    if (allowance >= fee * 2n) {
       return {status: 'already_sufficient', vault: vault, feeToken: erc20, transfer: {token: token, amountHuman: transferAmountHuman, amountUnits: scaledAmount, tokenDecimals: tokenDecimals}, fee: {requiredAllowance: fee, allowanceBefore: allowance, allowanceAfter: allowance}, approvedBy: deployerAddr};
     }
     // preflight check
     try {
-      await erc20Contract.approve.staticCall(account, fee);
+      await erc20Contract.approve.staticCall(account, fee * 2n);
     } catch (cause: any) {
       console.log(cause)
       throw new SDKError('SIMULATE/APPROVE_ERC20', 'ERC20 callStatic failed; approval would revert', { cause });
     }
-    const approveTx = await erc20Contract.approve.populateTransaction(account, fee);
+    const approveTx = await erc20Contract.approve.populateTransaction(account, fee * 2n);
     const receipt = await waitForTx(allowanceSigner, approveTx);
     const allowanceAfter = await erc20Contract.allowance(allowanceAddr, account);
     return {
@@ -344,7 +344,7 @@ export class Vault {
         amountUnits: scaledAmount, 
         tokenDecimals: tokenDecimals }, 
       fee: {
-        requiredAllowance: fee,
+        requiredAllowance: fee * 2n,
         allowanceBefore: allowance,
         allowanceAfter: allowanceAfter,
       },

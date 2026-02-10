@@ -32,11 +32,11 @@ async function main() {
   const rwa_sdk = new RWA(init);
 
   // 1. Claimer signer
-  const alice = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
+  const bob = new Wallet(process.env.BOB_PRIVATE_KEY!, provider);
 
   // 2. Claim yield
   const result = await rwa_sdk.vault.claimYield({
-    claimerSigner: alice,
+    claimerSigner: bob,
     vault: "0x4b76a8F7cdB68a9353c83e18077E6bbC760243B3"
   });
   console.log("Result", result);
@@ -60,11 +60,11 @@ async function main() {
   const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
 
   // 1. Claimer signer
-  const alice = new Wallet(process.env.ALICE_PRIVATE_KEY, provider);
+  const bob = new Wallet(process.env.BOB_PRIVATE_KEY, provider);
 
   // 2. Claim yield
   const result = await rwa_sdk.vault.claimYield({
-    claimerSigner: alice,
+    claimerSigner: bob,
     vault: "0x4b76a8F7cdB68a9353c83e18077E6bbC760243B3"
   });
   console.log("Result", result);
