@@ -1,3 +1,27 @@
+# SDK Installation Tutorial
+Before interacting with the packaged sdk, please read the [users](../docs/users/) portion of the docs page to have proper background.
+
+The package has not been deployed on npm yet, to install please:
+## Build Package
+### 1. Clone this repository & install dependencies
+```
+git clone https://github.com/peaqnetwork/peaq-sdk-js.git
+cd packages/rwa
+npm install
+```
+### 2. Build TypeChain
+```
+npm run codegen
+```
+### 3. Build package
+```
+npm run build
+```
+### 4. Pack for local testing
+```
+npm pack -w @peaq-network/rwa
+```
+
 ## Set up TS ENV
 ### 1. New Project
 ```bash
@@ -77,9 +101,39 @@ touch .env
 touch .gitignore
 ```
 Add to `.env`:
+If you would like to be able to follow the full example walkthrough, please define your `.env` as:
 ```
+HTTPS_BASE_URL="https://peaq-agung.api.onfinality.io/public"
+
+# PEAQ OWNER Admin
+ADMIN_PUBLIC_ADDRESS=""
 ADMIN_PRIVATE_KEY=""
+
+# Claim Issuer
+CLAIM_ISSUER_PUBLIC_ADDRESS=""
+CLAIM_ISSUER_PRIVATE_KEY=""
+CLAIM_ISSUER_CONTRACT_ADDRESS=""
+CLAIM_ISSUER_IDENTITY_ADDRESS=""
+
+# Machine Regulator
+MACHINE_REGULATOR_PUBLIC_ADDRESS=""
+MACHINE_REGULATOR_PRIVATE_KEY=""
+
+# Machine Issuer
+MACHINE_ISSUER_PUBLIC_ADDRESS=""
+MACHINE_ISSUER_PRIVATE_KEY=""
+
+# Alice
+ALICE_PUBLIC_ADDRESS=""
 ALICE_PRIVATE_KEY=""
+
+# Bob
+BOB_PUBLIC_ADDRESS=""
+BOB_PRIVATE_KEY=""
+
+# Charlie
+CHARLIE_PUBLIC_ADDRESS=""
+CHARLIE_PRIVATE_KEY=""
 ```
 Add to `.gitignore`:
 ```

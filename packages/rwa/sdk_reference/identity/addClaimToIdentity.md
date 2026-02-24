@@ -5,14 +5,16 @@ Add a signed claim to an ONCHAINID identity (calls the identity contract's `addC
 ### AddClaimToIdentity Type Parameters
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| **identity** | `string` | Required | ONCHAINID identity contract address that will receive the claim. |
-| **identityOwner** | `Signer` | Required | Signer/wallet of the identity owner connected to a provider. |
+| **subjectIdentity** | `string` | Required | ONCHAINID identity contract address that will receive the claim. |
+| **identityController** | `Signer` | Required | Signer/wallet that controls the identity, connected to a provider. |
 | **claim** | `IClaim` | Required | Encoded claim payload: `{ identity, issuer, topic, scheme, data, uri }`. |
-| **kycSignature** | `string` | Required | `0x`-prefixed hex signature over the claim by the claim issuer. |
+| **claimSignature** | `string` | Required | `0x`-prefixed hex signature over the claim by the claim issuer. |
 
 ### Returns
 | Field | Type | Description |
 |-------|------|-------------|
+| **status** | `added` or `updated` | `'added'` when the claim is new, `'updated'` when it replaces an existing claim. |
+| **claimId** | `string` | Claim ID emitted by the identity contract. |
 | **receipt** | `TransactionReceipt` | Transaction receipt of the `addClaim` call. |
 
 
@@ -37,14 +39,14 @@ async function main() {
   const claimIssuer = new Wallet(process.env.CLAIM_ISSUER_PRIVATE_KEY!, provider);
 
   // 2. Get User to KYC
-  const getIdentity: GetIdentity = { eoa: process.env.ALICE_PUBLIC_ADDRESS! };
+  const getIdentity: GetIdentity = { subject: process.env.ALICE_PUBLIC_ADDRESS! };
   const alice = await rwa_sdk.onchainid.getIdentity(getIdentity);
 
   // 3. Create claim + signature
   const issueKycClaim: IssueKycClaim = {
-    claimIssuer: claimIssuer,
-    issuerContract: process.env.CLAIM_ISSUER_CONTRACT_ADDRESS!,
-    identity: alice.identity,
+    claimIssuerSigner: claimIssuer,
+    claimIssuerContract: process.env.CLAIM_ISSUER_CONTRACT_ADDRESS!,
+    subjectIdentity: alice.identity,
     name: 'Alice',
     lastName: 'Doe',
     dateOfBirth: '1990-01-01',
@@ -56,14 +58,14 @@ async function main() {
   // 4. Identity owner signs and submits addClaim
   const aliceSigner = new Wallet(process.env.ALICE_PRIVATE_KEY!, provider);
   const addClaimToIdentity: AddClaimToIdentity = {
-    identity: alice.identity,
-    identityOwner: aliceSigner,
+    subjectIdentity: alice.identity,
+    identityController: aliceSigner,
     claim: claim,
-    kycSignature: signature,
+    claimSignature: signature,
   }
-  const { receipt } = await rwa_sdk.onchainid.addClaimToIdentity(addClaimToIdentity);
+  const { receipt, status, claimId } = await rwa_sdk.onchainid.addClaimToIdentity(addClaimToIdentity);
 
-  console.log('Added claim. txHash:', receipt.hash);
+  console.log('Add claim result:', { status, claimId, txHash: receipt.hash });
 }
 
 main().catch((err) => {
@@ -87,13 +89,13 @@ async function main() {
   const claimIssuer = new Wallet(process.env.CLAIM_ISSUER_PRIVATE_KEY, provider);
 
   // 2. Get User to KYC
-  const alice = await rwa_sdk.onchainid.getIdentity({ eoa: process.env.ALICE_PUBLIC_ADDRESS });
+  const alice = await rwa_sdk.onchainid.getIdentity({ subject: process.env.ALICE_PUBLIC_ADDRESS });
 
   // 3. Create claim + signature
   const { claim, signature } = await rwa_sdk.onchainid.issueKycClaim({
-    claimIssuer: claimIssuer,
-    issuerContract: process.env.CLAIM_ISSUER_CONTRACT_ADDRESS,
-    identity: alice.identity,
+    claimIssuerSigner: claimIssuer,
+    claimIssuerContract: process.env.CLAIM_ISSUER_CONTRACT_ADDRESS,
+    subjectIdentity: alice.identity,
     name: 'Alice',
     lastName: 'Doe',
     dateOfBirth: '1990-01-01',
@@ -103,14 +105,14 @@ async function main() {
 
   // 4. Identity owner signs and submits addClaim
   const aliceSigner = new Wallet(process.env.ALICE_PRIVATE_KEY, provider);
-  const { receipt } = await rwa_sdk.onchainid.addClaimToIdentity({
-    identity: alice.identity,
-    identityOwner: aliceSigner,
+  const { receipt, status, claimId } = await rwa_sdk.onchainid.addClaimToIdentity({
+    subjectIdentity: alice.identity,
+    identityController: aliceSigner,
     claim: claim,
-    kycSignature: signature,
+    claimSignature: signature,
   });
 
-  console.log('Added claim. txHash:', receipt.hash);
+  console.log('Add claim result:', { status, claimId, txHash: receipt.hash });
 }
 
 main().catch((err) => {
@@ -122,15 +124,16 @@ main().catch((err) => {
 ### Example outputs
 ```
 {
+  status: 'added',
+  claimId: '0x29753f23d65eadcfc30f6988fa876cef5069d80f61802576d029c1272a2c9c4e',
   receipt: TransactionReceipt {
     ...
     hash: '0xabccaf471ad0afa2f059747baeb7f79be3d41ecdaae1beed0bd3d903348b302a',
     status: 1
   }
 }
-Added claim. txHash: 0xabccaf471ad0afa2f059747baeb7f79be3d41ecdaae1beed0bd3d903348b302a
 ```
 
 Notes:
-- Ensure `identityOwner` controls the ONCHAINID at `identity`.
-- `kycSignature` must match the exact `claim` payload and issuer.
+- Ensure `identityController` controls the ONCHAINID at `subjectIdentity`.
+- `claimSignature` must match the exact `claim` payload and issuer.

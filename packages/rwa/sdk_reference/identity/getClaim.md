@@ -5,7 +5,7 @@ Fetch a claim from an ONCHAINID identity by `claimId`. This is a read-only call 
 ### GetClaim Type Parameters
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| **identity** | `string` | Required | The ONCHAINID identity contract address to read from. |
+| **subjectIdentity** | `string` | Required | The ONCHAINID identity contract address to read from. |
 | **claimId**  | `string` | Required | The claim identifier, computed as `keccak256(abi.encode(issuer, topic))`. |
 
 Note: The `claimId` is derived from the issuer contract address and the claim topic to uniquely identify a claim on an identity. In Solidity this is `keccak256(abi.encode(_issuer, _topic))`. In ethers you can compute it via `keccak256(new AbiCoder().encode(["address","uint256"], [issuer, topic]))`.
@@ -30,7 +30,7 @@ async function main() {
 
     // 1. Resolve the identity for an EOA (or use a known identity address)
     const alice = process.env.ALICE_PUBLIC_ADDRESS!;
-    const identityRes = await rwa_sdk.onchainid.getIdentity({ eoa: alice } as GetIdentity);
+    const identityRes = await rwa_sdk.onchainid.getIdentity({ subject: alice } as GetIdentity);
     if (identityRes.status !== 'found') throw new Error('Identity not found');
     const identity = identityRes.identity;
 
@@ -42,7 +42,7 @@ async function main() {
 
     // 3. Fetch claim
     const result = await rwa_sdk.onchainid.getClaim({
-      identity,
+      subjectIdentity: identity,
       claimId
     } as GetClaim);
     console.log("Result", result);
@@ -67,7 +67,7 @@ async function main() {
 
     // 1. Resolve the identity for an EOA (or use a known identity address)
     const alice = process.env.ALICE_PUBLIC_ADDRESS;
-    const identityRes = await rwa_sdk.onchainid.getIdentity({ eoa: alice });
+    const identityRes = await rwa_sdk.onchainid.getIdentity({ subject: alice });
     if (identityRes.status !== 'found') throw new Error('Identity not found');
     const identity = identityRes.identity;
 
@@ -79,7 +79,7 @@ async function main() {
 
     // 3. Fetch claim
     const result = await rwa_sdk.onchainid.getClaim({
-      identity: identity,
+      subjectIdentity: identity,
       claimId: claimId
     });
     console.log("Result", result);

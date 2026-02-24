@@ -1,14 +1,26 @@
-# Most common flow:
-In order to make this as reproducible on a deployed framework as possible we will need to have precise definitions for those participating. Formal documentation on such can be found <link_rwa_evm_docs>. 
+# Common flow (start to finish)
 
-Throughout the examples you will see the syntax, `process.env.HTTPS_BASE_URL`. This is an environmental variable which was set in the `.env` file during initialization. It is important to remember to keep this file secret.
+## What this workflow shows
 
-Below is an example of the environmental variables we use throughout the sdk reference in this workflow for users to get an understanding on where to put authority keys and connect to users eoa wallet's for tx sending on their end.
+This page describes an **end-to-end RWA flow** that matches the integration test in `tests/full_flow/rwa.fullFlow.int.test.ts`. It runs in order:
 
+1. **Onboard participants** – Create ONCHAINID identities for Alice, Bob, and Charlie; then attach KYC claims so they can hold compliant tokens.
+2. **Asset side** – Alice receives Machine NFTs (via a Machine Issuer) and completes a multi-party Contract NFT with Bob and Charlie.
+3. **Vault and token** – Admin creates a vault with Alice as controller and unpauses the security token; then registers Alice, Bob, and Charlie in the vault’s Identity Registry.
+4. **Collateralize and mint** – Alice approves the vault to move her Machine NFTs and Contract NFT, deposits them into the vault, and mints security tokens.
+5. **Transfers and yield** – Alice transfers tokens to Bob and Charlie; Alice deposits yield into the vault; Bob claims yield (for himself and to Charlie).
+
+Throughout the examples you will see `process.env.*` (e.g. `process.env.HTTPS_BASE_URL`). These come from a **`.env` file** you set during [initialization](../initialize.md). Keep this file secret and never commit it.
+
+---
+
+## Environment variables
+
+Use the same variable names as in the SDK reference so you can copy-paste and compare with the test. Example layout:
 
 ```bash
 # Network RPC URL
-HTTPS_BASE_URL=""
+HTTPS_BASE_URL="https://peaq-agung.api.onfinality.io/public"
 
 # PEAQ OWNER Admin
 ADMIN_PUBLIC_ADDRESS=""
@@ -18,7 +30,15 @@ ADMIN_PRIVATE_KEY=""
 CLAIM_ISSUER_PUBLIC_ADDRESS=""
 CLAIM_ISSUER_PRIVATE_KEY=""
 CLAIM_ISSUER_CONTRACT_ADDRESS=""
+CLAIM_ISSUER_IDENTITY_ADDRESS=""
 
+# Machine Regulator
+MACHINE_REGULATOR_PUBLIC_ADDRESS=""
+MACHINE_REGULATOR_PRIVATE_KEY=""
+
+# Machine Issuer
+MACHINE_ISSUER_PUBLIC_ADDRESS=""
+MACHINE_ISSUER_PRIVATE_KEY=""
 
 # Alice
 ALICE_PUBLIC_ADDRESS=""
@@ -27,48 +47,86 @@ ALICE_PRIVATE_KEY=""
 # Bob
 BOB_PUBLIC_ADDRESS=""
 BOB_PRIVATE_KEY=""
+
+# Charlie
+CHARLIE_PUBLIC_ADDRESS=""
+CHARLIE_PRIVATE_KEY=""
 ```
 
-### ADMIN
-The Implementation Authority of the TREX system. This will be governed by PEAQ. They are deployers of ONCHAINID, TREX, First Claim Issuer, First Machine Regulator and First Machine Issuer. They have authoritative control and establish relationships between other verifiers and claim issuers.
+---
+
+## Parties at play
+
+### Admin (Framework owner / Implementation Authority)
+
+**Who:** In production this is peaq (or the Implementation Authority). In tests it is the wallet you put in `ADMIN_*`.
+
+**What they do:** Own the ID Factory and Vault Factory; create ONCHAINID identities for users; create vaults and set the vault controller; unpause vault tokens; register identities in a vault’s Identity Registry so those EOAs can hold and transfer the security token.
 
 ### Claim Issuer
-Entity that is added to the Trusted Issuers Registry who is able to add & validate claim topics. These are 3rd party verifiers that peaq approves and a deployment onboarding process is necessary.
 
-### Alice
-A Machine NFT owner in this particular instance. They will need to be KYC'd (approved by the KYC Claim Issuer), and the Machine Issuer (ADMIN in our case) needs to approve the MachineNFT issuance to Alice.
+**Who:** A trusted entity that issues and attests to claims (e.g. KYC). Onboarding is required; peaq approves and adds them to the Trusted Issuers Registry.
 
-### Bob
-Investor who would like to participate. Must KYC and their identity must get added to the Token Identity Registry to be able to accept security token transfers.
+**What they do:** Issue KYC (and optionally role) claims for identities. The Claim Issuer **contract** address is used by the vault’s compliance; the Claim Issuer **signer** (`CLAIM_ISSUER_PRIVATE_KEY`) signs claims. You need both `CLAIM_ISSUER_CONTRACT_ADDRESS` and the signer in `.env`.
 
+### Machine Regulator
 
-## Flow
+**Who:** Authority that decides which addresses may act as Machine Issuers.
 
-1. [Create Identity Alice](../identity/createIdentity.md)
+**What they do:** Add or remove Machine Issuers via the PeaqRwaNft contract; set block state for issuers or Contract NFT contracts. Uses `MACHINE_REGULATOR_*` in the full flow setup (e.g. adding the Machine Issuer before the test runs).
 
-2. [Create Identity Bob](../identity/createIdentity.md)
+### Machine Issuer
 
-Replace the `ALICE_PUBLIC_ADDRESS` with `BOB_PUBLIC_ADDRESS`
+**Who:** Entity allowed by the Machine Regulator to register Machine NFTs for a given machine value.
 
-3. [Add KYC Claim to Identity Alice](../identity/addClaimToIdentity.md)
+**What they do:** Call `mnft.registerMachine` to mint Machine NFTs to a **machine controller** (e.g. Alice). The controller pays the ERC20 fee (after setting allowance via `mnft.ensureMachineNftAllowance`). Uses `MACHINE_ISSUER_*`.
 
-4. [Add KYC Claim to Identity Bob](../identity/addClaimToIdentity.md)
+### Alice (Asset owner / Vault controller)
 
-Replace the `ALICE_PUBLIC_ADDRESS` with `BOB_PUBLIC_ADDRESS` and `ALICE_PRIVATE_KEY` with `BOB_PRIVATE_KEY`
+**Who:** In this flow, the main asset owner and vault controller.
 
-5. [Issue Machine NFTs](../mnft/issueMachineNFT.md)
+**What they do:** Get an identity and KYC; receive Machine NFTs from the Machine Issuer; create a Contract NFT as controller and have Bob and Charlie sign; become the vault controller when Admin creates the vault; approve the vault for her MNFT and CNFT token IDs; deposit those NFTs and mint security tokens; transfer tokens to Bob and Charlie; deposit yield into the vault.
 
-6. [Create Vault and Token](../vault/createVaultAndToken.md)
+### Bob and Charlie (Investors / Counterparties)
 
-7. Mint Security Token
-    - [Register Token Owner Identity](../vault/registerIdentity.md)
-    - [Token Owner Approves Vault as Operator](../vault/approveVaultAsOperator.md)
-    - [Mint Security Token](../vault/mintSecurityTokens.md)
+**Who:** Participants who will hold security tokens and (in this flow) sign the Contract NFT as counterparties.
 
-8. [Unpause Token](../vault/unpauseToken.md)
+**What they do:** Get identities and KYC; sign the Contract NFT created by Alice; get registered in the vault’s Identity Registry; receive token transfers from Alice; claim yield from the vault (Bob claims for himself and can claim to Charlie via `claimYieldTo`).
 
-9. [Register Bob Token Identity](../vault/registerIdentity.md)
+---
 
-Replace the `ALICE_PUBLIC_ADDRESS` with `BOB_PUBLIC_ADDRESS`
+## Flow (step-by-step)
 
-10. [Transfer Token from Alice to Bob](../vault/transfer.md)
+Each step links to the SDK reference for that operation. Replace placeholders (e.g. Alice vs Bob) where the doc says “use this address/signer”.
+
+1. **Create identities**  
+   [Create Identity](../identity/createIdentity.md) for Alice, Bob, and Charlie (use `idFactoryAdmin: admin`, `subject: ALICE_PUBLIC_ADDRESS` / Bob / Charlie, and a unique `deploymentSalt`).
+
+2. **Add KYC claims**  
+   [Add claim to identity](../identity/addClaimToIdentity.md) for each of Alice, Bob, and Charlie (Claim Issuer signer + contract; each identity owner signs `addClaimToIdentity`).
+
+3. **Register Machine NFTs for Alice**  
+   [Ensure allowance](../mnft/ensureMachineNftAllowance.md) then [Register machine](../mnft/registerMachineNft.md). Use `machineIssuer` (Machine Issuer signer), `machineControllerAddr: alice.address`, and the same used in your deployment. Record the `machineIds` as these will be needed later when approving and minting.
+
+4. **Create and complete a Contract NFT**  
+   [Create contract](../cnft/createContract.md) (Alice as controller, Bob and Charlie as counterparties). Then [Sign contract](../cnft/signContract.md) as Bob and as Charlie until status is `completed`. Save the `contractId` that is generated as it will be needed for signing and approval/minting later.
+
+5. **Create vault and unpause token**  
+   [Create vault](../vault/createVaultAndToken.md) (Admin as `vaultDeployer`, Alice as `vaultController`). Set the vault factory and info desk as the same contracts in your deployed framework. Make sure to write down the addresses for the vault, token, and distributor. Then [Unpause token](../vault/unpauseToken.md) for that vault.
+
+6. **Register identities for the vault**  
+   [Register identity](../vault/registerIdentity.md) for Alice, Bob, and Charlie in the vault’s Identity Registry (Admin as `vaultDeployer`).
+
+7. **Approve vault for NFTs**  
+   [NFT approval](../vault/approveVaultAsOperator.md): approve the vault for the Machine NFT token IDs, then for the Contract NFT contract and its token ID (Alice as `machineController`).
+
+8. **Deposit and mint**  
+   [Deposit and mint](../vault/mintSecurityTokens.md): Alice deposits the same Machine NFTs and Contract NFT token IDs and mints the chosen amount of security tokens.
+
+9. **Transfer tokens**  
+   [Ensure transfer fee allowance](../vault/ensureTransferFeeAllowance.md) then [Transfer](../vault/transfer.md) from Alice to Bob and from Alice to Charlie (use the vault’s security token address from step 5).
+
+10. **Yield (optional)**  
+    [Deposit yield](../vault/depositYield.md) (e.g. Alice deposits). [Claim yield](../vault/claimYield.md) (e.g. Bob claims). [Claim yield to](../vault/claimYieldTo.md) (e.g. Bob claims to Charlie).
+
+For a single script that runs this sequence, see `tests/full_flow/rwa.fullFlow.int.test.ts`.

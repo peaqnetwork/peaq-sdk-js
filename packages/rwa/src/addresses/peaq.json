@@ -13,15 +13,10 @@
     "trexImplementationAuthority": "",
     "iaFactory": "",
     "trexFactory": "",
-    "trexGateway": "",
-    "modularComplianceProxy": "",
-    "identityRegistryProxy": "",
-    "identityRegistryStorageProxy": "",
-    "trustedIssuersRegistryProxy": "",
-    "claimTopicsRegistryProxy": ""
+    "trexGateway": ""
   },
-  "mnft": {
-    "peaqMachineNft": "",
+  "nft": {
+    "peaqRwaNft": "",
     "proxyAdmin": ""
   },
   "vault": {

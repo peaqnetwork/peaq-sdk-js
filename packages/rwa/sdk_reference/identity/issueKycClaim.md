@@ -5,14 +5,14 @@ Generate and sign a KYC claim for an ONCHAINID identity. This does not broadcast
 ### IssueKycClaim Type Parameters
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| **claimIssuer** | `Signer` | Required | Claim Issuer signer authorized to issue KYC claims. Must be connected to a provider. |
-| **issuerContract** | `string` | Required | EVM address of the ClaimIssuer contract. |
-| **identity** | `string` | Required | ONCHAINID identity contract address of the subject being KYCed. |
+| **claimIssuerSigner** | `Signer` | Required | Claim Issuer signer authorized to issue KYC claims. Must be connected to a provider. |
+| **claimIssuerContract** | `string` | Required | EVM address of the ClaimIssuer contract. |
+| **subjectIdentity** | `string` | Required | ONCHAINID identity contract address of the subject being KYCed. |
 | **name** | `string` | Required | First name of the identity owner. |
 | **lastName** | `string` | Required | Last name of the identity owner. |
 | **dateOfBirth** | `string` | Required | Date of birth in ISO format `YYYY-MM-DD`. |
 | **placeOfBirth** | `string` | Required | Place of birth. |
-| **uri** | `string` or `null` | Required | Optional URI pointing to KYC evidence/metadata (use `null` if not applicable). |
+| **uri** | `string` | Optional | Optional URI pointing to KYC evidence/metadata. |
 
 ### Returns
 | Field | Type | Description |
@@ -38,7 +38,7 @@ async function main() {
     const aliceEoa = process.env.ALICE_PUBLIC_ADDRESS
 
     // 2. Get Alice identity
-    const getIdentity: GetIdentity = { eoa: aliceEoa! };
+    const getIdentity: GetIdentity = { subject: aliceEoa! };
     const alice = await rwa_sdk.onchainid.getIdentity(getIdentity);
     console.log("Alice Identity", alice);
 
@@ -50,9 +50,9 @@ async function main() {
 
     // 5. Issue signed KYC claim
     const issueKycClaim: IssueKycClaim = {
-        claimIssuer: claimIssuer,
-        issuerContract: issuerContract!,
-        identity: alice.identity,
+        claimIssuerSigner: claimIssuer,
+        claimIssuerContract: issuerContract!,
+        subjectIdentity: alice.identity,
         name: "Alice",
         lastName: "Doe",
         dateOfBirth: "1990-01-01",
@@ -84,7 +84,7 @@ async function main() {
     const aliceEoa = process.env.ALICE_PUBLIC_ADDRESS
 
     // 2. Get Alice identity
-    const alice = await rwa_sdk.onchainid.getIdentity({ eoa: aliceEoa });
+    const alice = await rwa_sdk.onchainid.getIdentity({ subject: aliceEoa });
     console.log("Alice Identity", alice);
 
     // 3. Get Claim Issuer Admin
@@ -96,9 +96,9 @@ async function main() {
 
     // 5. Issue signed KYC claim
     const result = await rwa_sdk.onchainid.issueKycClaim({
-        claimIssuer: claimIssuer,
-        issuerContract: issuerContract,
-        identity: alice.identity,
+        claimIssuerSigner: claimIssuer,
+        claimIssuerContract: issuerContract,
+        subjectIdentity: alice.identity,
         name: "Alice",
         lastName: "Doe",
         dateOfBirth: "1990-01-01",

@@ -1,27 +1,33 @@
 import type { NetworkAddresses } from '../types/core';
-import type { IMachineMetadata, IssueMachineNFT, IssueMachineNFTResult } from '../types/mnfts';
+import type { 
+  EnsureMachineNftAllowance,
+  EnsureMachineNftAllowanceResult,
+  RegisterMachine,
+  RegisterMachineResult,
+  GetMachineDid,
+  GetMachineDidResult 
+} from '../types/mnft';
 
 // utils
-import { Fees } from "../config/fees";
 import { getArgsFromTxEvent, parseOptions, validators } from '../utils/helpers';
 import { waitForTx } from '../utils/txs';
+import { setupDidDocument,  } from '../utils/did/functions';
+import { deserializeDidFromNft, machineId, serializeDidForNft } from '../utils/nft';
 import { SDKError } from '../errors/errors';
 
-import { Sdk } from '@peaq-network/sdk';
-
 import type { Signer, Provider } from 'ethers';
-import { parseEther, getAddress } from 'ethers';
-import { IMachineNft__factory, IERC20__factory } from '../typechain';
+import { getAddress, parseUnits, formatUnits } from 'ethers';
+import { IMachineNft__factory, IERC20__factory, type IMachineNft } from '../typechain';
 
 
 /**
  * MachineNFTs module provides functionality for issuing Machine NFTs for the PEAQ network.
  * 
- * @class MachineNFT
+ * @class MachineNft
  * @param {NetworkAddresses} addresses - The network addresses for the MachineNFTs module
  * @param {Provider} provider - The provider for the MachineNFTs module
  */
-export class MachineNFT {
+export class MachineNft {
   constructor(
     private readonly addresses: NetworkAddresses,
     private readonly provider: Provider
@@ -37,165 +43,160 @@ export class MachineNFT {
     return IERC20__factory.connect(addr, runner);
   }
 
-
-
-  private async _createDIDDocument(machineOwner: Signer, machineNFT: string, project: string, metadataEndpoint: string, tokenId: string) {
-		// creates sdk instance for peaq-did construction
-    const peaq_sdk = await Sdk.createInstance({
-      baseUrl: "https://peaq-agung.api.onfinality.io/public", // hardcoding for now
-      chainType: Sdk.ChainType.EVM
-    });
-
-    // 1. Assign the did subject address and controller
-    const didAddress = machineNFT;
-    const controller = await machineOwner.getAddress(); // machine owner or machine issuer??
-
-    // 2. Create the did name as per our naming convention
-    const rwaSubject = `${didAddress}.${tokenId}`;
-    const name = `did:peaq:${project}:${rwaSubject}`;
-
-    // 3. Construct the signature for the did address to prove machine owner has ownership on the machine nft
-    const rwaSubjectSignature = await machineOwner.signMessage(rwaSubject);
-    const signature = {
-      type: Sdk.VerificationMethodType.ECDSA,
-      issuer: controller,
-      hash: rwaSubjectSignature
-    };
-
-    // 4. Attach the verification method to the did document
-    const verification = [{
-      type: Sdk.VerificationMethodType.ECDSA,
-    }];
-
-    // 5. Attach the metadata service endpoint to the did document with the appropriate data (token id)
-    const service = [{
-      id: `#metadata`,
-      type: 'RWA Machine Metadata',
-      serviceEndpoint: metadataEndpoint,
-      data: tokenId
-    }];
-
-
-    // 6. Generate the serialized did document via protobuf with the sdk
-    const result = await peaq_sdk.did.create({
-      name: name,
-      didAddress: didAddress,
-      controller: controller,
-      verificationMethods: verification,
-      services: service,
-      signature: signature,
-      project: project,
-      tokenId: tokenId
-    });
-
-    // 7. Send the transaction to the network using rwa tx algorithm
-    if ('tx' in result && result.tx) {
-      await waitForTx(machineOwner, result.tx);
-
-      // Read the did document from the network
-      const didDocument = await peaq_sdk.did.read({
-        name: name,
-        address: didAddress
-      });
-      console.log(didDocument)
-      console.log(didDocument?.document);
-    } else {
-      throw new SDKError('DID/CREATE', 'Unexpected DID write result shape; expected unsigned EVM tx.');
-    }
-  }
   /**
+   * Ensure the ERC20 allowance for the MachineNft registration account is sufficient to cover the registration fee for N machines of a given value.
    * 
-   * TODO: Update function name to registerMachine(), and then split up function into two:
-   * - approveErc20()
-   * - registerMachine()
-   * - determine if count is necessary
-   * - update function parameters 'feePerMint' to 'feePerRegistration'
-   * 
-   * Issues a Machine NFT to a designated owner. Make sure the Machine NFT contract is funded.
-   * 
-   * @param {IssueMachineNFT} opts - The options for issuing a Machine NFT
-   * @returns {IssueMachineNFTResult} The result of issuing a Machine NFT
+   * @param {EnsureMachineNftAllowance} opts - The options for ensuring a Machine NFT allowance
+   * @returns {EnsureMachineNftAllowanceResult} The result of ensuring a Machine NFT allowance
    */
-  public async issueMachineNFT(opts: IssueMachineNFT): Promise<IssueMachineNFTResult> {
-    // validate and parse parameter type options for improved error messages for user
-    const { machineIssuer, machineOwner, machineNFT, project, metadataEndpoint, metadata } = parseOptions<IssueMachineNFT>(opts, {
-      machineIssuer: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
-      machineOwner: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
-      machineNFT: { required: true, validator: validators.address, expected: 'EVM address string' },
-      project: { required: true, validator: validators.string, expected: 'string' },
-      metadataEndpoint: { required: true, validator: validators.string, expected: 'string' },
-      metadata: { required: true, validator: validators.partialObject({
-        brand: validators.string,
-        model: validators.string,
-        serialNumber: validators.string,
-        uri: validators.string,
-        timestamp: validators.string,
-      }), expected: 'object' },
-      count: { required: false, validator: validators.number, expected: 'number' },
-      fees: { required: false, validator: validators.partialObject({
-        feePerMint: validators.numberOrBigint,
-        machineValue: validators.numberOrBigint,
-        nativeDepositPerMint: validators.numberOrBigint,
-      }), expected: 'object' },
-    }, 'issueMachineNFT');
+  public async ensureMachineNftAllowance(opts: EnsureMachineNftAllowance): Promise<EnsureMachineNftAllowanceResult> {
+    const { machineController, machineNft, machineValueHuman, erc20, tokenDecimals, machineCount } = parseOptions<EnsureMachineNftAllowance>(opts, {
+      machineController: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      machineNft: { required: true, validator: validators.address, expected: 'EVM address string' },
+      machineValueHuman: { required: true, validator: validators.string, expected: 'bigint' },
+      erc20: { required: true, validator: validators.address, expected: 'EVM address string' },
+      tokenDecimals: { required: true, validator: validators.number, expected: 'number' },
+      machineCount: { required: false, validator: validators.number, expected: 'number' },
+    }, 'ensureMachineNftAllowance');
 
-    const count = opts.count ?? 1;    
-    const mnft = this._mnft(machineIssuer, machineNFT);
-
-   
-
-    // TODO 
-    // - see if we can get the value of the machine nfts from the contract
-    // - native deposit per mint is based on DID fees
-
-    // 1) Merge fee overrides (if provided)
-    const fees = {
-      feePerMint: parseEther(String(opts.fees?.feePerMint)) ?? Fees.FeePerMint,
-      machineValue: parseEther(String(opts.fees?.machineValue)) ?? Fees.MachineValue,
-      nativeDepositPerMint: parseEther(String(opts.fees?.nativeDepositPerMint)) ?? Fees.NativeDepositPerMint,
-    };
+    const mnft = this._mnft(this.provider, machineNft);
+    const [fee, account] = await this._getRegistrationFeeAndAccount(mnft, machineValueHuman, tokenDecimals);
 
     // 2) Approve ERC20
-    const ownerAddr = await machineOwner.getAddress();
-    const erc20 = this._erc20(machineOwner, this.addresses.erc20.peaq);
-    const totalFeeErc20 = fees.feePerMint * BigInt(count);
-    const allowance = await erc20.allowance(ownerAddr, machineNFT);
-    if (allowance < totalFeeErc20) {
+    const ownerAddr = await machineController.getAddress();
+    const erc20Contract = this._erc20(machineController, erc20);
+    const allowance = await erc20Contract.allowance(ownerAddr, account);
+    if (allowance < fee * BigInt(machineCount)) {
       // preflight check
       try {
-        await erc20.approve.staticCall(machineNFT, totalFeeErc20);
+        await erc20Contract.approve.staticCall(account, fee * BigInt(machineCount));
       } catch (cause: any) {
         throw new SDKError('SIMULATE/APPROVE_ERC20', 'ERC20 callStatic failed; approval would revert', { cause });
       }
-      const approveTx = await erc20.approve.populateTransaction(machineNFT, totalFeeErc20);
-      await waitForTx(machineOwner, approveTx);
+      const approveTx = await erc20Contract.approve.populateTransaction(account, fee * BigInt(machineCount));
+      const receipt = await waitForTx(machineController, approveTx);
+      const postTxAllowance = await erc20Contract.allowance(ownerAddr, account);
+
+      return { status: 'approved', machineNft: machineNft, feeToken: erc20, feePerMachine: fee, requiredAllowance: fee * BigInt(machineCount), currentAllowance: postTxAllowance, receipt: receipt };
+
     }
+    return { status: 'already_sufficient', machineNft: machineNft, feeToken: erc20, feePerMachine: fee, requiredAllowance: fee * BigInt(machineCount), currentAllowance: allowance };
+
+  }
+
+  /**
+   * 
+   * Issues a MachineNft to a designated owner. Make sure the MachineNft contract is funded.
+   * 
+   * @param {RegisterMachine} opts - The options for registering a MachineNft
+   * @returns {RegisterMachineResult} The result of registering a MachineNft
+   */
+  public async registerMachine(opts: RegisterMachine): Promise<RegisterMachineResult> {
+    const { machineIssuer, machineNft, machineValueHuman, machineControllerAddr, erc20, tokenDecimals, salt, count } = parseOptions<RegisterMachine>(opts, {
+      machineIssuer: { required: true, validator: validators.signerWithProvider, expected: 'Signer connected to provider' },
+      machineNft: { required: true, validator: validators.address, expected: 'EVM address string' },
+      machineValueHuman: { required: true, validator: validators.string, expected: 'bigint' },
+      machineControllerAddr: { required: true, validator: validators.address, expected: 'EVM address string' },
+      erc20: { required: true, validator: validators.address, expected: 'EVM address string' },
+      tokenDecimals: { required: true, validator: validators.number, expected: 'number' },
+      salt: { required: true, validator: validators.number, expected: 'number' },
+      count: { required: false, validator: validators.number, expected: 'number' },
+    }, 'registerMachine');
+
+    // 0) Get MachineNft contract and machine value in units
+    const mnft = this._mnft(machineIssuer, machineNft);
+    const machineValueInUnits = parseUnits(machineValueHuman, tokenDecimals);
+
+    // 1) Get starting balance of machine owner ERC20
+    const erc20Contract = this._erc20(this.provider, erc20);
+    const startingBalance = await erc20Contract.balanceOf(machineControllerAddr);
   
-    // 3) Mint loop (TODO batch in smart contract??)
+    // 2) Mint loop
+    let machines;
+    let didX;
+    let machineIdX;
+    let serializedDidX;
+    const base = salt * count;
+    const machineIssuerAddress = await machineIssuer.getAddress();
     for (let i = 0; i < count; i++) {
+      // create DID document
+      didX = await setupDidDocument(machineIssuerAddress, machineNft, base + i);
+      machineIdX = machineId(didX);
+      serializedDidX = serializeDidForNft(didX);
+
       // preflight check
       try {
-        await mnft.registerMachine.staticCall(ownerAddr, fees.machineValue, metadata, { value: fees.nativeDepositPerMint });
+        await mnft.registerMachine.staticCall(machineControllerAddr, machineValueInUnits, machineIdX, serializedDidX);
       } catch (cause: any) {
+        console.log(cause) // TODO: Improve error handling in the SDKError class; for now just log the cause
         throw new SDKError('SIMULATE/ISSUE_MNFT', 'MachineNFTs callStatic failed; issuance would revert', { cause });
       }
-      const mintTx = await mnft.registerMachine.populateTransaction(
-        ownerAddr,
-        fees.machineValue,
-        metadata,
-        { value: fees.nativeDepositPerMint }
+      // submit transaction to register machine
+      const registerMachineTx = await mnft.registerMachine.populateTransaction(
+        machineControllerAddr,
+        machineValueInUnits,
+        machineIdX,
+        serializedDidX
       );
-      const result = await waitForTx(machineIssuer, mintTx);
-      console.log(result)
-
+      const result = await waitForTx(machineIssuer, registerMachineTx);
       const iface = IMachineNft__factory.createInterface();
-      const args = await getArgsFromTxEvent(result, 'MetadataUpdate', iface);
-      const tokenId = args[0].toString();
+      const args = await getArgsFromTxEvent(result, 'MachineAdded', iface);
+      const emittedMachineIssuer = args[0].toString();
+      const emittedMachineOwner = args[1].toString();
+      const emittedTokenId = args[2].toString();
 
-      // request a serviceEndpoint to link in the service field that shows the machine nft metadata (stored off chain)
-      await this._createDIDDocument(machineOwner, machineNFT, project, metadataEndpoint, tokenId);
+      // What is the best way to log to user of SDK?
+      // add to machines array
+      machines = [...(machines || []), { machineId: emittedTokenId!, did: didX!.toString(), receipt: result! }];
+      // machines = machines.push({ tokenId: emittedTokenId!, machineId: machineIdX, did: didX!, receipt: result! });
+      // console.log(`Registered Machine ${i + 1} of ${count}:`, {
+      //   machineNft: machineNft,
+      //   machineIssuer: emittedMachineIssuer,
+      //   machineOwner: emittedMachineOwner,
+      //   tokenId: emittedTokenId,
+      // });
     }
-  
-    return { result: `Registered ${count} Machine NFT${count > 1 ? 's' : ''} for user: ${ownerAddr}` }; // or assigned rather than registered?
+    
+    const endingBalance = await erc20Contract.balanceOf(machineControllerAddr);
+    const tokenDelta = startingBalance - endingBalance
+    return { 
+      status: 'issued', 
+      machineNft: machineNft, 
+      machineIssuer: machineIssuerAddress, 
+      machineController: machineControllerAddr, 
+      machineValue: { human: machineValueHuman, units: machineValueInUnits, tokenDecimals: tokenDecimals, feeToken: erc20 }, 
+      count: count, 
+      machines: machines || [],
+      feesPaid: tokenDelta, 
+      startingBalance: startingBalance, 
+      endingBalance: endingBalance,
+      humanTokenDelta: formatUnits(tokenDelta.toString(), tokenDecimals)
+    };
   }
+
+
+  /**
+   * 
+   * Reads a DID document from a Machine NFT.
+   * 
+   * @param {GetMachineDid} opts - The options for getting a Machine DID
+   * @returns {GetMachineDidResult} The result of getting a Machine DID
+   */
+  public async getMachineDid(opts: GetMachineDid): Promise<GetMachineDidResult> {
+    const { machineNft, tokenId } = parseOptions<GetMachineDid>(opts, {
+      machineNft: { required: true, validator: validators.address, expected: 'EVM address string' },
+      tokenId: { required: true, validator: validators.string, expected: 'number or bigint' },
+    }, 'readDidDocument');
+    const mnft = this._mnft(this.provider, machineNft);
+    const didDocument = await mnft.getMachineDid(BigInt(tokenId));
+    const deserializedDidDocument = deserializeDidFromNft(didDocument).toObject();
+    return { didDocument: deserializedDidDocument };
+  }
+
+  private async _getRegistrationFeeAndAccount(mnft: IMachineNft, machineValue: string, decimals: number): Promise<[bigint, string]> {
+    const machineValueInUnits = parseUnits(machineValue, decimals);
+    const [fee, account] = await mnft.registrationFeeAndAccount(machineValueInUnits);
+    return [fee, account];
+  }
+
 }

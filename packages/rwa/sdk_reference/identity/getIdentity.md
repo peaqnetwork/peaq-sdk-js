@@ -5,13 +5,13 @@ Fetch the ONCHAINID identity contract address associated with a given EOA (Exter
 ### GetIdentity Type Parameters
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| **eoa**   | `string` | Required | EOA to check for an associated ONCHAINID identity. |
+| **subject**   | `string` | Required | EOA to check for an associated ONCHAINID identity. |
 
 ### Returns
 | Field | Type | Description |
 |-------|------|-------------|
 | **status**   | `found` or `not_found` | `'found'` when an identity is associated with the EOA, otherwise `'not_found'`. |
-| **identity** | `string`    | The identity address when found; empty string `''` when not found. |
+| **identity** | `string`    | The identity address when found. Only present when `status` is `'found'`. |
 
 ### Usage
 #### TypeScript
@@ -30,7 +30,7 @@ async function main() {
     const alice = process.env.ALICE_PUBLIC_ADDRESS!;
 
     // 2. Query ONCHAINID Identity
-    const params: GetIdentity = { eoa: alice };
+    const params: GetIdentity = { subject: alice };
     const result = await rwa_sdk.onchainid.getIdentity(params);
     console.log("Result", result);
 }
@@ -57,7 +57,7 @@ async function main() {
 
     // 2. Query ONCHAINID Identity
     const result = await rwa_sdk.onchainid.getIdentity({
-        eoa: alice
+        subject: alice
     });
     console.log("Result", result);
 }
@@ -80,7 +80,6 @@ Result {
 Not found:
 ```
 Result {
-  status: 'not_found',
-  identity: ''
+  status: 'not_found'
 }
 ```

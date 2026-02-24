@@ -1,10 +1,11 @@
 import type { SDKInit, NetworkAddresses } from './types/core';
 import { getAddresses } from './config/addresses';
 
-import { TREX } from './modules/trex';
-import { Vault } from './modules/vault';
-import { MachineNFT } from './modules/mnft';
 import { OnChainID } from './modules/onchainid';
+import { PeaqRwaNft } from './modules/rwanft';
+import { MachineNft } from './modules/mnft';
+import { ContractNft } from './modules/cnft';
+import { Vault } from './modules/vault';
 
 import type { Provider } from 'ethers';
 
@@ -22,10 +23,11 @@ export class RWA {
   readonly addresses: NetworkAddresses;
   readonly provider: Provider;
 
-  readonly trex: TREX;
-  readonly vault: Vault;
-  readonly mnft: MachineNFT;
   readonly onchainid: OnChainID;
+  readonly rwanft: PeaqRwaNft;
+  readonly mnft: MachineNft;
+  readonly cnft: ContractNft;
+  readonly vault: Vault;
 
   /**
    * Initialize the RWA SDK for a specific chain
@@ -38,10 +40,11 @@ export class RWA {
     this.addresses = getAddresses(opts.chainId);
 
     // modules: pass provider for reads; writes accept a Signer per method
-    this.trex = new TREX(this.addresses, this.provider);
-    this.vault = new Vault(this.addresses, this.provider);
-    this.mnft = new MachineNFT(this.addresses, this.provider);
     this.onchainid = new OnChainID(this.addresses, this.provider);
+    this.rwanft = new PeaqRwaNft(this.addresses, this.provider);
+    this.mnft = new MachineNft(this.addresses, this.provider);
+    this.cnft = new ContractNft(this.addresses, this.provider);
+    this.vault = new Vault(this.addresses, this.provider);
   }
 
   /** Return the resolved address book for this chain. */
