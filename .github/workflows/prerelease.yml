@@ -117,3 +117,60 @@ jobs:
         run: npm publish --workspace=@peaq-network/msf --tag next
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+  publish-rwa-prerelease:
+    runs-on: ubuntu-latest
+    needs: publish-machine-station-prerelease
+    if: "!contains(github.event.head_commit.message, 'ci: bump')"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PAT }}
+
+      - name: Get changed files for RWA
+        id: changed-rwa-files
+        uses: tj-actions/changed-files@v41
+        with:
+          path: packages/rwa
+
+      - name: Set up Node.js
+        if: steps.changed-rwa-files.outputs.any_changed == 'false'
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Configure Git
+        if: steps.changed-rwa-files.outputs.any_changed == 'false'
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Install dependencies
+        if: steps.changed-rwa-files.outputs.any_changed == 'false'
+        run: npm install
+
+      - name: Build RWA
+        if: steps.changed-rwa-files.outputs.any_changed == 'false'
+        run: npm run build --workspace=@peaq-network/rwa
+
+      - name: Bump RWA Prerelease Version
+        if: steps.changed-rwa-files.outputs.any_changed == 'false'
+        run: npm version prerelease --git-tag-version=false --workspace=@peaq-network/rwa
+
+      - name: Commit and Push RWA Version Bump
+        if: steps.changed-rwa-files.outputs.any_changed == 'false'
+        run: |
+          git add packages/rwa/package.json
+          git commit -m "ci: bump rwa prerelease version"
+          git stash
+          git pull --rebase
+          git stash pop
+          git push https://x-access-token:${{ secrets.PAT }}@github.com/${{ github.repository }} HEAD:${{ github.ref }}
+
+      - name: Publish RWA Prerelease
+        if: steps.changed-rwa-files.outputs.any_changed == 'false'
+        run: npm publish --workspace=@peaq-network/rwa --tag next
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
