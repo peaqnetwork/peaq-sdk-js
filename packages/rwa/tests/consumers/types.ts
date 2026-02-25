@@ -11,7 +11,7 @@ import type {
     GetIdentity,
     GetIdentityResult,
     IssueKycClaim,
-    KycClaimResult,
+    IssueKycClaimResult,
     AddClaimToIdentity,
     AddClaimToIdentityResult,
   } from '../../dist';
@@ -72,14 +72,14 @@ import type {
     >
   >;
   
-  // CreateIdentity input exact keys
+  // CreateIdentity input exact keys (SDK uses idFactoryAdmin, subject, deploymentSalt)
   type _CreateIdentity_exact = Expect<
     IsExact<
       CreateIdentity,
       {
-        admin: Signer;
-        eoa: string;
-        salt: string;
+        idFactoryAdmin: Signer;
+        subject: string;
+        deploymentSalt: string;
       }
     >
   >;
@@ -96,32 +96,32 @@ import type {
     >
   >;
   
-  // GetIdentity exact shape
+  // GetIdentity exact shape (SDK uses subject)
   type _GetIdentity_exact = Expect<
     IsExact<
       GetIdentity,
-      { eoa: string }
+      { subject: string }
     >
   >;
   
-  // GetIdentityResult exact shape
+  // GetIdentityResult exact shape (identity is optional in SDK)
   type _GetIdentityResult_exact = Expect<
     IsExact<
       GetIdentityResult,
       {
         status: 'found' | 'not_found';
-        identity: string;
+        identity?: string;
       }
     >
   >;
   
-  // IssueKycClaim exact keys + selected field types
+  // IssueKycClaim exact keys (SDK uses claimIssuerSigner, claimIssuerContract, subjectIdentity, etc.)
   type _IssueKycClaim_has_keys = Expect<
     HasKeys<
       IssueKycClaim,
-      | 'claimIssuer'
-      | 'issuerContract'
-      | 'identity'
+      | 'claimIssuerSigner'
+      | 'claimIssuerContract'
+      | 'subjectIdentity'
       | 'name'
       | 'lastName'
       | 'dateOfBirth'
@@ -131,14 +131,14 @@ import type {
   >;
   type _IssueKycClaim_uri = Expect<IsExact<IssueKycClaim['uri'], string | null>>;
   
-  // KycClaimResult exact keys
-  type _KycClaimResult_has_keys = Expect<HasKeys<KycClaimResult, 'claim' | 'signature'>>;
+  // IssueKycClaimResult exact keys (exported as IssueKycClaimResult, not KycClaimResult)
+  type _IssueKycClaimResult_has_keys = Expect<HasKeys<IssueKycClaimResult, 'claim' | 'signature'>>;
   
-  // AddClaimToIdentity exact keys
+  // AddClaimToIdentity exact keys (SDK uses identityController, subjectIdentity, claim, claimSignature)
   type _AddClaimToIdentity_has_keys = Expect<
     HasKeys<
       AddClaimToIdentity,
-      'identity' | 'claim' | 'kycSignature' | 'identityOwner'
+      'identityController' | 'subjectIdentity' | 'claim' | 'claimSignature'
     >
   >;
   
