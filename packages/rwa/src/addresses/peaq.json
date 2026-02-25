@@ -3,25 +3,25 @@
   "network": "peaq",
   "onchainid": {
     "identity": "",
-    "implementationAuthority": "",
-    "idFactory": "",
-    "kycVerifier": "",
-    "mnftIssuerVerifier": "",
-    "mnftRegulatorVerifier": ""
+    "implementationAuthority": "0xE51F50bA6713CA71Ee987C3C305BE77EC502fdBC",
+    "idFactory": "0x2f91c6db691D4b412976aDaB518D83723DC3A069",
+    "kycVerifier": "0xF1b050b943065002489796BFDF54E37B19101b3F",
+    "mnftIssuerVerifier": "0x9C056EdCC77447c576d2b5808871d5305C58Bb03",
+    "mnftRegulatorVerifier": "0x823db6D7621857a6279B26102577D55EEE59A406"
   },
   "trex": {
-    "trexImplementationAuthority": "",
+    "trexImplementationAuthority": "0x207d63D341fA6834E93606e3e66B9fe8f86A4966",
     "iaFactory": "",
-    "trexFactory": "",
-    "trexGateway": ""
+    "trexFactory": "0x51c17AC87f44F492271B7A243D0f21855C593003",
+    "trexGateway": "0x9D671d1e2e621300312213CF24c767753c15ba9c"
   },
   "nft": {
-    "peaqRwaNft": "",
-    "proxyAdmin": ""
+    "peaqRwaNft": "0x10a6734bfB7123fb0a43AaE870f116A3Af91539A",
+    "proxyAdmin": "0xaF4d82F70B29d58e87C69f0404d171E2e60a5913"
   },
   "vault": {
-    "factory": "",
-    "proxyAdmin": ""
+    "factory": "0xF3e61Fa74FfA62a7de2791361536e4b1bccbFE34",
+    "proxyAdmin": "0xaF4d82F70B29d58e87C69f0404d171E2e60a5913"
   },
   "erc20": {
     "peaq": "0x0000000000000000000000000000000000000809"
