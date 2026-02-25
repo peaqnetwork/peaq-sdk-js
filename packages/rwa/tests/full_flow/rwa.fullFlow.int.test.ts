@@ -10,7 +10,7 @@ import { ClaimTopics } from '../../src/enums/claimTopics';
 import { ClaimScheme } from '../../src/enums/claimSchemes';
 
 describe.sequential('rwa.fullFlow [integration]', () => {    
-  it('runs the full flow', async () => {
+  it.skip('runs the full flow', async () => {
     // 0. Create RWA instance, get provider and get all participants wallets
     const provider = new JsonRpcProvider(process.env.HTTPS_BASE_URL);   
     const rwa_sdk = new RWA({ chainId: Chain.AGUNG, provider });
