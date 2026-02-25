@@ -10,6 +10,7 @@ on:
         options:
           - sdk
           - msf
+          - rwa
       version_type:
         description: 'Version type (minor, or major)'
         required: true
