@@ -1,4 +1,6 @@
 
+Example Log file for AGUNG deployment used in testing:
+
 🌐 Network Configuration:
 ════════════════════════════════════════
   Network: agung (Chain ID: 9990)

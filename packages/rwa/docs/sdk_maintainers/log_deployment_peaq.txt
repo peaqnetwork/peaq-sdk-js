@@ -1,0 +1,167 @@
+Log file for PEAQ deployment:
+{
+  "startedAt": "2026-02-24T16:27:33.646Z",
+  "endedAt": "2026-02-24T16:27:34.660Z",
+  "summaryPath": "/Work/peaq/peaq-rwa-evm/deployment-logs/peaq/20260224-155141Z/deployment-summary.json",
+  "network": "peaq",
+  "safeAddress": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+  "checks": {
+    "ownerChecks": [
+      {
+        "contract": "ProxyAdmin",
+        "address": "0xaF4d82F70B29d58e87C69f0404d171E2e60a5913",
+        "expectedOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "actualOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "ok": true
+      },
+      {
+        "contract": "InfoDesk",
+        "address": "0x246eC0443D3017e319330e2B70F554B997a2Ec50",
+        "expectedOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "actualOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "ok": true
+      },
+      {
+        "contract": "PeaqRwaNft",
+        "address": "0x10a6734bfB7123fb0a43AaE870f116A3Af91539A",
+        "expectedOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "actualOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "ok": true
+      },
+      {
+        "contract": "PeaqVaultFactory",
+        "address": "0xF3e61Fa74FfA62a7de2791361536e4b1bccbFE34",
+        "expectedOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "actualOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "ok": true
+      },
+      {
+        "contract": "ONCHAINID ImplementationAuthority",
+        "address": "0xE51F50bA6713CA71Ee987C3C305BE77EC502fdBC",
+        "expectedOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "actualOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "ok": true
+      },
+      {
+        "contract": "ONCHAINID IdFactory",
+        "address": "0x2f91c6db691D4b412976aDaB518D83723DC3A069",
+        "expectedOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "actualOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "ok": true
+      },
+      {
+        "contract": "VerifierKyc",
+        "address": "0xF1b050b943065002489796BFDF54E37B19101b3F",
+        "expectedOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "actualOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "ok": true
+      },
+      {
+        "contract": "VerifierMnftIssuer",
+        "address": "0x9C056EdCC77447c576d2b5808871d5305C58Bb03",
+        "expectedOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "actualOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "ok": true
+      },
+      {
+        "contract": "VerifierMnftRegulator",
+        "address": "0x823db6D7621857a6279B26102577D55EEE59A406",
+        "expectedOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "actualOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "ok": true
+      },
+      {
+        "contract": "TREX ImplementationAuthority",
+        "address": "0x207d63D341fA6834E93606e3e66B9fe8f86A4966",
+        "expectedOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "actualOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "ok": true
+      },
+      {
+        "contract": "TREX Gateway",
+        "address": "0x9D671d1e2e621300312213CF24c767753c15ba9c",
+        "expectedOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "actualOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "ok": true
+      },
+      {
+        "contract": "ContractNft#1",
+        "address": "0xdA340e0EB025014107cd87035A6DAadD4c80989C",
+        "expectedOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "actualOwner": "0xBF8b365fA3C6949A94fC9E610475d3fDf97dC76a",
+        "ok": true
+      }
+    ],
+    "infoDeskChecks": [
+      {
+        "name": "InfoDesk.PeaqProxyAdmin",
+        "expected": "0xaF4d82F70B29d58e87C69f0404d171E2e60a5913",
+        "actual": "0xaF4d82F70B29d58e87C69f0404d171E2e60a5913",
+        "ok": true
+      },
+      {
+        "name": "InfoDesk.PeaqRwaNft",
+        "expected": "0x10a6734bfB7123fb0a43AaE870f116A3Af91539A",
+        "actual": "0x10a6734bfB7123fb0a43AaE870f116A3Af91539A",
+        "ok": true
+      },
+      {
+        "name": "InfoDesk.PeaqVaultFactory",
+        "expected": "0xF3e61Fa74FfA62a7de2791361536e4b1bccbFE34",
+        "actual": "0xF3e61Fa74FfA62a7de2791361536e4b1bccbFE34",
+        "ok": true
+      },
+      {
+        "name": "InfoDesk.IdFactory",
+        "expected": "0x2f91c6db691D4b412976aDaB518D83723DC3A069",
+        "actual": "0x2f91c6db691D4b412976aDaB518D83723DC3A069",
+        "ok": true
+      },
+      {
+        "name": "InfoDesk.VerifierKyx",
+        "expected": "0xF1b050b943065002489796BFDF54E37B19101b3F",
+        "actual": "0xF1b050b943065002489796BFDF54E37B19101b3F",
+        "ok": true
+      },
+      {
+        "name": "InfoDesk.VerifierMnftIssuer",
+        "expected": "0x9C056EdCC77447c576d2b5808871d5305C58Bb03",
+        "actual": "0x9C056EdCC77447c576d2b5808871d5305C58Bb03",
+        "ok": true
+      },
+      {
+        "name": "InfoDesk.VerifierMnftRegulator",
+        "expected": "0x823db6D7621857a6279B26102577D55EEE59A406",
+        "actual": "0x823db6D7621857a6279B26102577D55EEE59A406",
+        "ok": true
+      },
+      {
+        "name": "InfoDesk.TrexGateway",
+        "expected": "0x9D671d1e2e621300312213CF24c767753c15ba9c",
+        "actual": "0x9D671d1e2e621300312213CF24c767753c15ba9c",
+        "ok": true
+      }
+    ],
+    "contractNftCheck": {
+      "name": "PeaqRwaNft.findContractNft(1)",
+      "expected": "0xdA340e0EB025014107cd87035A6DAadD4c80989C",
+      "actual": "0xdA340e0EB025014107cd87035A6DAadD4c80989C",
+      "ok": true
+    },
+    "trexFactoryOwnerCheck": {
+      "name": "TREXFactory.owner",
+      "expected": "0x9D671d1e2e621300312213CF24c767753c15ba9c",
+      "actual": "0x9D671d1e2e621300312213CF24c767753c15ba9c",
+      "ok": true
+    },
+    "chainCheck": {
+      "name": "ChainId",
+      "expected": "3338",
+      "actual": "3338",
+      "ok": true
+    }
+  },
+  "passed": true,
+  "failureCount": 0,
+  "logFile": "/Work/peaq/peaq-rwa-evm/deployment-logs/peaq/20260224-155141Z/checks-final/check.log"
+}
