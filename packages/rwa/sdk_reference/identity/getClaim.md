@@ -36,7 +36,7 @@ async function main() {
 
     // 2. Compute claimId = keccak256(abi.encode(issuer, topic))
     const issuerContract = process.env.CLAIM_ISSUER_CONTRACT_ADDRESS!;
-    const topic = 777;
+    const topic = 666;
     const abiCoder = new AbiCoder();
     const claimId = keccak256(abiCoder.encode(["address", "uint256"], [issuerContract, topic]));
 
@@ -73,7 +73,7 @@ async function main() {
 
     // 2. Compute claimId = keccak256(abi.encode(issuer, topic))
     const issuerContract = process.env.CLAIM_ISSUER_CONTRACT_ADDRESS;
-    const topic = 777;
+    const topic = 666;
     const abiCoder = new AbiCoder();
     const claimId = keccak256(abiCoder.encode(["address", "uint256"], [issuerContract, topic]));
 
@@ -95,7 +95,7 @@ main().catch((err) => {
 ```
 Result {
   claim: {
-    topic: 777,
+    topic: 666,
     scheme: 1,
     issuer: '0x187EB39e1aF4B9a79936635dBa52984af98464a9',
     signature: '0x4bab329329ea682e4ac675d9ebab2b8ec597124b98b5085a4e8f83104ce064d4728771567752a75db8ad75552579f0f805913f1f756947f25a8e85d67ce3055e1b',
