@@ -1,6 +1,6 @@
 {
   "name": "@peaq-network/rwa",
-  "version": "0.0.0",
+  "version": "0.0.1-0",
   "description": "TypeScript/JavaScript SDK for RWA on the peaq network.",
   "author": "peaq network",
   "keywords": [
