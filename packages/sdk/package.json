@@ -1,6 +1,6 @@
 {
   "name": "@peaq-network/sdk",
-  "version": "1.0.1-11",
+  "version": "1.0.1-12",
   "description": "TypeScript/JavaScript SDK for DID, Storage, and RBAC operations on the peaq network.",
   "type": "module",
   "main": "dist/index.js",
