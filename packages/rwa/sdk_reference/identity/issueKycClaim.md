@@ -124,7 +124,7 @@ Result {
  claim: {
    identity: '0x1d0FDE95e971c5c78B6f9c745a8e2791Fe0c962C',
    issuer: '0x842d57632954943304441258E94f3f089235022c',
-   topic: 777,
+   topic: 666,
    scheme: 1,
    data: '0x252ec8044814d556905cc1587f4a375a2acfe3f84a17d7d104accd32ee25b3b6',
    uri: 'https://example.com/kyc'

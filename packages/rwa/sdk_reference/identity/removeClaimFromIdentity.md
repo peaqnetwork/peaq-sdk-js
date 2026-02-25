@@ -42,7 +42,7 @@ async function main() {
 
     // 3. Compute claimId = keccak256(abi.encode(issuer, topic))
     const issuerContract = process.env.CLAIM_ISSUER_CONTRACT_ADDRESS!;
-    const topic = 777;
+    const topic = 666;
     const abiCoder = new AbiCoder();
     const claimId = keccak256(abiCoder.encode(["address", "uint256"], [issuerContract, topic]));
 
@@ -83,7 +83,7 @@ async function main() {
 
     // 3. Compute claimId = keccak256(abi.encode(issuer, topic))
     const issuerContract = process.env.CLAIM_ISSUER_CONTRACT_ADDRESS;
-    const topic = 777;
+    const topic = 666;
     const abiCoder = new AbiCoder();
     const claimId = keccak256(abiCoder.encode(["address", "uint256"], [issuerContract, topic]));
 

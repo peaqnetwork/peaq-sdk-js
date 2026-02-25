@@ -1,3 +1,4 @@
+
 🌐 Network Configuration:
 ════════════════════════════════════════
   Network: agung (Chain ID: 9990)
@@ -18,144 +19,144 @@ Deploying for owner: 0x8BCfa2e9FC4aCa66fCF36Bcf47646E5Fb8d74BA0
 1. Deploying ProxyAdmin for MachineNft and PeaqVault...
 ✅ Peaq's ProxyAdmin deployed successfully
 📋 Peaq-ProxyAdmin Contract Address:
-   Peaq-ProxyAdmin: 0x70fb856d48E13633a29d23444Bb1365C48E5Ac64
+   Peaq-ProxyAdmin: 0x19548A8F98ec2876E92b89c57beD31D0675189E0
 2. Deploying InfoDesk...
 ⏳ InfoDeskUpgradeable deployment (1/4)...
-✅ InfoDeskUpgradeable deployment confirmed (block 7249469)
+✅ InfoDeskUpgradeable deployment confirmed (block 7841351)
 ⏳ MachineNftUpgradeable deployment (1/4)...
-✅ MachineNftUpgradeable deployment confirmed (block 7249472)
+✅ MachineNftUpgradeable deployment confirmed (block 7841355)
 ⏳ ContractNftUpgradeable deployment (1/4)...
-✅ ContractNftUpgradeable deployment confirmed (block 7249473)
+✅ ContractNftUpgradeable deployment confirmed (block 7841356)
 ⏳ PeaqVaultUpgradeable deployment (1/4)...
-✅ PeaqVaultUpgradeable deployment confirmed (block 7249475)
+✅ PeaqVaultUpgradeable deployment confirmed (block 7841357)
 ⏳ RewardDistributorUpgradeable deployment (1/4)...
-✅ RewardDistributorUpgradeable deployment confirmed (block 7249476)
+✅ RewardDistributorUpgradeable deployment confirmed (block 7841358)
 ⏳ NativeTransferFeeModule deployment (1/4)...
-✅ NativeTransferFeeModule deployment confirmed (block 7249477)
+✅ NativeTransferFeeModule deployment confirmed (block 7841359)
 ✅ InfoDesk deployed successfully
 📋 InfoDesk Contract Address:
-   InfoDesk: 0x3F2c72Ba389632079DA68Ee13E8b955d69D1B5c1
+   InfoDesk: 0x9f2bF4e338cCC48D1b7021494377907ea4a593F2
 3. 📜 Deploy ONCHAINID contracts...
 ════════════════════════════════════════════════════════════
 ⏳ Identity deployment (1/4)...
-✅ Identity deployment confirmed (block 7249478)
+✅ Identity deployment confirmed (block 7841360)
 ⏳ ImplementationAuthority deployment (1/4)...
-✅ ImplementationAuthority deployment confirmed (block 7249479)
+✅ ImplementationAuthority deployment confirmed (block 7841361)
 ⏳ IdFactory deployment (1/4)...
-✅ IdFactory deployment confirmed (block 7249480)
+✅ IdFactory deployment confirmed (block 7841363)
 ⏳ Verifier deployment (1/4)...
-✅ Verifier deployment confirmed (block 7249481)
+✅ Verifier deployment confirmed (block 7841365)
 ⏳ Add KYC claim topic (1/4)...
-✅ Add KYC claim topic confirmed (block 7249482)
+✅ Add KYC claim topic confirmed (block 7841367)
 ⏳ Verifier deployment (1/4)...
-✅ Verifier deployment confirmed (block 7249485)
+✅ Verifier deployment confirmed (block 7841368)
 ⏳ Add KYC claim topic (1/4)...
-✅ Add KYC claim topic confirmed (block 7249486)
+✅ Add KYC claim topic confirmed (block 7841369)
 ⏳ Verifier deployment (1/4)...
-✅ Verifier deployment confirmed (block 7249487)
+✅ Verifier deployment confirmed (block 7841370)
 ⏳ Add KYC claim topic (1/4)...
-✅ Add KYC claim topic confirmed (block 7249488)
+✅ Add KYC claim topic confirmed (block 7841371)
 ⏳ Adding claim topic to verifier (1/4)...
-✅ Adding claim topic to verifier confirmed (block 7249489)
+✅ Adding claim topic to verifier confirmed (block 7841372)
 ⏳ Adding claim topic to verifier (1/4)...
-✅ Adding claim topic to verifier confirmed (block 7249490)
+✅ Adding claim topic to verifier confirmed (block 7841373)
 ✅ ONCHAINID contracts deployed successfully
 📋 ONCHAINID Contract Addresses:
-   Identity: 0x0e7B867AC0866E58Fe1073e4245b7F353d7D9e06
-   Authority: 0xA848bEb6e61429EAa529D1F05063Ed87C24647a1
-   Factory: 0x125f23BBDe7AdAd5B9669A7dF416C03908718549
-   KYC-Verifier: 0xAE3722eDbC759bc04609dC8283E3C490f0765548
-   MNFT-Issuer-Verifier: 0x1A86C9CD93E4F8d6EC9aE1DE4aE48b3127822F3E
-   MNFT-Regulator-Verifier: 0x2C08565D35fe594933c53420dA78BE34Dc4fA4DF
+   Identity: 0x7a86d1913AFC30392F700d8E981636Fa07f59d7F
+   Authority: 0x84Df77FEa8398bcBCB18CE1165D89aEa02f8b67F
+   Factory: 0x6c2Cf1CD533C5c36C2d9918Ca00EAB800AE32d0A
+   KYC-Verifier: 0xb1b53EAD9E8aBa8eb061cC50a563FFd392C260d9
+   MNFT-Issuer-Verifier: 0xfbbb480a67A5CB746F9468d00D9b0F4106D04a32
+   MNFT-Regulator-Verifier: 0xEE3c15a286575620852d252F0BE1e1De0308C29f
 4. 📜 Deploy T-REX system...
 ════════════════════════════════════════════════════════════
 ⏳ TREXImplementationAuthority deployment (1/4)...
-✅ TREXImplementationAuthority deployment confirmed (block 7249491)
+✅ TREXImplementationAuthority deployment confirmed (block 7841375)
 ⏳ IdentityRegistryStorage deployment (1/4)...
-✅ IdentityRegistryStorage deployment confirmed (block 7249492)
+✅ IdentityRegistryStorage deployment confirmed (block 7841376)
 ⏳ IdentityRegistry deployment (1/4)...
-✅ IdentityRegistry deployment confirmed (block 7249493)
+✅ IdentityRegistry deployment confirmed (block 7841377)
 ⏳ ClaimTopicsRegistry deployment (1/4)...
-✅ ClaimTopicsRegistry deployment confirmed (block 7249495)
+✅ ClaimTopicsRegistry deployment confirmed (block 7841379)
 ⏳ TrustedIssuersRegistry deployment (1/4)...
-✅ TrustedIssuersRegistry deployment confirmed (block 7249497)
+✅ TrustedIssuersRegistry deployment confirmed (block 7841385)
 ⏳ ModularCompliance deployment (1/4)...
-✅ ModularCompliance deployment confirmed (block 7249498)
+✅ ModularCompliance deployment confirmed (block 7841386)
 ⏳ TrexRewardHook deployment (1/4)...
-✅ TrexRewardHook deployment confirmed (block 7249499)
+✅ TrexRewardHook deployment confirmed (block 7841387)
 ⏳ Add T-REX version (1/4)...
-✅ Add T-REX version confirmed (block 7249500)
+✅ Add T-REX version confirmed (block 7841388)
 ⏳ Use T-REX version (1/4)...
-✅ Use T-REX version confirmed (block 7249501)
+✅ Use T-REX version confirmed (block 7841390)
 ⏳ TREXFactory deployment (1/4)...
-✅ TREXFactory deployment confirmed (block 7249502)
+✅ TREXFactory deployment confirmed (block 7841391)
 ⏳ IAFactory deployment (1/4)...
-✅ IAFactory deployment confirmed (block 7249505)
+✅ IAFactory deployment confirmed (block 7841392)
 ⏳ TREXGateway deployment (1/4)...
-✅ TREXGateway deployment confirmed (block 7249506)
+✅ TREXGateway deployment confirmed (block 7841393)
 ⏳ Transfer factory ownership (1/4)...
-✅ Transfer factory ownership confirmed (block 7249507)
+✅ Transfer factory ownership confirmed (block 7841395)
 ⏳ Set factory in gateway (1/4)...
-✅ Set factory in gateway confirmed (block 7249509)
+✅ Set factory in gateway confirmed (block 7841396)
 ⏳ Transfer TREXFactory ownership to deployer (1/4)...
-✅ Transfer TREXFactory ownership to deployer confirmed (block 7249510)
+✅ Transfer TREXFactory ownership to deployer confirmed (block 7841397)
 ⏳ Set IdFactory on TREXFactory (1/4)...
-✅ Set IdFactory on TREXFactory confirmed (block 7249512)
+✅ Set IdFactory on TREXFactory confirmed (block 7841399)
 ⏳ Register TREXFactory in ONCHAINID IdFactory (1/4)...
-✅ Register TREXFactory in ONCHAINID IdFactory confirmed (block 7249513)
+✅ Register TREXFactory in ONCHAINID IdFactory confirmed (block 7841400)
 ⏳ Transfer TREXFactory ownership back to Gateway (1/4)...
-✅ Transfer TREXFactory ownership back to Gateway confirmed (block 7249515)
+✅ Transfer TREXFactory ownership back to Gateway confirmed (block 7841401)
 ✅ T-REX system deployed successfully
 📋 T-REX Contract Addresses:
-   Authority: 0xAabf71b5EF3466275f9639007B48C0BA5938FfF0
-   IA Factory: 0x2C57eB7c79f99d8Da7d1736206D325F67256DFd9
-   Factory: 0x9a050DB6Cc6b80E376Dd98B7206dC152D7042d62
-   Gateway: 0x5C7c78C13Cb217f0679C1640c3B1dCC8C8F5466A
+   Authority: 0xA2b6B1d25b8072E6560bFDB0D09b1217368CBa4a
+   IA Factory: 0x28fE166972Bd1aBF176fDCda1bEd78F0d8F90391
+   Factory: 0x2207DB2a167E31fF2d8E82E953ec0Bda942a8B71
+   Gateway: 0x6c24606B129cD4e426c54628E0A0896985aEbca3
 5. 📜 Deploy PeaqRwaNft...
 ════════════════════════════════════════════════════════════
 ⏳ PeaqRwaNftUpgradeable deployment (1/4)...
-✅ PeaqRwaNftUpgradeable deployment confirmed (block 7249516)
+✅ PeaqRwaNftUpgradeable deployment confirmed (block 7841402)
 ✅ PeaqRwaNft deployed successfully
 📋 PeaqRwaNft Contract Address:
-   PeaqRwaNft: 0x33213940fb3a62bD3503b60Cc8736F9eDdb6DC7c
+   PeaqRwaNft: 0x968b4520261C9c602a25448b75f3d4483D0a083B
 ⏳ Set TREXGateway in InfoDesk (1/4)...
-✅ Set TREXGateway in InfoDesk confirmed (block 7249518)
+✅ Set TREXGateway in InfoDesk confirmed (block 7841405)
 ⏳ Set ProxyAdmin in InfoDesk (1/4)...
-✅ Set ProxyAdmin in InfoDesk confirmed (block 7249519)
+✅ Set ProxyAdmin in InfoDesk confirmed (block 7841406)
 6. 📜 Deploy PeaqVaultFactory
 ════════════════════════════════════════════════════════════
 ⏳ PeaqVaultFactoryUpgradeable deployment (1/4)...
-✅ PeaqVaultFactoryUpgradeable deployment confirmed (block 7249520)
+✅ PeaqVaultFactoryUpgradeable deployment confirmed (block 7841407)
 ⏳ Approve factory as deployer in TREXGateway (1/4)...
-✅ Approve factory as deployer in TREXGateway confirmed (block 7249522)
+✅ Approve factory as deployer in TREXGateway confirmed (block 7841409)
 ✅ PeaqVault factory deployed successfully
 📋 PeaqVaultFactory Contract Address:
-   PeaqVaultFactory: 0x5C5Db5CcF63ed6C11063385070C8FD2C990BFd53
+   PeaqVaultFactory: 0x7809591A43449Ab57452c56Cf7d95b04Ef9886b6
 🎉 RWA Framework Deployment Complete!
 ==============================================
 ✅ All RWA framework components deployed successfully:
 
 📋 Check your deployment artifacts for contract addresses
 ⏳ ClaimIssuer deployment (1/4)...
-✅ ClaimIssuer deployment confirmed (block 7249523)
+✅ ClaimIssuer deployment confirmed (block 7841410)
 📋 ClaimIssuer Contract Address:
-   ClaimIssuer: 0x455E00a8702f7F62b1e462934a820FC2CCD94BFF
+   ClaimIssuer: 0x9e528f2d7E045e9396c41ADcf83A804257aB378F
 ⏳ Identity creation (1/4)...
-✅ Identity creation confirmed (block 7249525)
+✅ Identity creation confirmed (block 7841412)
 📋 Identity Contract Address:
-   Identity: 0x2c90f8aD56A4522ad0865c176407b4A025b7CA12
+   Identity: 0xE93f5eCbCD0E42449989fc4152BCD65516615d55
 ⏳ Adding claim to identity (1/4)...
-✅ Adding claim to identity confirmed (block 7249526)
+✅ Adding claim to identity confirmed (block 7841413)
 CT_KYC_APPROVED added to owner identity
 ⏳ Adding claim to identity (1/4)...
-✅ Adding claim to identity confirmed (block 7249527)
+✅ Adding claim to identity confirmed (block 7841415)
 CT_MNFT_ISSUER claim added to owner identity
 ⏳ Adding claim to identity (1/4)...
-✅ Adding claim to identity confirmed (block 7249528)
+✅ Adding claim to identity confirmed (block 7841416)
 CT_MNFT_REGULATOR claim added to owner identity
 Owner added as Machine-Regulator in PeaqRwaNft contract
 Owner added as Machine-Issuer in PeaqRwaNft contract
 📋 MachineNft Contract Address:
-   MachineNft: 0xaBB3961281123C336596153C4dfE83E11498fc54
+   MachineNft: 0x5Ca3db1f292f913DDdA8C5385E5391438665463c
 📋 ContractNft Contract Address:
-   ContractNft: 0xA00ee5b948E3E1cb293f57F7008721353416Aa2E
+   ContractNft: 0x35D67095A5a6f00CBE288cF744b3efC48de3699a
