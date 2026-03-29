@@ -7,15 +7,18 @@ export type EvmNetwork = {
   wallet: Wallet;
 };
 
-const wallet = new Wallet(process.env.EVM_PRIVATE || '');
+const createWallet = (): Wallet | null => {
+  const privateKey = process.env.EVM_PRIVATE;
+  if (!privateKey) return null;
 
-const maybe = (label: string, baseUrl?: string | null): EvmNetwork | null => {
-  if (!baseUrl) return null;
-  if (!wallet) return null;
-  return { label, baseUrl, wallet };
+  try {
+    return new Wallet(privateKey);
+  } catch {
+    return null;
+  }
 };
 
 export const EVM_NETWORKS: EvmNetwork[] = [
-  maybe('peaq', process.env.PEAQ_HTTPS),
-  maybe('agung', process.env.AGUNG_HTTPS),
+  { label: 'peaq', baseUrl: process.env.PEAQ_HTTPS!, wallet: createWallet() },
+  { label: 'agung', baseUrl: process.env.AGUNG_HTTPS!, wallet: createWallet() }
 ].filter(Boolean) as EvmNetwork[];

@@ -22,9 +22,11 @@
     "typecheck": "tsc -b",
     "clean": "rimraf dist *.tsbuildinfo node_modules/.cache/tsbuild",
     "prepack": "npm run build",
-    "test": "vitest",
-    "test:watch": "vitest --watch",
-    "test:coverage": "vitest run --coverage"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:unit": "vitest run tests/**/*.unit.test.ts",
+    "test:int": "vitest run tests/**/*.int.test.ts"
   },
   "keywords": [
     "peaq",

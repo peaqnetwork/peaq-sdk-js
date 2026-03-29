@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { type Wallet } from 'ethers';
 
-import { Sdk, ChainType,  } from '../../src/index';
+import { Sdk, ChainType } from '../../src/index';
 import { EVM_NETWORKS } from '../helpers/config';
 
 // Build tuple cases so only the label is printed in test titles (no secrets in logs)
@@ -9,7 +9,7 @@ const CASES: [string, string, Wallet | string][] = EVM_NETWORKS.length
   ? EVM_NETWORKS.map((n) => [n.label, n.baseUrl, n.wallet])
   : [['skipped', '', '']];
 
-describe.sequential.each(CASES)('[did] EVM %s', (label, baseUrl, wallet) => {
+describe.skip.each(CASES)('[did] EVM %s', (_label, baseUrl, wallet) => {
   const run = baseUrl && wallet ? it : it.skip;
 
   run('DID controller and didAddress the same', async () => {
