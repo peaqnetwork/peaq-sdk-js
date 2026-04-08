@@ -18,7 +18,7 @@ jobs:
 
       - name: Get changed files for SDK
         id: changed-sdk-files
-        uses: tj-actions/changed-files@v41
+        uses: tj-actions/changed-files@v46
         with:
           path: packages/sdk
 
@@ -73,7 +73,7 @@ jobs:
 
       - name: Get changed files for Machine Station
         id: changed-ms-files
-        uses: tj-actions/changed-files@v41
+        uses: tj-actions/changed-files@v46
         with:
           path: packages/msf
 
